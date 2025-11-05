@@ -1,5 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { PrismaClient } from '@prisma/client';
+import { isPasswordValid } from '$lib/regex';
+import { isStringLongEnough } from '$lib/regex';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -39,17 +42,33 @@ export const POST: RequestHandler = async ({ request }) => {
     const data = await request.json();
     const { login, password, role, team, characterId } = data;
 
+    //REGEX VERIFICATION
+      if (!isPasswordValid(password)) {
+        return json({ error: 'Invalid password format' }, { status: 400 });
+      }
+
+      if(!isStringLongEnough(login)) {
+        return json({ error: 'Invalid login format' }, { status: 400 });
+      }
+
     if (!login || !password || role === undefined || team === undefined) {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const existingPlayer = await prisma.player.findUnique({ where: { login } });
+    if (existingPlayer) {
+      return json({ error: 'Login already exists' }, { status: 409 });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const player = await prisma.player.create({
       data: {
         login,
-        password,
-        role: BigInt(role),
-        team: BigInt(team),
-        characterId: characterId ? BigInt(characterId) : null
+        password: hashedPassword,
+        role: 0,
+        team: 0,
+        characterId: null
       },
       include: {
         character: true
