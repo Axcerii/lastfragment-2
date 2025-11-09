@@ -80,9 +80,9 @@
     }
 </style>
 
-<header class="header-desktop" class:visible={isMenuOpen}>
+<header class="header-desktop" class:visible={isMenuOpen} data-sveltekit-reload>
     <a href="/" class="logo">
-        <img src="layout/Logo.svg" alt="Logo du Tout" class="primary-svg">
+        <img src="/layout/Logo.svg" alt="Logo du Tout" class="primary-svg">
     </a>
     <NavButton
         href="/"

@@ -1,8 +1,11 @@
 <script lang="ts">
-    let {dragon = 'Artrish', border = 'Yinva', text} = $props();
+    let {dragon = 'Artrish', border = 'Yinva', text, onClick = defaultClick()} = $props();
+
+    function defaultClick(){
+    }
 </script>
 
-<button  style="background-color: var(--{dragon}); border-color: var(--{border});">
+<button  style="background-color: var(--{dragon}); border-color: var(--{border});" onclick={onClick}>
     <img src="/dragons/normal/{dragon}.svg" alt="">
     {text}
 </button>
@@ -31,7 +34,7 @@
 
     img{
         position: absolute;
-        opacity: 0.17;
+        opacity: 0.30;
         height: 100%;
         width: auto;
         top: 0;
