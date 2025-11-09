@@ -65,6 +65,18 @@ a {
 	--radius: 5px;
 	--textFont: 'El Messiri', sans-serif;
 	--titleFont: 'EB Garamond', serif;
+
+	--Artrish: #fff;
+	--Yinva: #E5B8CC;
+	--Guizamark: #CFDFC4;
+	--Shizari: #1b1b1b;
+	--Pestia: #615DD3;
+	--Chronos: #CA4444;
+	--Aqua: #a6a6a6;
+	--Goliath: #84583C;
+	--Drii: #803084;
+	--Lada: #F3F09E;
+	--Pura: #D2B674;
 }
 
 html{
@@ -88,6 +100,7 @@ input{
 	border-radius: var(--radius);
 	font-size: 20px;
 	width: 100%;
+	font-family: var(--textFont);
 }
 
 input::placeholder{

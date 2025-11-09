@@ -1,4 +1,7 @@
 <script lang="ts">
+
+	import Cta from "$lib/components/Cta.svelte";
+
 	let login = '';
 	let password = '';
 	let message = '';
@@ -58,7 +61,7 @@
 	<h2>Créer un compte</h2>
 	<input type="text" bind:value={login} placeholder="Nom d'utilisateur" required />
 	<input type="password" bind:value={password} placeholder="Mot de passe" required />
-	<button type="submit">S'inscrire</button>
+	<Cta text="S'inscrire"/>
 </form>
 
 <hr />
@@ -67,7 +70,7 @@
 	<h2>Connexion</h2>
 	<input type="text" bind:value={login} placeholder="Email" required />
 	<input type="password" bind:value={password} placeholder="Mot de passe" required />
-	<button type="submit">Se connecter</button>
+	<Cta text="Se connecter" dragon="Yinva" border="Artrish"/>
 </form>
 
 {#if loggedIn}
