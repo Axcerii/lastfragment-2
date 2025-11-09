@@ -68,7 +68,7 @@ a {
 }
 
 html{
-    background-color: var(--background);
+	background-image: url("layout/soft-neige1B1B1B.png");
     color: var(--foreground);
 	font-family: var(--textFont);
 }
