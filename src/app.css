@@ -80,3 +80,16 @@ html{
 .accent-svg{
 	filter: invert(78%) sepia(52%) saturate(214%) hue-rotate(293deg) brightness(95%) contrast(88%);
 }
+
+input{
+	background-color: var(--primary);
+	border: var(--foreground) 1px solid;
+	border-radius: var(--radius);
+	font-size: 20px;
+	width: 100%;
+	font-family: var(--titleFont);
+}
+
+input::placeholder{
+	color: rgba(0, 0, 0, 0.5);
+}
