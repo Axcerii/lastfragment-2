@@ -13,7 +13,7 @@
     header{
         z-index: 1000;
         background-color: var(--background);
-        font-family: var(--titleFont);
+        font-family: var(--textFont);
     }
     .header-desktop{
         display: flex;

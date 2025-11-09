@@ -63,11 +63,12 @@ a {
     --primary: #CFDFC4;
     --secondary: #D2B674;
 	--radius: 5px;
-	--titleFont: 'El Messiri', sans-serif;
-	--textFont: 'EB Garamond', serif;
+	--textFont: 'El Messiri', sans-serif;
+	--titleFont: 'EB Garamond', serif;
 }
 
 html{
+	background-color: var(--background);
 	background-image: url("layout/soft-neige1B1B1B.png");
     color: var(--foreground);
 	font-family: var(--textFont);
@@ -87,7 +88,6 @@ input{
 	border-radius: var(--radius);
 	font-size: 20px;
 	width: 100%;
-	font-family: var(--titleFont);
 }
 
 input::placeholder{

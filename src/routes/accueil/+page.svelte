@@ -197,7 +197,7 @@
     left: 5%;
     transform: translateY(-50%);
     font-family: var(--titleFont);
-    font-size: 60px;
+    font-size: 64px;
     text-align: center;
     line-height: 1.4;
     z-index: 10;
