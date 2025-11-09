@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1 {
+        stroke-width: 20px;
+      }
+
+      .cls-2 {
+        stroke-width: 80px;
+      }
+    </style>
+  </defs>
+  <g id="Pura">
+    <polygon class="cls-1" points="500 57.1 305.3 127.4 172.4 316 143.5 563 227.8 790 398.5 925 601.5 925 772.2 790 856.5 563 827.6 316 694.7 127.4 500 57.1"/>
+    <circle class="cls-1" cx="307.3" cy="396.2" r="61.8"/>
+    <circle class="cls-1" cx="692.7" cy="396.2" r="61.8"/>
+    <g>
+      <line class="cls-2" x1="360.1" y1="399.7" x2="639.9" y2="399.7"/>
+      <line class="cls-2" x1="500.1" y1="273.3" x2="500.1" y2="760.8"/>
+      <line class="cls-2" x1="362.3" y1="633" x2="642.1" y2="633"/>
+    </g>
+  </g>
+</svg>

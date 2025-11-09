@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1 {
+        stroke-width: 10px;
+      }
+
+      .cls-2 {
+        stroke-width: 40px;
+      }
+
+      .cls-3 {
+        stroke-width: 20px;
+      }
+    </style>
+  </defs>
+  <g id="Shizari">
+    <line class="cls-1" x1="500" y1="878.4" x2="500" y2="200.1"/>
+    <line class="cls-1" x1="200" y1="786.2" x2="200" y2="200.1"/>
+    <line class="cls-1" x1="800" y1="786.2" x2="800" y2="200.1"/>
+    <rect class="cls-2" x="330.1" y="328.6" width="339.9" height="421.23"/>
+    <line class="cls-2" x1="286.5" y1="878.4" x2="713.5" y2="878.4"/>
+    <line class="cls-2" x1="200" y1="249.9" x2="800" y2="249.9"/>
+    <circle class="cls-3" cx="500" cy="133.9" r="61.8"/>
+  </g>
+</svg>

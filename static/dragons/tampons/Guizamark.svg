@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        fill: none;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1 {
+        stroke: #fff;
+        stroke-width: 100px;
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        stroke: #000;
+      }
+
+      .cls-2 {
+        stroke-width: 80px;
+      }
+
+      .cls-3 {
+        stroke-width: 40px;
+      }
+
+      .cls-4 {
+        stroke-width: 20px;
+      }
+    </style>
+  </defs>
+  <g id="Guizamark_2" data-name="Guizamark 2">
+    <g>
+      <g>
+        <line class="cls-1" x1="500.1" y1="99.7" x2="500.1" y2="631.5"/>
+        <line class="cls-2" x1="500.1" y1="99.7" x2="500.1" y2="631.5"/>
+      </g>
+      <line class="cls-2" x1="217.2" y1="457.5" x2="782.8" y2="457.5"/>
+    </g>
+    <polygon class="cls-3" points="500.1 592.7 368.3 821 632 821 500.1 592.7"/>
+    <circle class="cls-4" cx="500.1" cy="500" r="400.3"/>
+  </g>
+</svg>

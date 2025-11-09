@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+        stroke-width: 20px;
+      }
+    </style>
+  </defs>
+  <g id="Goliath">
+    <polygon class="cls-1" points="622.3 202 373.7 202 198 377.7 198 626.3 373.7 802 622.3 802 798 626.3 798 377.7 622.3 202"/>
+    <polygon class="cls-1" points="575.9 313.9 420.1 313.9 309.9 424.1 309.9 579.9 420.1 690.1 575.9 690.1 686.1 579.9 686.1 424.1 575.9 313.9"/>
+    <rect class="cls-1" x="239.4" y="242.4" width="519.2" height="519.22"/>
+    <circle class="cls-1" cx="500" cy="500" r="400.3"/>
+  </g>
+</svg>

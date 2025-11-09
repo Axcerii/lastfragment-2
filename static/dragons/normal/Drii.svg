@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1 {
+        stroke-width: 20px;
+      }
+
+      .cls-2 {
+        stroke-width: 10px;
+      }
+    </style>
+  </defs>
+  <g id="Drii_2" data-name="Drii 2">
+    <polygon class="cls-1" points="585.1 928.3 786.8 686.8 737.4 334.1 640 459 500 51.4 360 459 262.6 334.1 213.2 686.8 414.9 928.3 585.1 928.3"/>
+    <polygon class="cls-1" points="498.3 812.2 602.8 774.2 658.4 677.9 639.1 568.4 553.9 496.9 442.7 496.9 357.5 568.4 338.2 677.9 393.8 774.2 498.3 812.2"/>
+    <polyline class="cls-2" points="639.1 568.4 500 649.6 658.4 677.9"/>
+    <polyline class="cls-2" points="442.7 496.9 500 649.6 553.9 496.9"/>
+    <polyline class="cls-2" points="338.2 677.9 500 649.6 357.5 568.4"/>
+    <polyline class="cls-2" points="393.8 774.2 500 649.6 602.8 774.2"/>
+  </g>
+</svg>
