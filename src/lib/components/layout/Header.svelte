@@ -2,7 +2,9 @@
     import NavButton from "./NavButton.svelte";
     import BurgerMenu from "./BurgerMenu.svelte";
 
-    let isMenuOpen = false;
+    let { connected } = $props();
+
+    let isMenuOpen = $state(false);
 
     function toggleMenu() {
         isMenuOpen = !isMenuOpen;
@@ -85,35 +87,44 @@
         <img src="/layout/Logo.svg" alt="Logo du Tout" class="primary-svg">
     </a>
     <NavButton
-        href="/"
+        href="/accueil"
         label="Accueil"
         active={false}
     />
     <NavButton
-        href="/"
+        href="/personnages"
         label="Personnages"
         active={false}
     />
     <NavButton
-        href="/"
+        href="/histoires"
         label="Histoires"
         active={false}
     />
     <NavButton
-        href="/"
+        href="/flux"
         label="Don de Flux"
         active={false}
     />
     <NavButton
-        href="/"
+        href="/outils"
         label="Outils"
         active={false}
     />
-    <NavButton
-        href="/"
+
+    {#if connected}
+        <NavButton
+            href="/profil"
+            label="Profil"
+            active={false}
+        />
+    {:else}    
+        <NavButton
+        href="/auth/login"
         label="Connexion"
         active={false}
-    />
+        />
+    {/if}
 </header>
 <header class="header-mobile">
     <BurgerMenu click={toggleMenu} />

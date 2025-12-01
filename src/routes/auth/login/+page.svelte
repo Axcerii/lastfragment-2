@@ -1,9 +1,11 @@
 <script lang="ts">
 
 	import Cta from "$lib/components/Cta.svelte";
+	import { goto } from '$app/navigation';
 
 	let login = $state('');
 	let password = $state('');
+	let passwordConfirm = $state('');
 	let message = $state('');
 	let loggedIn = false;
 	let pageName = $state(false);
@@ -13,19 +15,22 @@
 	}
 
 	async function register() {
-		message = '⏳ Inscription...';
 		const res = await fetch('/auth/register', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ login, password })
+			body: JSON.stringify({ login, password, passwordConfirm })
 		});
 
 		const data = await res.json();
-		message = data.message || data.error || 'Erreur inconnue';
+
+		if (res.ok) {
+			goto('/accueil');
+		} else {
+			message = data.error || "Erreur lors de l'inscription";
+		}
 	}
 
 	async function loginf() {
-		message = '⏳ Connexion...';
 		const res = await fetch('/auth/login', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -35,31 +40,13 @@
 		const data = await res.json();
 
 		if (res.ok) {
-			message = '✅ Connecté avec succès !';
 			loggedIn = true;
+			goto('/accueil');
 		} else {
 			message = data.error || 'Erreur de connexion';
 		}
 	}
-
-	async function logout() {
-		await fetch('/api/logout', { method: 'POST' });
-		loggedIn = false;
-		message = '🚪 Déconnecté.';
-	}
-
-	async function checkProfile() {
-		const res = await fetch('/api/profile');
-		const data = await res.json();
-
-		if (res.ok) {
-			message = `👤 Profil : ${JSON.stringify(data.user)}`;
-		} else {
-			message = data.error || 'Erreur.';
-		}
-	}
 </script>
-
 
 {#if pageName}
 <div class="inscription">
@@ -74,8 +61,8 @@
 			<input type="password" bind:value={password} placeholder="****************" required name="password"/>
 		</div>
 		<div>
-			<label for="password">Confirmer le mot de passe :</label>
-			<input type="password" placeholder="****************" required name="password"/>
+			<label for="password-confirm">Confirmer le mot de passe :</label>
+			<input type="password" bind:value={passwordConfirm} placeholder="****************" required name="password-confirm"/>
 		</div>
 		<Cta text="S'inscrire"/>
 	</form>

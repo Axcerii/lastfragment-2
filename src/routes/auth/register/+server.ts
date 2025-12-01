@@ -2,13 +2,18 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { PrismaClient } from '@prisma/client';
 import { isPasswordValid, isStringLongEnough } from '$lib/regex';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
 
 const prisma = new PrismaClient();
 
-export const POST: RequestHandler = async ({ request }) => {
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+
+
+export const POST: RequestHandler = async ({ request, cookies }) => {
   try {
     const data = await request.json();
-    const { login, password, characterId } = data;
+    const { login, password, passwordConfirm, characterId, } = data;
 
     if (!isPasswordValid(password)) {
       return json({ error: 'Le mot de passe ne correspond pas aux exigences' }, { status: 400 });
@@ -20,6 +25,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
     if (!login || !password) {
       return json({ error: 'Des champs n\'ont pas été correctement remplis' }, { status: 400 });
+    }
+
+    if (password !== passwordConfirm) {
+      return json({ error: 'Les mots de passe ne correspondent pas' }, { status: 400 });
     }
 
     const existingPlayer = await prisma.player.findUnique({ where: { login } });
@@ -42,9 +51,19 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     });
 
+    const serializedId = player.id.toString();
 
+    const token = jwt.sign({ userId: serializedId }, JWT_SECRET, { expiresIn: '1h' });
 
-    return json("Reussi", { status: 201 });
+    cookies.set('jwt', token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60
+    });
+
+    return json({ success: true });
   } catch (error: any) {
     console.error('Error creating player:', error);
     if (error.code === 'P2002') {
