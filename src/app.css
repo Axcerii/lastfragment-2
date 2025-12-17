@@ -5,19 +5,87 @@
    License: none (public domain)
 */
 
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed, 
-figure, figcaption, footer, header, hgroup, 
-menu, nav, output, ruby, section, summary,
-time, mark, audio, video {
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+b,
+u,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+canvas,
+details,
+embed,
+figure,
+figcaption,
+footer,
+header,
+hgroup,
+menu,
+nav,
+output,
+ruby,
+section,
+summary,
+time,
+mark,
+audio,
+video {
 	margin: 0;
 	padding: 0;
 	border: 0;
@@ -25,43 +93,62 @@ time, mark, audio, video {
 	font: inherit;
 	vertical-align: baseline;
 }
+
 /* HTML5 display-role reset for older browsers */
-article, aside, details, figcaption, figure, 
-footer, header, hgroup, menu, nav, section {
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section {
 	display: block;
 }
+
 body {
 	line-height: 1;
 }
-ol, ul {
+
+ol,
+ul {
 	list-style: none;
 }
-blockquote, q {
+
+blockquote,
+q {
 	quotes: none;
 }
-blockquote:before, blockquote:after,
-q:before, q:after {
+
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
 	content: '';
 	content: none;
 }
+
 table {
 	border-collapse: collapse;
 	border-spacing: 0;
 }
 
 a {
-    color: inherit;
-    text-decoration: none;
+	color: inherit;
+	text-decoration: none;
 }
 
 /* Fin du reset */
 
-:root{
-    --foreground: #fff;
-    --background: #1b1b1b;
-    --accent: #E5B8CC;
-    --primary: #CFDFC4;
-    --secondary: #D2B674;
+:root {
+	--foreground: #fff;
+	--background: #1b1b1b;
+	--accent: #E5B8CC;
+	--primary: #CFDFC4;
+	--secondary: #D2B674;
 	--radius: 5px;
 	--textFont: 'El Messiri', sans-serif;
 	--titleFont: 'EB Garamond', serif;
@@ -77,25 +164,31 @@ a {
 	--Drii: #803084;
 	--Lada: #F3F09E;
 	--Pura: #D2B674;
+
+	--transition: 0.3s all ease-in-out;
 }
 
-html{
+html {
 	background-color: var(--background);
 	background-image: url("/layout/soft-neige1B1B1B.png");
-    color: var(--foreground);
+	color: var(--foreground);
 	font-family: var(--textFont);
 	font-size: 20px;
 }
 
-.primary-svg{
+.primary-svg {
 	filter: invert(90%) sepia(13%) saturate(311%) hue-rotate(52deg) brightness(101%) contrast(81%);
 }
 
-.accent-svg{
+.accent-svg {
 	filter: invert(78%) sepia(52%) saturate(214%) hue-rotate(293deg) brightness(95%) contrast(88%);
 }
 
-input{
+.secondary-svg {
+	filter: invert(76%) sepia(57%) saturate(281%) hue-rotate(2deg) brightness(88%) contrast(87%);
+}
+
+input {
 	background-color: var(--primary);
 	border: var(--foreground) 1px solid;
 	border-radius: var(--radius);
@@ -108,10 +201,21 @@ input{
 	padding: 0 1rem;
 }
 
-input::placeholder{
+input::placeholder {
 	color: rgba(0, 0, 0, 0.5);
 }
 
-h1, h2, h3, h4, h5, h6{
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	font-family: var(--titleFont);
+}
+
+.pages-personnages {
+	background-image: url("personnages/backgroundpattern.png") !important;
+	background-size: 50%;
+	background-position: 20% 20%;
 }

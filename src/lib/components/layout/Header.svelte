@@ -11,13 +11,33 @@
     }
 </script>
 
+<header class="header-desktop" class:visible={isMenuOpen} data-sveltekit-reload>
+    <a href="/" class="logo">
+        <img src="/layout/Logo.svg" alt="Logo du Tout" class="primary-svg" />
+    </a>
+    <NavButton href="/accueil" label="Accueil" active={false} />
+    <NavButton href="/personnages" label="Personnages" active={false} />
+    <NavButton href="/histoires" label="Histoires" active={false} />
+    <NavButton href="/flux" label="Don de Flux" active={false} />
+    <NavButton href="/outils" label="Outils" active={false} />
+
+    {#if connected}
+        <NavButton href="/profil" label="Profil" active={false} />
+    {:else}
+        <NavButton href="/auth/login" label="Connexion" active={false} />
+    {/if}
+</header>
+<header class="header-mobile">
+    <BurgerMenu click={toggleMenu} />
+</header>
+
 <style>
-    header{
-        z-index: 1000;
+    header {
+        z-index: 9999;
         background-color: var(--background);
         font-family: var(--textFont);
     }
-    .header-desktop{
+    .header-desktop {
         display: flex;
         flex-direction: row;
         justify-content: space-between;
@@ -29,7 +49,7 @@
         box-sizing: border-box;
     }
 
-    .logo{
+    .logo {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -41,23 +61,24 @@
         font-size: 20px;
     }
 
-    .logo > img{
+    .logo > img {
         width: 100%;
         height: 80%;
         padding: 5px;
         transition: all ease-in-out 800ms;
     }
 
-    .logo:hover > img{
-        filter: invert(78%) sepia(52%) saturate(214%) hue-rotate(293deg) brightness(95%) contrast(88%);
+    .logo:hover > img {
+        filter: invert(78%) sepia(52%) saturate(214%) hue-rotate(293deg)
+            brightness(95%) contrast(88%);
     }
 
-    .header-mobile{
+    .header-mobile {
         display: none;
     }
 
     @media screen and (max-width: 600px) {
-        .header-desktop{
+        .header-desktop {
             display: none;
             flex-direction: column;
             position: fixed;
@@ -65,67 +86,19 @@
             left: 0;
         }
 
-        .header-desktop.visible{
+        .header-desktop.visible {
             display: flex;
         }
 
-        .header-mobile{
+        .header-mobile {
             display: flex;
             position: fixed;
             right: 25px;
             top: 35px;
         }
 
-        .logo{
+        .logo {
             border-bottom: var(--primary) 2px solid;
         }
     }
 </style>
-
-<header class="header-desktop" class:visible={isMenuOpen} data-sveltekit-reload>
-    <a href="/" class="logo">
-        <img src="/layout/Logo.svg" alt="Logo du Tout" class="primary-svg">
-    </a>
-    <NavButton
-        href="/accueil"
-        label="Accueil"
-        active={false}
-    />
-    <NavButton
-        href="/personnages"
-        label="Personnages"
-        active={false}
-    />
-    <NavButton
-        href="/histoires"
-        label="Histoires"
-        active={false}
-    />
-    <NavButton
-        href="/flux"
-        label="Don de Flux"
-        active={false}
-    />
-    <NavButton
-        href="/outils"
-        label="Outils"
-        active={false}
-    />
-
-    {#if connected}
-        <NavButton
-            href="/profil"
-            label="Profil"
-            active={false}
-        />
-    {:else}    
-        <NavButton
-        href="/auth/login"
-        label="Connexion"
-        active={false}
-        />
-    {/if}
-</header>
-<header class="header-mobile">
-    <BurgerMenu click={toggleMenu} />
-</header>
