@@ -119,7 +119,7 @@
     }
 
     .pays-color {
-        background-size: 80%;
+        background-size: 95%;
         background-repeat: no-repeat;
         background-position: center;
         filter: invert(90%) sepia(13%) saturate(311%) hue-rotate(52deg)
@@ -130,7 +130,7 @@
         position: absolute;
         bottom: 0;
         left: 0;
-        height: 33%;
+        height: 30%;
         width: 100%;
         box-sizing: border-box;
         padding: 1rem;
@@ -174,7 +174,7 @@
 
     .dialogue-icon {
         position: absolute;
-        top: -15px;
+        top: -10px;
         left: 50%;
         transform: translateX(-50%);
         width: 40%;
@@ -282,8 +282,8 @@
         }
 
         .character {
-            width: 60%;
-            margin: auto;
+            width: 30%;
+            margin: auto auto 0 auto;
 
             -webkit-filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0));
             filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0));
@@ -325,7 +325,7 @@
         }
 
         .inverter:nth-child(odd) .character {
-            margin-left: 45%;
+            margin-left: 65%;
         }
 
         .inverter:nth-child(odd) .pays {

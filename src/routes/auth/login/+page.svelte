@@ -1,12 +1,11 @@
 <script lang="ts">
-
 	import Cta from "$lib/components/Cta.svelte";
-	import { goto } from '$app/navigation';
+	import { goto } from "$app/navigation";
 
-	let login = $state('');
-	let password = $state('');
-	let passwordConfirm = $state('');
-	let message = $state('');
+	let login = $state("");
+	let password = $state("");
+	let passwordConfirm = $state("");
+	let message = $state("");
 	let loggedIn = false;
 	let pageName = $state(false);
 
@@ -15,83 +14,117 @@
 	}
 
 	async function register() {
-		const res = await fetch('/auth/register', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ login, password, passwordConfirm })
+		const res = await fetch("/auth/register", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ login, password, passwordConfirm }),
 		});
 
 		const data = await res.json();
 
 		if (res.ok) {
-			goto('/accueil');
+			goto("/accueil", { invalidateAll: true });
 		} else {
 			message = data.error || "Erreur lors de l'inscription";
 		}
 	}
 
 	async function loginf() {
-		const res = await fetch('/auth/login', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ login, password })
+		const res = await fetch("/auth/login", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ login, password }),
 		});
 
 		const data = await res.json();
 
 		if (res.ok) {
 			loggedIn = true;
-			goto('/accueil');
+			goto("/accueil", { invalidateAll: true });
 		} else {
-			message = data.error || 'Erreur de connexion';
+			message = data.error || "Erreur de connexion";
 		}
 	}
 </script>
 
 {#if pageName}
-<div class="inscription">
-	<form on:submit|preventDefault={register}>
-		<h2>Création de compte :</h2>
-		<div>
-			<label for="login">Nom d'utilisateur :</label>
-			<input type="text" bind:value={login} placeholder="Serena" required name="login"/>
-		</div>
-		<div>
-			<label for="password">Mot de passe :</label>
-			<input type="password" bind:value={password} placeholder="****************" required name="password"/>
-		</div>
-		<div>
-			<label for="password-confirm">Confirmer le mot de passe :</label>
-			<input type="password" bind:value={passwordConfirm} placeholder="****************" required name="password-confirm"/>
-		</div>
-		<Cta text="S'inscrire"/>
-	</form>
-	<div class="separateur">
-	</div>
-	<Cta text="Page de connexion" dragon="Yinva" border="Artrish" onClick={ctaClick}/>
+	<div class="inscription">
+		<form on:submit|preventDefault={register}>
+			<h2>Création de compte :</h2>
+			<div>
+				<label for="login">Nom d'utilisateur :</label>
+				<input
+					type="text"
+					bind:value={login}
+					placeholder="Serena"
+					required
+					name="login"
+				/>
+			</div>
+			<div>
+				<label for="password">Mot de passe :</label>
+				<input
+					type="password"
+					bind:value={password}
+					placeholder="****************"
+					required
+					name="password"
+				/>
+			</div>
+			<div>
+				<label for="password-confirm">Confirmer le mot de passe :</label
+				>
+				<input
+					type="password"
+					bind:value={passwordConfirm}
+					placeholder="****************"
+					required
+					name="password-confirm"
+				/>
+			</div>
+			<Cta text="S'inscrire" />
+		</form>
+		<div class="separateur"></div>
+		<Cta
+			text="Page de connexion"
+			dragon="Yinva"
+			border="Artrish"
+			onClick={ctaClick}
+		/>
 
-	<img src="/dragons/tampons/Artrish.svg" alt="" class="form-image">
-</div>
+		<img src="/dragons/tampons/Artrish.svg" alt="" class="form-image" />
+	</div>
 {:else}
-<div class="connexion">
-	<form on:submit|preventDefault={loginf}>
-		<h2>Formulaire de connexion :</h2>
-		<div>
-			<label for="login">Nom d'utilisateur :</label>
-			<input type="text" bind:value={login} placeholder="Lucii" name="login" required />
-		</div>
-		<div>
-			<label for="password">Mot de passe :</label>
-			<input type="password" bind:value={password} placeholder="****************" name="password" required />
-		</div>
-		<Cta text="Se connecter" dragon="Yinva" border="Artrish"/>
-	</form>
-	<div class="separateur">
-	</div>
-	<Cta text="Créer un compte" onClick={ctaClick}/>
+	<div class="connexion">
+		<form on:submit|preventDefault={loginf}>
+			<h2>Formulaire de connexion :</h2>
+			<div>
+				<label for="login">Nom d'utilisateur :</label>
+				<input
+					type="text"
+					bind:value={login}
+					placeholder="Lucii"
+					name="login"
+					required
+				/>
+			</div>
+			<div>
+				<label for="password">Mot de passe :</label>
+				<input
+					type="password"
+					bind:value={password}
+					placeholder="****************"
+					name="password"
+					required
+				/>
+			</div>
+			<Cta text="Se connecter" dragon="Yinva" border="Artrish" />
+		</form>
+		<div class="separateur"></div>
+		<Cta text="Créer un compte" onClick={ctaClick} />
 
-	<img src="/dragons/tampons/Yinva.svg" alt="" class="form-image">
-</div>
+		<img src="/dragons/tampons/Yinva.svg" alt="" class="form-image" />
+	</div>
 {/if}
 
 <p style="margin-top:1rem; color: #555;">{message}</p>
@@ -104,7 +137,8 @@
 		width: 100%;
 	}
 
-	.inscription, .connexion{
+	.inscription,
+	.connexion {
 		position: relative;
 		width: 50%;
 		max-width: 675px;
@@ -116,18 +150,18 @@
 		margin-top: 3rem;
 	}
 
-	.separateur{
+	.separateur {
 		width: 50%;
 		margin: auto;
 		background-color: var(--foreground);
 		height: 2px;
 	}
 
-	h2{
+	h2 {
 		font-size: 32px;
 	}
 
-	.form-image{
+	.form-image {
 		width: 120%;
 		position: absolute;
 		z-index: -1;
@@ -138,11 +172,12 @@
 	}
 
 	@media only screen and (max-width: 600px) {
-		.inscription, .connexion{
+		.inscription,
+		.connexion {
 			width: 90%;
 		}
 
-		.form-image{
+		.form-image {
 			width: 100%;
 			top: 0;
 		}

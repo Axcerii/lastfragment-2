@@ -2,11 +2,20 @@
     import CharacterCard from "$lib/components/personnages/CharacterCard.svelte";
     import Checkbox from "$lib/components/Checkbox.svelte";
 
-    const personnages = fetch("http://localhost:5173/api/characters").then(
-        (res) => res.json(),
-    );
+    const personnages: Promise<Character[]> = fetch(
+        "http://localhost:5173/api/characterslist",
+    ).then((res) => res.json());
 
-    console.log(personnages);
+    interface Character {
+        id: number;
+        name: string;
+        country: string;
+        image: string;
+        description: string;
+        category: string;
+        current: boolean;
+        title: string;
+    }
 </script>
 
 <svelte:head>
@@ -31,87 +40,22 @@
         </div>
     </div>
     <div class="card-container">
-        <CharacterCard
-            nom="Test"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            titre="L'épée noir"
-            pays="Augeaime"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            mort={true}
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
-        <CharacterCard
-            nom="Test"
-            image="uploads/personnages/1758761239499-Adam-Détouré.png"
-            tags={["Humain", "Guerrier", "Soldat"]}
-            titre="L'épée noir"
-            pays="Mudan"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-        />
+        {#await personnages}
+            <p>Chargement des personnages...</p>
+        {:then characters}
+            {#each characters as personnage}
+                <CharacterCard
+                    nom={personnage.name}
+                    tags={personnage.category.split(",")}
+                    image={personnage.image}
+                    titre={personnage.title}
+                    pays={personnage.country}
+                    description={personnage.description}
+                />
+            {/each}
+        {:catch error}
+            <p>Erreur lors du chargement: {error.message}</p>
+        {/await}
     </div>
 </div>
 
