@@ -51,8 +51,7 @@ Abandonné : marché, entraînement, état du monde, histoires, thèmes par joue
 
 ### Reste à décider ou à faire
 
-- **S9 — Uploads** : les images sont validées (type, 8 Mo) mais toujours écrites dans `static/uploads`, ce qui ne tient pas en production. Dépend de l'hébergeur.
-- **S10 — Adapter** : toujours `adapter-auto`. Dépend aussi de l'hébergeur.
+- **S9 et S10 — faits** : déploiement Docker (`Dockerfile`, `docker-compose.yml`, `adapter-node`). Les images envoyées vont dans un volume et sont servies par `/uploads/…`. Voir le README.
 - **Lien « Histoires »** : l'accueil l'affiche si `PUBLIC_LORE_URL` est renseigné dans `.env`. Il manque l'adresse du site de lore.
 - **Migrations Prisma** : le schéma est appliqué avec `prisma db push`, comme avant. Le dossier `prisma/migrations` ne contient que la migration initiale et ne reflète plus la base.
 - **Données V1** : rien n'a été importé (annexe B).

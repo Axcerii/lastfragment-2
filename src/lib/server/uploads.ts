@@ -1,5 +1,14 @@
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
+import { env } from '$env/dynamic/private';
+
+/**
+ * Dossier des images envoyées. En développement c'est `static/uploads`, servi par Vite.
+ * En production `UPLOAD_DIR` pointe vers un volume, servi par la route /uploads/[...path].
+ */
+export function uploadDir(): string {
+	return path.resolve(env.UPLOAD_DIR || path.join('static', 'uploads'));
+}
 
 const EXTENSIONS: Record<string, string> = {
 	'image/jpeg': '.jpg',
@@ -21,7 +30,7 @@ export async function saveImage(file: File, folder: string): Promise<string> {
 	if (!extension) throw new UploadError('Format d’image non pris en charge.');
 	if (file.size > MAX_SIZE) throw new UploadError('Image trop lourde (8 Mo maximum).');
 
-	const dir = path.join(process.cwd(), 'static', 'uploads', folder);
+	const dir = path.join(uploadDir(), folder);
 	await mkdir(dir, { recursive: true });
 
 	// Le nom d'origine n'est gardé que pour la lisibilité, débarrassé de tout caractère à risque.

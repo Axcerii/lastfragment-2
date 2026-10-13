@@ -20,7 +20,8 @@ export function startSession(cookies: Cookies, playerId: number) {
 	cookies.set(COOKIE, token, {
 		httpOnly: true,
 		sameSite: 'strict',
-		secure: env.NODE_ENV === 'production',
+		// Cookie réservé au HTTPS dès que le site est servi en HTTPS (voir ORIGIN dans .env).
+		secure: (env.ORIGIN ?? '').startsWith('https://'),
 		path: '/',
 		maxAge: SESSION_DAYS * 24 * 60 * 60
 	});

@@ -1,0 +1,17 @@
+# Rien de local ne doit entrer dans l'image : dépendances, builds, secrets, sauvegardes.
+node_modules
+.svelte-kit
+build
+generated
+backups
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.vscode
+.claude
+Dockerfile
+docker-compose.yml
+.dockerignore
+*.md

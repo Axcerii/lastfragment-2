@@ -14,6 +14,21 @@ npm run dev
 
 `npm run seed:dev` ajoute deux comptes de test (un MJ, un joueur avec une fiche complète) ; leurs identifiants sont en tête de `prisma/seed-dev.mjs`. `node prisma/seed-dev.mjs --clean` les retire.
 
+## Déployer avec Docker
+
+```sh
+cp .env.example .env      # remplir JWT_SECRET, ADMIN_*, MYSQL_*, ORIGIN
+docker compose up -d --build
+docker compose logs -f app
+```
+
+Le site répond sur `http://localhost:3010` (réglable avec `APP_PORT`). Au démarrage, le conteneur met la base au niveau du schéma Prisma, crée le compte MJ décrit par `ADMIN_LOGIN` / `ADMIN_PASSWORD` s'il n'existe pas, puis lance le site.
+
+- La base MySQL et les images envoyées vivent dans deux volumes (`lastfragment2_db_data`, `lastfragment2_uploads`) : `docker compose down` les conserve, `docker compose down -v` les supprime.
+- La base n'est pas exposée sur la machine. Pour une sauvegarde : `docker compose exec db sh -c 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' > sauvegarde.sql`.
+- Derrière un reverse proxy en HTTPS, mettre l'adresse publique dans `ORIGIN` (`https://…`) : c'est elle qui autorise les formulaires et qui réserve le cookie de session au HTTPS.
+- Après une modification du code : `docker compose up -d --build`.
+
 ## Commandes
 
 | Commande | Rôle |
