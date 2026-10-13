@@ -82,7 +82,7 @@ const resources: Resource[] = [
 		title: (r) => r.name,
 		orderBy: { name: 'asc' },
 		fields: [
-			{ name: 'image', label: 'Portrait', type: 'image', folder: 'personnages', required: true, list: true },
+			{ name: 'image', label: 'Portrait', type: 'image', folder: 'personnages', list: true, help: 'Facultatif : sans portrait, la silhouette par défaut est affichée.' },
 			{ name: 'name', label: 'Nom', type: 'text', required: true, list: true },
 			{ name: 'title', label: 'Titre', type: 'text', list: true },
 			{ name: 'country', label: 'Pays', type: 'select', options: option(Object.keys(COUNTRY_LABELS), COUNTRY_LABELS), required: true },
@@ -189,7 +189,7 @@ const resources: Resource[] = [
 		orderBy: { level: 'asc' },
 		fields: [
 			{ name: 'statistics', label: 'Statistique', type: 'select', required: true, list: true, options: STAT_KEYS.map((k) => ({ value: STATS[k].skill, label: STATS[k].label })) },
-			{ name: 'level', label: 'Palier', type: 'number', required: true, list: true, help: 'Valeur de la stat à atteindre (jusqu’à 3 000 pour QDF et HP, 2 000 pour END).' },
+			{ name: 'level', label: 'Palier', type: 'number', required: true, list: true, help: 'Valeur de la stat à atteindre. Échelle : 3 000 pour QDF et HP, 2 000 pour END, 100 pour les autres.' },
 			{ name: 'name', label: 'Nom', type: 'text', required: true, list: true },
 			{ name: 'description', label: 'Description', type: 'textarea', required: true }
 		]

@@ -1,9 +1,17 @@
 <script lang="ts">
+    import { portrait } from "$lib/game/labels";
+
     let {
-        image = "/uploads/personnages/placeholder.png",
+        image,
         name = "Erreur",
         title = "",
         country = "Inconnu",
+    }: {
+        /** Sans image, la silhouette par défaut est affichée. */
+        image?: string | null;
+        name?: string;
+        title?: string;
+        country?: string;
     } = $props();
 </script>
 
@@ -13,7 +21,7 @@
             class="background-pays secondary-svg"
             style="background-image: url('/pays/{country}.svg')"
         ></div>
-        <img src={image} alt="Image de {name},{title}" />
+        <img src={portrait(image)} alt="Image de {name},{title}" />
     </div>
     <div class="name">
         <h2>

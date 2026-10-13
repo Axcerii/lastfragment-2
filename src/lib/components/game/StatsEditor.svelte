@@ -15,15 +15,15 @@
                 type="number"
                 name={key}
                 min="0"
-                max={STATS[key].scale * 200}
                 bind:value={draft[key]}
             />
         </label>
     {/each}
 </div>
 <p class="muted">
-    Puissance totale : {totalPower(draft)} · QDF et HP vont jusqu'à 3 000, END jusqu'à 2 000, les
-    autres jusqu'à 100.
+    Puissance totale : {totalPower(draft)} · les barres sont pleines à 3 000 pour QDF et HP, 2 000
+    pour END et 100 pour les autres. Une valeur peut dépasser ce seuil (boss, divinités) : la barre
+    reste alors pleine.
 </p>
 
 <style>

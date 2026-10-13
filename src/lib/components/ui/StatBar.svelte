@@ -44,7 +44,8 @@
         class="track"
         role="meter"
         aria-label={info.label}
-        aria-valuenow={line.total}
+        aria-valuenow={Math.min(line.total, 100 * info.scale)}
+        aria-valuetext={String(line.total)}
         aria-valuemin={0}
         aria-valuemax={100 * info.scale}
     >

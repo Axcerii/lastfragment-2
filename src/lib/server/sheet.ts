@@ -6,6 +6,7 @@ import {
 	toContainer,
 	type ContainerKey
 } from '$lib/game/inventory';
+import { portrait } from '$lib/game/labels';
 import { toStatBlock } from '$lib/game/stats';
 import { requireUser } from './auth';
 import { prisma } from './prisma';
@@ -98,7 +99,7 @@ export async function loadSheet(playerId: number) {
 			id: character.id,
 			name: character.name,
 			title: character.title,
-			image: character.image,
+			image: portrait(character.image),
 			country: character.country as string,
 			race: character.race as string,
 			flux: character.flux,

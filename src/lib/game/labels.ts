@@ -53,6 +53,13 @@ export const FOOD_TYPE_LABELS: Record<string, string> = {
 	rations: 'Rations'
 };
 
+/** Silhouette affichée pour un personnage sans portrait. */
+export const DEFAULT_PORTRAIT = '/uploads/personnages/placeholder.png';
+
+export function portrait(image: string | null | undefined): string {
+	return image || DEFAULT_PORTRAIT;
+}
+
 /** Les tags d'un personnage sont stockés en une seule chaîne séparée par des virgules. */
 export function splitTags(category: string | null | undefined): string[] {
 	return (category ?? '')

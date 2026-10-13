@@ -1,6 +1,7 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import Toggle from "$lib/components/ui/Toggle.svelte";
+    import { portrait } from "$lib/game/labels";
     import { CONTAINER_KEYS, CONTAINERS, formatMoney } from "$lib/game/inventory";
 
     let { data, form } = $props();
@@ -24,7 +25,7 @@
             <div class="players">
                 {#each data.players as player (player.id)}
                     <a class="player panel" href="/admin/fiches/{player.id}">
-                        <img src={player.character?.image} alt="" />
+                        <img src={portrait(player.character?.image)} alt="" />
                         <span>
                             <strong>{player.character?.name}</strong>
                             <span class="muted">{player.login}</span>

@@ -113,7 +113,8 @@ model Character {
   theme       String? @db.VarChar(255)
   race        Race
   country     Country
-  image       String  @db.VarChar(255)
+  // Sans portrait, la silhouette par défaut est affichée
+  image       String? @db.VarChar(255)
   description String  @db.Text
   category    String  @db.VarChar(255)
   current     Int     @db.SmallInt

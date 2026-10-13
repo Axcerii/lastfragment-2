@@ -1,7 +1,9 @@
 <script lang="ts">
+    import { portrait } from "$lib/game/labels";
+
     let {
         href,
-        image = "/uploads/personnages/placeholder.png",
+        image,
         nom = "Erreur",
         emblem = "/pays/Inconnu.svg",
         mort = false,
@@ -11,7 +13,8 @@
         flags = [],
     }: {
         href: string;
-        image?: string;
+        /** Sans image, la silhouette par défaut est affichée. */
+        image?: string | null;
         nom?: string;
         /** Emblème affiché derrière le portrait (pays ou dragon). */
         emblem?: string;
@@ -38,7 +41,7 @@
 <a {href} class="inverter">
     <div class="character-card">
         <div class="absolute character-wrapper">
-            <img src={image} alt="Image de {nom}" class="character" class:mort />
+            <img src={portrait(image)} alt="Image de {nom}" class="character" class:mort />
         </div>
         <div
             class="absolute pays pays-color"
