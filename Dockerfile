@@ -30,8 +30,13 @@ COPY --from=build --chown=node:node /app/package.json ./
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Les images envoyées vivent dans un volume où `node` doit pouvoir écrire.
-# `sed` retire d'éventuels retours chariot Windows du script de démarrage.
-RUN sed -i 's/$//' /usr/local/bin/entrypoint.sh     && chmod +x /usr/local/bin/entrypoint.sh     && mkdir -p /data/uploads     && chown -R node:node /data     && chown node:node /app
+# `tr` retire d'éventuels retours chariot Windows du script de démarrage.
+RUN tr -d '\r' < /usr/local/bin/entrypoint.sh > /tmp/entrypoint.sh \
+    && mv /tmp/entrypoint.sh /usr/local/bin/entrypoint.sh \
+    && chmod +x /usr/local/bin/entrypoint.sh \
+    && mkdir -p /data/uploads \
+    && chown -R node:node /data \
+    && chown node:node /app
 
 USER node
 EXPOSE 3000
