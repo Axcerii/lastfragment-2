@@ -1,6 +1,7 @@
 <script lang="ts">
     import MjPanel from "$lib/components/game/MjPanel.svelte";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
+    import CensorScreen from "$lib/components/personnages/CensorScreen.svelte";
     import CharacterPlusCountry from "$lib/components/personnages/CharacterPlusCountry.svelte";
     import { COUNTRY_LABELS, RACE_LABELS, isDragon, splitTags } from "$lib/game/labels";
 
@@ -57,9 +58,7 @@
     </div>
 
     {#if censored}
-        <blockquote class="description quote">
-            {character.quote || "Vous n'en savez pas encore assez sur ce personnage."}
-        </blockquote>
+        <CensorScreen quote={character.quote} name={character.name} />
     {:else}
         <div class="description">
             <p>{character.description}</p>
@@ -134,12 +133,6 @@
         white-space: pre-line;
     }
 
-    .quote {
-        text-align: center;
-        font-family: var(--titleFont);
-        font-style: italic;
-        font-size: 1.5rem;
-    }
 
     .character {
         width: 40%;
