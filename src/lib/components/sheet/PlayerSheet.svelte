@@ -18,6 +18,7 @@
         canEdit,
         isAdmin = false,
         base,
+        showTransfer = true,
         error,
         mjTools,
     }: {
@@ -26,6 +27,7 @@
         isAdmin?: boolean;
         /** Préfixe des liens vers l'inventaire et la vue de combat de cette fiche. */
         base: string;
+        showTransfer?: boolean;
         error?: string;
         mjTools?: Snippet;
     } = $props();
@@ -56,7 +58,7 @@
             </p>
             <div class="links">
                 <a class="btn btn-accent" href="{base}/combat">Vue de combat</a>
-                {#if canEdit}
+                {#if canEdit && showTransfer}
                     <a class="btn" href="{base}/inventaire">Gérer l'inventaire</a>
                 {/if}
             </div>

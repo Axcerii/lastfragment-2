@@ -8,6 +8,57 @@ Légende de la colonne **V2** : ✅ fait · 🟡 commencé / partiel · ❌ abse
 
 ---
 
+## Avancement — branche `refonte-v2`
+
+Les sections 0 à 13 ci-dessous gardent l'état des lieux d'origine et tes annotations. Cette section dit où en est la branche.
+
+### Fait
+
+| Domaine | Détail |
+|---|---|
+| Socle | S1 à S8, S11, S12. Routes `/api` et `/crud` supprimées ; `/admin` réservé au MJ dans `hooks.server.ts` ; rôle chargé une fois ; plus de secret JWT par défaut ; session de 30 jours ; tout en Svelte 5 ; chargements côté serveur. |
+| Accueil et navigation | A1, A3, A4, A5. Déconnexion et lien MJ dans le header, page d'erreur, pages provisoires pour Outils et Don de flux. |
+| Personnages et bestiaire | B2, B3, B5, B6, B7, B8, B9, B12, B13. Recherche par nom, titre et tags ; bascule bestiaire ; filtre arc actuel ; filtres mémorisés 10 min ; stats et réglages modifiables par le MJ depuis la fiche. |
+| Censure | B11 revu selon ta note : un interrupteur « Censuré (teaser) » par personnage, pour tous les joueurs, avec une citation à la place de la description. Le contenu censuré n'est jamais envoyé au navigateur. |
+| Comptes | C3, C5, C6, C8. Le MJ associe un compte à un personnage et ouvre la fiche de n'importe quel joueur. |
+| Fiche de jeu | D1 à D9, D11. Jauges, stats à barre triple, armure à 4 emplacements, passifs activables, puissance, badges, compétences par paliers, argent, histoire affichée directement. |
+| Vue de combat | Ton ajout de la section D : `/profil/combat`, plein écran, avec stats, armure, passifs, objets en main et dans le sac, argent. |
+| Inventaire | E1 à E7. Conteneurs, cartes d'objets, transfert à deux panneaux, coffre commun, capacité et surcharge, conteneurs ouverts ou fermés par le MJ, contenu des sacs de nourriture. |
+| MJ | G1, G2, G4, G5, G6. Back-office unique pour 12 tables (recherche, tri, interrupteurs modifiables dans le tableau, images, éditeur d'effets), distribution d'argent en masse, don et retrait d'objets depuis la fiche d'un joueur. |
+| Règles | Annexe A portée dans `src/lib/game/`, avec tests (`npm test`). |
+
+### Choix faits en ton absence, à valider
+
+- **Inscription (C2)** : laissée ouverte. Un nouveau compte est un simple joueur sans personnage, il ne voit rien de plus qu'un visiteur tant que tu ne l'as pas associé.
+- **Badges (D6)** : les badges restent des dragons, comme dans ton schéma. Tu distribues des badges aux joueurs (Espace MJ → Badges des joueurs), tu crées une fusion de deux badges, et la fiche affiche la compétence définie pour cette paire. Créer une fusion marque un badge disponible de chaque type comme utilisé.
+- **Passifs** : un effet est soit fixe (`+5`), soit un multiplicateur (`×1.1`), avec un effet optionnel quand le passif est désactivé. Cela couvre *Alcoolique* sans code spécial. *Introverti* (30 % d'éloquence transférés en furtivité) n'a pas d'équivalent exact : il se saisit comme ELO ×0.7 et FUR en valeur fixe.
+- **Compétences (D7)** : débloquées automatiquement par la stat de base, comme en V1. La table `character_skills` de ton schéma n'est pas utilisée.
+- **Conteneurs fermés (E6)** : gardé alors que « état du monde » (G3) est abandonné. Ce sont cinq interrupteurs dans l'Espace MJ.
+- **Sac à dos** : la règle V1 est conservée, un objet nommé « Sac à dos » équipé au torse double la capacité de port.
+- **Champs abandonnés** : `Character.theme` et `Player.team` restent en base mais n'ont plus de champ de formulaire.
+
+### Reporté, selon tes notes
+
+| Sujet | Sections |
+|---|---|
+| Simulateur de combat (« un truc à part ») | G7 à G10 |
+| Outils publics et quiz | H1 à H5, K1, K2 |
+| Easter eggs | J1 à J5 |
+| Table de jeu à la Roll20 / Daggerheart | Section 13 |
+| Version mobile de l'accueil | A2 |
+
+Abandonné : marché, entraînement, état du monde, histoires, thèmes par joueur, filtre par dragon, compte invité, groupes.
+
+### Reste à décider ou à faire
+
+- **S9 — Uploads** : les images sont validées (type, 8 Mo) mais toujours écrites dans `static/uploads`, ce qui ne tient pas en production. Dépend de l'hébergeur.
+- **S10 — Adapter** : toujours `adapter-auto`. Dépend aussi de l'hébergeur.
+- **Lien « Histoires »** : l'accueil l'affiche si `PUBLIC_LORE_URL` est renseigné dans `.env`. Il manque l'adresse du site de lore.
+- **Migrations Prisma** : le schéma est appliqué avec `prisma db push`, comme avant. Le dossier `prisma/migrations` ne contient que la migration initiale et ne reflète plus la base.
+- **Données V1** : rien n'a été importé (annexe B).
+
+---
+
 ## 0. Résumé
 
 | Domaine | V1 | V2 |

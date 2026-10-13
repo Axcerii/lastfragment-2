@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>%sveltekit.error.message%</title>
+		<style>
+			/* Page de secours : affichée quand l'erreur survient avant que l'application ne démarre. */
+			body {
+				margin: 0;
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 1.5rem;
+				background-color: #1b1b1b;
+				color: #fff;
+				font-family: 'El Messiri', sans-serif;
+				font-size: 20px;
+				text-align: center;
+			}
+
+			h1 {
+				margin: 0;
+				font-family: 'EB Garamond', serif;
+				font-size: 5rem;
+				font-weight: normal;
+			}
+
+			p {
+				margin: 0;
+				padding: 0 1rem;
+			}
+
+			a {
+				padding: 0.5rem 1rem;
+				border: 1px solid #cfdfc4;
+				border-radius: 5px;
+				color: #fff;
+				text-decoration: none;
+			}
+
+			a:hover {
+				background-color: #cfdfc4;
+				color: #1b1b1b;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>%sveltekit.status%</h1>
+		<p>%sveltekit.error.message%</p>
+		<a href="/accueil">Retour à l'accueil</a>
+	</body>
+</html>

@@ -75,8 +75,10 @@
         gap: 2rem;
     }
 
+    /* En vue compacte, les deux groupes s'empilent pour laisser toute la largeur aux barres. */
     .compact .columns {
-        gap: 1rem;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
 
     h3 {

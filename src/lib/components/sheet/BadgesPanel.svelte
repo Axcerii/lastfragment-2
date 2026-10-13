@@ -36,7 +36,10 @@
                 <li class:spent={free === 0} title="{dragon} : {free} disponible(s), {used} utilisé(s)">
                     <img src="/dragons/tampons/{dragon}.svg" alt="" />
                     <span>{dragon}</span>
-                    <span class="count">{free}{#if used}<span class="muted"> +{used} utilisé{used > 1 ? "s" : ""}</span>{/if}</span>
+                    <span class="count">
+                        {free} disponible{free > 1 ? "s" : ""}
+                        {#if used}<span class="muted">· {used} utilisé{used > 1 ? "s" : ""}</span>{/if}
+                    </span>
                 </li>
             {/each}
         </ul>
@@ -82,7 +85,7 @@
         flex-direction: column;
         align-items: center;
         gap: 0.2rem;
-        width: 6.5rem;
+        width: 8rem;
         padding: 0.5rem;
         border: 1px solid var(--border);
         border-radius: var(--radius);

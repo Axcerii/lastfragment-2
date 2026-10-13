@@ -1,5 +1,11 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit';
-import { armorSlot, toContainer, type ContainerKey } from '$lib/game/inventory';
+import {
+	CONTAINER_KEYS,
+	CONTAINERS,
+	armorSlot,
+	toContainer,
+	type ContainerKey
+} from '$lib/game/inventory';
 import { toStatBlock } from '$lib/game/stats';
 import { requireUser } from './auth';
 import { prisma } from './prisma';
@@ -189,6 +195,49 @@ export function sheetActions(target: (event: RequestEvent) => number) {
 				}),
 				prisma.itemInPlayer.update({ where: { id: entry.id }, data: { equipped: equip } })
 			]);
+		},
+
+		/** Déplace des objets d'un conteneur à un autre (coffre commun compris). */
+		transfer: async (event: RequestEvent) => {
+			const { user, playerId, form } = await context(event);
+			const from = String(form.get('from')) as ContainerKey;
+			const to = String(form.get('to')) as ContainerKey;
+			const ids = form.getAll('ids').map(Number);
+
+			if (!CONTAINER_KEYS.includes(from) || !CONTAINER_KEYS.includes(to) || from === to) {
+				return fail(400, { error: 'Choisis deux conteneurs différents.' });
+			}
+			if (ids.length === 0) return fail(400, { error: 'Aucun objet sélectionné.' });
+
+			// Le MJ peut fermer un conteneur (pas de coffre en voyage) ; lui-même n'est pas limité.
+			if (!user.isAdmin) {
+				const access = openContainers(await getGameState());
+				const closed = [from, to].find((key) => !access[key]);
+				if (closed) {
+					return fail(403, { error: `${CONTAINERS[closed].label} : fermé par le MJ pour le moment.` });
+				}
+			}
+
+			const owner = from === 'commun' ? null : playerId;
+			const entries = await prisma.itemInPlayer.findMany({
+				where: { id: { in: ids }, playerId: owner },
+				select: { id: true, localisation: true }
+			});
+			const movable = entries.filter((e) => owner === null || toContainer(e.localisation) === from);
+			if (movable.length !== ids.length) {
+				return fail(409, { error: 'Certains objets ne sont plus dans ce conteneur.' });
+			}
+
+			await prisma.itemInPlayer.updateMany({
+				where: { id: { in: ids } },
+				data: {
+					localisation: to,
+					// Un objet déposé dans le coffre commun n'appartient plus à personne.
+					playerId: to === 'commun' ? null : playerId,
+					// Une armure qui change de conteneur n'est plus portée.
+					equipped: false
+				}
+			});
 		}
 	};
 }
