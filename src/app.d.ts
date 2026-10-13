@@ -6,8 +6,11 @@ declare global {
 		interface Locals {
 			user: {
 				id: number;
-				name: string;
-			};
+				login: string;
+				role: number;
+				characterId: number | null;
+				isAdmin: boolean;
+			} | null;
 		}
 		// interface PageData {}
 		// interface PageState {}

@@ -1,56 +1,70 @@
 <script lang="ts">
     let {
-        id = "",
-        image = "uploads/personnages/placeholder.png",
+        href,
+        image = "/uploads/personnages/placeholder.png",
         nom = "Erreur",
-        pays = "Inconnu",
+        emblem = "/pays/Inconnu.svg",
         mort = false,
         titre = "",
         description = "",
         tags = [],
+        flags = [],
+    }: {
+        href: string;
+        image?: string;
+        nom?: string;
+        /** Emblème affiché derrière le portrait (pays ou dragon). */
+        emblem?: string;
+        mort?: boolean;
+        titre?: string | null;
+        description?: string;
+        tags?: string[];
+        /** Mentions réservées au MJ (« Caché », « Censuré »…). */
+        flags?: string[];
     } = $props();
 
-    if (description.length > 100) {
-        description =
-            description.slice(0, 100).split(" ").slice(0, -1).join(" ") + "...";
-    }
+    const EXCERPT_LENGTH = 100;
 
-    let color = $state("");
-    if (mort) {
-        pays = "dragons/normal/Shizari.svg";
-        color =
-            "filter: invert(26%) sepia(100%) saturate(6787%) hue-rotate(358deg) brightness(91%) contrast(127%);";
-    } else {
-        pays = `pays/${pays}.svg`;
-    }
+    let excerpt = $derived(
+        description.length > EXCERPT_LENGTH
+            ? description.slice(0, EXCERPT_LENGTH).split(" ").slice(0, -1).join(" ") + "..."
+            : description,
+    );
 
-    let style = $state("");
-    if (mort) {
-        style =
-            "filter: grayscale(100%) brightness(0.25) drop-shadow(-10px -10px 0px rgba(0, 0, 0, 0.8));";
-    }
+    // Un personnage mort est grisé et son emblème est remplacé par celui de Shizari.
+    let emblemUrl = $derived(mort ? "/dragons/normal/Shizari.svg" : emblem);
 </script>
 
-<a href={`/personnages/${id}`} class="inverter">
+<a {href} class="inverter">
     <div class="character-card">
         <div class="absolute character-wrapper">
-            <img src={image} alt="Image de {nom}" class="character" {style} />
+            <img src={image} alt="Image de {nom}" class="character" class:mort />
         </div>
         <div
             class="absolute pays pays-color"
-            style="background-image: url('{pays}'); {color}"
+            class:mort
+            style="background-image: url('{encodeURI(emblemUrl)}');"
         ></div>
         <div class="absolute hover"></div>
+        {#if flags.length > 0}
+            <div class="flags">
+                {#each flags as flag}
+                    <span>{flag}</span>
+                {/each}
+            </div>
+        {/if}
         <div class="dialogue">
             <img
-                src="personnages/Dialogueboxup.svg"
+                src="/personnages/Dialogueboxup.svg"
                 alt=""
                 class="dialogue-icon secondary-svg"
             />
             <div class="dialogue-background"></div>
             <p class="nom">
                 {nom}
-                <span class="title-mobile">, {titre}</span>
+                {#if titre}
+                    <span class="title-mobile">, {titre}</span>
+                {/if}
             </p>
 
             {#if titre}
@@ -63,7 +77,7 @@
                     {#each tags as tag}
                         <div class="tag-container">
                             <img
-                                src="personnages/Plume.svg"
+                                src="/personnages/Plume.svg"
                                 alt=""
                                 class="plume"
                             />
@@ -72,9 +86,9 @@
                     {/each}
                 </div>
             {/if}
-            {#if description}
+            {#if excerpt}
                 <p class="description">
-                    {description}
+                    {excerpt}
                 </p>
             {/if}
         </div>
@@ -113,9 +127,38 @@
         filter: drop-shadow(-10px -10px 0px rgba(0, 0, 0, 0.8));
         z-index: 996;
     }
+    .character.mort {
+        filter: grayscale(100%) brightness(0.25)
+            drop-shadow(-10px -10px 0px rgba(0, 0, 0, 0.8));
+    }
+
     .pays {
         opacity: 0.3;
         z-index: 995;
+    }
+
+    .pays-color.mort {
+        filter: invert(26%) sepia(100%) saturate(6787%) hue-rotate(358deg)
+            brightness(91%) contrast(127%);
+    }
+
+    .flags {
+        position: absolute;
+        top: 0.4rem;
+        right: 0.4rem;
+        z-index: 1002;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.25rem;
+    }
+
+    .flags span {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: var(--radius);
+        background-color: var(--accent);
+        color: var(--background);
     }
 
     .pays-color {

@@ -1,34 +1,49 @@
 <script lang="ts">
+    import { afterNavigate } from "$app/navigation";
+    import { page } from "$app/state";
     import NavButton from "./NavButton.svelte";
     import BurgerMenu from "./BurgerMenu.svelte";
 
-    let { connected } = $props();
+    let { user }: { user: App.Locals["user"] } = $props();
 
     let isMenuOpen = $state(false);
 
-    function toggleMenu() {
-        isMenuOpen = !isMenuOpen;
-    }
+    afterNavigate(() => {
+        isMenuOpen = false;
+    });
+
+    const isActive = (href: string) =>
+        page.url.pathname === href || page.url.pathname.startsWith(href + "/");
 </script>
 
-<header class="header-desktop" class:visible={isMenuOpen} data-sveltekit-reload>
-    <a href="/" class="logo">
+<header class="header-desktop" class:visible={isMenuOpen}>
+    <a href="/accueil" class="logo">
         <img src="/layout/Logo.svg" alt="Logo du Tout" class="primary-svg" />
     </a>
-    <NavButton href="/accueil" label="Accueil" active={false} />
-    <NavButton href="/personnages" label="Personnages" active={false} />
-    <NavButton href="/histoires" label="Histoires" active={false} />
-    <NavButton href="/flux" label="Don de Flux" active={false} />
-    <NavButton href="/outils" label="Outils" active={false} />
+    <NavButton
+        href="/personnages"
+        label="Personnages"
+        active={isActive("/personnages") || isActive("/bestiaire")}
+    />
+    <NavButton href="/outils" label="Outils" active={isActive("/outils")} />
+    <NavButton href="/flux" label="Don de Flux" active={isActive("/flux")} />
 
-    {#if connected}
-        <NavButton href="/profil" label="Profil" active={false} />
+    {#if user}
+        <NavButton href="/profil" label="Profil" active={isActive("/profil")} />
+        {#if user.isAdmin}
+            <NavButton href="/admin" label="MJ" active={isActive("/admin")} />
+        {/if}
+        <NavButton action="/auth/logout" label="Déconnexion" />
     {:else}
-        <NavButton href="/auth/login" label="Connexion" active={false} />
+        <NavButton
+            href="/auth/login"
+            label="Connexion"
+            active={isActive("/auth/login")}
+        />
     {/if}
 </header>
 <header class="header-mobile">
-    <BurgerMenu click={toggleMenu} />
+    <BurgerMenu open={isMenuOpen} click={() => (isMenuOpen = !isMenuOpen)} />
 </header>
 
 <style>
@@ -47,6 +62,7 @@
         border-bottom: 2px solid var(--primary);
         background-color: var(--background);
         box-sizing: border-box;
+        position: relative;
     }
 
     .logo {
@@ -84,6 +100,9 @@
             position: fixed;
             top: 0;
             left: 0;
+            height: auto;
+            max-height: 100dvh;
+            overflow-y: auto;
         }
 
         .header-desktop.visible {
@@ -95,10 +114,13 @@
             position: fixed;
             right: 25px;
             top: 35px;
+            background-color: transparent;
         }
 
         .logo {
             border-bottom: var(--primary) 2px solid;
+            width: 100%;
+            height: 91px;
         }
     }
 </style>

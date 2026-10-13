@@ -214,8 +214,131 @@ h6 {
 	font-family: var(--titleFont);
 }
 
-.pages-personnages {
-	background-image: url("personnages/backgroundpattern.png") !important;
-	background-size: 50%;
-	background-position: 20% 20%;
+/* Raretés des objets, de Commun à Unique */
+:root {
+	--rarity-1: #b9b9b9;
+	--rarity-2: #cfdfc4;
+	--rarity-3: #7fa8e0;
+	--rarity-4: #d2b674;
+	--rarity-5: #e5b8cc;
+
+	--surface: #232323;
+	--surface-raised: #2c2c2c;
+	--border: rgba(207, 223, 196, 0.35);
+	--danger: #ca4444;
+	--muted: rgba(255, 255, 255, 0.6);
+}
+
+body {
+	line-height: 1.35;
+}
+
+textarea,
+select {
+	background-color: var(--primary);
+	border: var(--foreground) 1px solid;
+	border-radius: var(--radius);
+	font-size: 20px;
+	width: 100%;
+	font-family: var(--textFont);
+	box-sizing: border-box;
+	padding: 0.5rem 1rem;
+}
+
+select {
+	height: 48px;
+}
+
+textarea {
+	min-height: 10rem;
+	resize: vertical;
+	line-height: 1.35;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+	width: auto;
+	height: auto;
+}
+
+input[type='file'] {
+	height: auto;
+	padding: 0.5rem 1rem;
+}
+
+button {
+	font-family: var(--textFont);
+	cursor: pointer;
+}
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-height: 40px;
+	padding: 0 1rem;
+	border: 1px solid var(--primary);
+	border-radius: var(--radius);
+	background-color: transparent;
+	color: var(--foreground);
+	font-size: 18px;
+	transition: var(--transition);
+}
+
+.btn:hover:not(:disabled) {
+	background-color: var(--primary);
+	color: var(--background);
+}
+
+.btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.btn-accent {
+	border-color: var(--accent);
+}
+
+.btn-accent:hover:not(:disabled) {
+	background-color: var(--accent);
+}
+
+.btn-danger {
+	border-color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+	background-color: var(--danger);
+	color: var(--foreground);
+}
+
+.btn-small {
+	min-height: 32px;
+	padding: 0 0.6rem;
+	font-size: 16px;
+}
+
+.panel {
+	background-color: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 1.25rem;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.message-error {
+	color: #ff9c9c;
+}
+
+.message-success {
+	color: var(--primary);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
 }

@@ -12,8 +12,8 @@ datasource db {
 
 enum Race {
   Humain
-  Geant      @map("Géant")
-  Eternelle  @map("Éternelle")
+  Geant     @map("Géant")
+  Eternelle @map("Éternelle")
   Inconnu
   Dragon
   Ange
@@ -26,7 +26,7 @@ enum Country {
   Amari
   Mudan
   Edenia
-  Celeste   @map("Céleste")
+  Celeste  @map("Céleste")
   Saxifra
 }
 
@@ -72,95 +72,106 @@ enum SkillStatistic {
   PV
   QDF
   Endurance
-  Maitrise   @map("Maîtrise")
+  Maitrise     @map("Maîtrise")
   Force
-  Defense    @map("Défense")
+  Defense      @map("Défense")
   Vitesse
-  Precision  @map("Précision")
+  Precision    @map("Précision")
   Perception
-  Furtivite  @map("Furtivité")
+  Furtivite    @map("Furtivité")
   Charisme
-  Eloquence  @map("Éloquence")
+  Eloquence    @map("Éloquence")
   Intelligence
 }
 
 model Player {
-  id           Int     @id @default(autoincrement())
-  login        String  @unique @db.VarChar(255)
-  password     String  @db.VarChar(255)
-  role         Int     @db.Int
-  team         Int     @db.Int
-  characterId  Int?    @map("character_id")
-  
+  id          Int    @id @default(autoincrement())
+  login       String @unique @db.VarChar(255)
+  password    String @db.VarChar(255)
+  role        Int    @db.Int
+  team        Int    @db.Int
+  characterId Int?   @map("character_id")
+  money       Int    @default(0) @db.Int
+
   // Relations
-  character    Character?     @relation(fields: [characterId], references: [id])
+  character     Character?     @relation(fields: [characterId], references: [id])
   itemsInPlayer ItemInPlayer[]
   badgesFusions BadgeFusion[]
-  
+  badges        PlayerBadge[]
+
   @@index([characterId], map: "players_character_id_index")
   @@map("players")
 }
 
 model Character {
-  id          Int      @id @default(autoincrement())
-  visibility  Int      @db.SmallInt
-  name        String   @db.VarChar(255)
-  flux        String?  @db.VarChar(255)
-  dragon      String   @db.VarChar(255)
-  title       String?  @db.VarChar(255)
-  theme       String?  @db.VarChar(255)
+  id          Int     @id @default(autoincrement())
+  visibility  Int     @db.SmallInt
+  name        String  @db.VarChar(255)
+  flux        String? @db.VarChar(255)
+  dragon      String  @db.VarChar(255)
+  title       String? @db.VarChar(255)
+  theme       String? @db.VarChar(255)
   race        Race
   country     Country
-  image       String   @db.VarChar(255)
-  description String   @db.Text
-  category    String   @db.VarChar(255)
-  current     Int      @db.SmallInt
-  
+  image       String  @db.VarChar(255)
+  description String  @db.Text
+  category    String  @db.VarChar(255)
+  current     Int     @db.SmallInt
+  dead        Boolean @default(false)
+  // Fiche « teaser » : visible dans la liste mais contenu masqué pour les joueurs
+  censored    Boolean @default(false)
+  quote       String? @db.VarChar(400)
+
   // Relations
   players         Player[]
   statistics      Statistic?
   passives        Passive[]
   characterSkills CharacterSkill[]
-  
+
   @@map("characters")
 }
 
 model Monster {
-  id           Int     @id @default(autoincrement())
-  visibility   Int     @db.SmallInt
-  name         String  @db.VarChar(255)
-  dragon       String  @db.VarChar(255)
-  size         String  @db.VarChar(255)
-  weight       String  @db.VarChar(255)
-  dangerosity  Int     @db.Int
-  image        String  @db.VarChar(255)
-  effect       String  @db.Text
-  description  String  @db.Text
-  current      Int     @db.SmallInt
-  
+  id          Int    @id @default(autoincrement())
+  visibility  Int    @db.SmallInt
+  name        String @db.VarChar(255)
+  dragon      String @db.VarChar(255)
+  size        String @db.VarChar(255)
+  weight      String @db.VarChar(255)
+  dangerosity Int    @db.Int
+  image       String @db.VarChar(255)
+  effect      String @db.Text
+  description String @db.Text
+  current     Int    @db.SmallInt
+
+  // Relations
+  statistics Statistic?
+
   @@map("monsters")
 }
 
 model Statistic {
-  id           Int       @id @default(autoincrement())
-  characterId  Int       @unique @map("character_id")
-  qdf          Int       @db.Int
-  pv           Int       @db.Int
-  endurance    Int       @db.Int
-  strength     Int       @db.Int
-  maitrise     Int       @db.Int
-  defense      Int       @db.Int
-  vitesse      Int       @db.Int
-  accuracy     Int       @db.Int
-  perception   Int       @db.Int
-  furtivite    Int       @db.Int
-  charisme     Int       @db.Int
-  eloquence    Int       @db.Int
-  intelligence Int       @db.Int
-  
+  id           Int  @id @default(autoincrement())
+  characterId  Int? @unique @map("character_id")
+  monsterId    Int? @unique @map("monster_id")
+  qdf          Int  @db.Int
+  pv           Int  @db.Int
+  endurance    Int  @db.Int
+  strength     Int  @db.Int
+  maitrise     Int  @db.Int
+  defense      Int  @db.Int
+  vitesse      Int  @db.Int
+  accuracy     Int  @db.Int
+  perception   Int  @db.Int
+  furtivite    Int  @db.Int
+  charisme     Int  @db.Int
+  eloquence    Int  @db.Int
+  intelligence Int  @db.Int
+
   // Relations
-  character    Character @relation(fields: [characterId], references: [id])
-  
+  character Character? @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  monster   Monster?   @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
   @@map("statistics")
 }
 
@@ -171,27 +182,31 @@ model Item {
   rarity      Int          @db.Int
   weight      Int          @db.Int
   description String       @db.Text
-  
+  // Icône personnalisée ; à défaut, l'icône de la catégorie est utilisée
+  icon        String?      @db.VarChar(255)
+
   // Relations
   itemsInPlayer ItemInPlayer[]
   armors        Armor[]
-  
+
   @@map("items")
 }
 
 model ItemInPlayer {
-  id           Int      @id @default(autoincrement())
-  itemId       Int      @map("item_id")
-  playerId     Int      @map("player_id")
-  quantity     Int      @default(1) @db.Int
-  localisation String   @db.VarChar(255)
-  
+  id           Int     @id @default(autoincrement())
+  itemId       Int     @map("item_id")
+  // null = objet du coffre commun
+  playerId     Int?    @map("player_id")
+  quantity     Int     @default(1) @db.Int
+  localisation String  @db.VarChar(255)
+  equipped     Boolean @default(false)
+
   // Relations
-  item          Item            @relation(fields: [itemId], references: [id])
-  player        Player          @relation(fields: [playerId], references: [id])
+  item          Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  player        Player?         @relation(fields: [playerId], references: [id], onDelete: Cascade)
   armorInPlayer ArmorInPlayer[]
   foodsInBags   FoodInBag[]
-  
+
   @@map("items_in_player")
 }
 
@@ -201,27 +216,27 @@ model Armor {
   statistics String @db.VarChar(255)
   values     String @db.VarChar(255)
   itemId     Int    @map("item_id")
-  
+
   // Relations
-  item          Item            @relation(fields: [itemId], references: [id])
+  item          Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
   armorInPlayer ArmorInPlayer[]
-  
+
   @@map("armors")
 }
 
 model ArmorInPlayer {
-  id               Int          @id @default(autoincrement())
-  itemInPlayerId   Int          @map("item_in_player_id")
-  armorId          Int          @map("armor_id")
-  statistics       String       @db.VarChar(255)
-  values           String       @db.VarChar(255)
-  descriptionAdd   String       @map("description_add") @db.VarChar(255)
-  notes            String       @db.Text
-  
+  id             Int    @id @default(autoincrement())
+  itemInPlayerId Int    @map("item_in_player_id")
+  armorId        Int    @map("armor_id")
+  statistics     String @db.VarChar(255)
+  values         String @db.VarChar(255)
+  descriptionAdd String @map("description_add") @db.VarChar(255)
+  notes          String @db.Text
+
   // Relations
-  itemInPlayer     ItemInPlayer @relation(fields: [itemInPlayerId], references: [id])
-  armor            Armor        @relation(fields: [armorId], references: [id])
-  
+  itemInPlayer ItemInPlayer @relation(fields: [itemInPlayerId], references: [id], onDelete: Cascade)
+  armor        Armor        @relation(fields: [armorId], references: [id], onDelete: Cascade)
+
   @@map("armors_in_player")
 }
 
@@ -231,23 +246,23 @@ model Food {
   weight Int      @db.Int
   type   FoodType
   price  Int      @db.Int
-  
+
   // Relations
   foodsInBags FoodInBag[]
-  
+
   @@map("foods")
 }
 
 model FoodInBag {
-  id             Int          @id @default(autoincrement())
-  itemInPlayerId Int          @map("item_in_player_id")
-  foodId         Int          @map("food_id")
-  quantity       Int          @default(1) @db.Int
-  
+  id             Int @id @default(autoincrement())
+  itemInPlayerId Int @map("item_in_player_id")
+  foodId         Int @map("food_id")
+  quantity       Int @default(1) @db.Int
+
   // Relations
-  itemInPlayer   ItemInPlayer @relation(fields: [itemInPlayerId], references: [id])
-  food           Food         @relation(fields: [foodId], references: [id])
-  
+  itemInPlayer ItemInPlayer @relation(fields: [itemInPlayerId], references: [id], onDelete: Cascade)
+  food         Food         @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
   @@map("foods_in_bags")
 }
 
@@ -256,8 +271,21 @@ model Badge {
   badges      String @db.VarChar(255)
   name        String @db.VarChar(255)
   description String @db.Text
-  
+
   @@map("badges")
+}
+
+// Jeton de badge distribué par le MJ, consommé lors d'une fusion
+model PlayerBadge {
+  id       Int       @id @default(autoincrement())
+  playerId Int       @map("player_id")
+  badge    BadgeType
+  used     Boolean   @default(false)
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("player_badges")
 }
 
 model BadgeFusion {
@@ -265,10 +293,10 @@ model BadgeFusion {
   badge1   BadgeType @map("badge_1")
   badge2   BadgeType @map("badge_2")
   playerId Int       @map("player_id")
-  
+
   // Relations
-  player   Player    @relation(fields: [playerId], references: [id])
-  
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
   @@map("badges_fusions")
 }
 
@@ -279,32 +307,49 @@ model Skill {
   description     String           @db.Text
   level           Int              @db.Int
   characterSkills CharacterSkill[]
-  
+
   @@map("skills")
 }
 
 model CharacterSkill {
-  id          Int       @id @default(autoincrement())
-  characterId Int       @map("character_id")
-  skillId     Int       @map("skill_id")
-  level       Int       @default(1) @db.Int
-  
+  id          Int @id @default(autoincrement())
+  characterId Int @map("character_id")
+  skillId     Int @map("skill_id")
+  level       Int @default(1) @db.Int
+
   // Relations
-  character   Character @relation(fields: [characterId], references: [id])
-  skill       Skill     @relation(fields: [skillId], references: [id])
-  
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  skill     Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
   @@unique([characterId, skillId], map: "character_skills_character_skill_unique")
   @@map("character_skills")
 }
 
 model Passive {
-  id          Int       @id @default(autoincrement())
-  characterId Int       @map("character_id")
-  statistics  String    @db.VarChar(255)
-  maths       String    @db.VarChar(255)
-  
+  id            Int     @id @default(autoincrement())
+  characterId   Int     @map("character_id")
+  name          String  @default("") @db.VarChar(255)
+  description   String? @db.Text
+  active        Boolean @default(true)
+  statistics    String  @db.VarChar(255)
+  maths         String  @db.VarChar(255)
+  // Effet appliqué quand le passif est désactivé (même format que maths), optionnel
+  inactiveMaths String? @map("inactive_maths") @db.VarChar(255)
+
   // Relations
-  character   Character @relation(fields: [characterId], references: [id])
-  
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
   @@map("passives")
+}
+
+// Ligne unique (id = 1) : conteneurs d'inventaire accessibles aux joueurs
+model GameState {
+  id         Int     @id @default(1)
+  mainOpen   Boolean @default(true) @map("main_open")
+  bagOpen    Boolean @default(true) @map("bag_open")
+  chestOpen  Boolean @default(true) @map("chest_open")
+  horseOpen  Boolean @default(true) @map("horse_open")
+  commonOpen Boolean @default(true) @map("common_open")
+
+  @@map("game_state")
 }

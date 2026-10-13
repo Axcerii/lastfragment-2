@@ -1,12 +1,5 @@
-import type { PageServerLoad } from './$types';
-export const load: PageServerLoad = async ({ locals }: any) => {
-  console.log('Layout: User:', locals.user);
-  if (locals.user.id === 0) {
-    return { connected: false };
-  }
+import type { LayoutServerLoad } from './$types';
 
-  return {
-    connected: true,
-    user: locals.user
-  };
+export const load: LayoutServerLoad = ({ locals }) => {
+	return { user: locals.user };
 };

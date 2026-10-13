@@ -1,51 +1,94 @@
 <script lang="ts">
+    import MjPanel from "$lib/components/game/MjPanel.svelte";
+    import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import CharacterPlusCountry from "$lib/components/personnages/CharacterPlusCountry.svelte";
-    export let data;
+    import { COUNTRY_LABELS, RACE_LABELS, isDragon, splitTags } from "$lib/game/labels";
 
-    const character = data.character;
+    let { data, form } = $props();
+
+    let character = $derived(data.character);
+    // Pour un joueur, une fiche censurée arrive déjà vidée de son contenu.
+    let censored = $derived(character.censored && !data.user?.isAdmin);
+    let tags = $derived(splitTags(character.category));
 </script>
+
+<svelte:head>
+    <title>{character.name} : Last Fragment</title>
+</svelte:head>
+
+<PatternBackground />
 
 <main>
     <div class="infos">
-        <div class="character">
+        <div class="character" class:dead={character.dead}>
             <CharacterPlusCountry
                 image={character.image}
                 name={character.name}
-                title={character.title}
+                title={character.title ?? ""}
                 country={character.country}
             />
         </div>
         <div class="secondaire">
-            <p><span>Flux</span> : {character.flux}</p>
-            <p><span>Pays</span> : {character.country}</p>
-            <p><span>Race</span> : {character.race}</p>
-            <p><span>Tags</span> : {character.category}</p>
+            {#if censored}
+                <p class="censor">Informations censurées</p>
+            {:else}
+                {#if character.flux}
+                    <p><span>Flux</span> : {character.flux}</p>
+                {/if}
+                <p><span>Pays</span> : {COUNTRY_LABELS[character.country]}</p>
+                <p><span>Race</span> : {RACE_LABELS[character.race]}</p>
+                {#if tags.length > 0}
+                    <p><span>Tags</span> : {tags.join(", ")}</p>
+                {/if}
+            {/if}
+            {#if character.dead}
+                <p class="status">Décédé</p>
+            {/if}
         </div>
-        <div class="dragons">
-            <img
-                src="/dragons/normal/{character.dragon}.svg"
-                alt=""
-                class="primary-svg"
-            />
+        {#if isDragon(character.dragon) && !censored}
+            <div class="dragons" title="Descendance de {character.dragon}">
+                <img
+                    src="/dragons/normal/{character.dragon}.svg"
+                    alt="Descendance de {character.dragon}"
+                    class="primary-svg"
+                />
+            </div>
+        {/if}
+    </div>
+
+    {#if censored}
+        <blockquote class="description quote">
+            {character.quote || "Vous n'en savez pas encore assez sur ce personnage."}
+        </blockquote>
+    {:else}
+        <div class="description">
+            <p>{character.description}</p>
         </div>
-    </div>
-    <div class="description">
-        <p>{character.description}</p>
-    </div>
+    {/if}
+
+    {#if data.stats}
+        <MjPanel
+            stats={data.stats}
+            editHref="/admin/personnages/{character.id}"
+            quote={character.quote}
+            message={form?.message}
+            flags={[
+                { name: "visibility", label: "Visible des joueurs", checked: !!character.visibility },
+                { name: "current", label: "Arc actuel", checked: !!character.current },
+                { name: "dead", label: "Mort", checked: character.dead },
+                { name: "censored", label: "Censuré (teaser)", checked: character.censored },
+            ]}
+        />
+    {/if}
 </main>
 
 <style>
-    :global(html) {
-        background-image: url("/personnages/backgroundpattern.png") !important;
-        background-size: 50%;
-        background-position: 20% 20%;
-    }
-
     main {
         display: flex;
         flex-direction: column;
         gap: 6rem;
         margin: auto;
+        padding-bottom: 3rem;
     }
 
     .infos {
@@ -68,22 +111,48 @@
         text-decoration: underline;
     }
 
+    .censor,
+    .status {
+        color: var(--accent);
+        font-family: var(--titleFont);
+        font-size: 1.2rem;
+    }
+
     .dragons {
         width: 5rem;
         z-index: -1;
+    }
+
+    .dragons img {
+        width: 100%;
     }
 
     .description {
         width: 65%;
         margin: auto;
         text-align: justify;
+        white-space: pre-line;
+    }
+
+    .quote {
+        text-align: center;
+        font-family: var(--titleFont);
+        font-style: italic;
+        font-size: 1.5rem;
     }
 
     .character {
         width: 40%;
     }
 
+    .character.dead {
+        filter: grayscale(1);
+    }
+
     @media screen and (max-width: 600px) {
+        main {
+            gap: 4rem;
+        }
         .infos {
             flex-direction: column;
             width: 95%;

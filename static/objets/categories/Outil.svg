@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #1c1d1b;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1 {
+        stroke-width: 50px;
+      }
+
+      .cls-2 {
+        stroke-width: 25px;
+      }
+    </style>
+  </defs>
+  <g id="Outil">
+    <polyline class="cls-1" points="495.1 460.66 216.79 763.32 132.09 678.62 434.63 401.36"/>
+    <rect class="cls-1" x="340.66" y="160.87" width="465.8" height="322.55" rx="72" transform="translate(395.78 -311.21) rotate(45)"/>
+    <g>
+      <line class="cls-2" x1="760.64" y1="813" x2="760.64" y2="622.08"/>
+      <line class="cls-1" x1="713.53" y1="622.08" x2="810.42" y2="622.08"/>
+      <line class="cls-2" x1="666.77" y1="767.32" x2="475.85" y2="767.32"/>
+      <line class="cls-1" x1="475.85" y1="814.43" x2="475.85" y2="717.54"/>
+      <line class="cls-2" x1="696.92" y1="773.92" x2="529.8" y2="681.62"/>
+      <line class="cls-1" x1="507.02" y1="722.86" x2="553.86" y2="638.05"/>
+    </g>
+  </g>
+</svg>

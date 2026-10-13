@@ -1,55 +1,20 @@
 <script lang="ts">
+	import { enhance } from "$app/forms";
 	import Cta from "$lib/components/Cta.svelte";
-	import { goto } from "$app/navigation";
 
-	let login = $state("");
-	let password = $state("");
-	let passwordConfirm = $state("");
-	let message = $state("");
-	let loggedIn = false;
-	let pageName = $state(false);
+	let { form } = $props();
 
-	function ctaClick() {
-		pageName = !pageName;
-	}
-
-	async function register() {
-		const res = await fetch("/auth/register", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ login, password, passwordConfirm }),
-		});
-
-		const data = await res.json();
-
-		if (res.ok) {
-			goto("/accueil", { invalidateAll: true });
-		} else {
-			message = data.error || "Erreur lors de l'inscription";
-		}
-	}
-
-	async function loginf() {
-		const res = await fetch("/auth/login", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ login, password }),
-		});
-
-		const data = await res.json();
-
-		if (res.ok) {
-			loggedIn = true;
-			goto("/accueil", { invalidateAll: true });
-		} else {
-			message = data.error || "Erreur de connexion";
-		}
-	}
+	let registering = $state(form?.mode === "register");
+	let login = $state(form?.login ?? "");
 </script>
 
-{#if pageName}
+<svelte:head>
+	<title>{registering ? "Création de compte" : "Connexion"} : Last Fragment</title>
+</svelte:head>
+
+{#if registering}
 	<div class="inscription">
-		<form on:submit|preventDefault={register}>
+		<form method="POST" action="?/register" use:enhance>
 			<h2>Création de compte :</h2>
 			<div>
 				<label for="login">Nom d'utilisateur :</label>
@@ -58,30 +23,36 @@
 					bind:value={login}
 					placeholder="Serena"
 					required
+					id="login"
 					name="login"
+					autocomplete="username"
 				/>
 			</div>
 			<div>
 				<label for="password">Mot de passe :</label>
 				<input
 					type="password"
-					bind:value={password}
 					placeholder="****************"
 					required
+					id="password"
 					name="password"
+					autocomplete="new-password"
 				/>
 			</div>
 			<div>
-				<label for="password-confirm">Confirmer le mot de passe :</label
-				>
+				<label for="password-confirm">Confirmer le mot de passe :</label>
 				<input
 					type="password"
-					bind:value={passwordConfirm}
 					placeholder="****************"
 					required
-					name="password-confirm"
+					id="password-confirm"
+					name="passwordConfirm"
+					autocomplete="new-password"
 				/>
 			</div>
+			{#if form?.error}
+				<p class="message-error" role="alert">{form.error}</p>
+			{/if}
 			<Cta text="S'inscrire" />
 		</form>
 		<div class="separateur"></div>
@@ -89,14 +60,14 @@
 			text="Page de connexion"
 			dragon="Yinva"
 			border="Artrish"
-			onClick={ctaClick}
+			onClick={() => (registering = false)}
 		/>
 
 		<img src="/dragons/tampons/Artrish.svg" alt="" class="form-image" />
 	</div>
 {:else}
 	<div class="connexion">
-		<form on:submit|preventDefault={loginf}>
+		<form method="POST" action="?/login" use:enhance>
 			<h2>Formulaire de connexion :</h2>
 			<div>
 				<label for="login">Nom d'utilisateur :</label>
@@ -104,7 +75,9 @@
 					type="text"
 					bind:value={login}
 					placeholder="Lucii"
+					id="login"
 					name="login"
+					autocomplete="username"
 					required
 				/>
 			</div>
@@ -112,22 +85,24 @@
 				<label for="password">Mot de passe :</label>
 				<input
 					type="password"
-					bind:value={password}
 					placeholder="****************"
+					id="password"
 					name="password"
+					autocomplete="current-password"
 					required
 				/>
 			</div>
+			{#if form?.error}
+				<p class="message-error" role="alert">{form.error}</p>
+			{/if}
 			<Cta text="Se connecter" dragon="Yinva" border="Artrish" />
 		</form>
 		<div class="separateur"></div>
-		<Cta text="Créer un compte" onClick={ctaClick} />
+		<Cta text="Créer un compte" onClick={() => (registering = true)} />
 
 		<img src="/dragons/tampons/Yinva.svg" alt="" class="form-image" />
 	</div>
 {/if}
-
-<p style="margin-top:1rem; color: #555;">{message}</p>
 
 <style>
 	form {

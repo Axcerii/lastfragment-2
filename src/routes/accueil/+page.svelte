@@ -1,20 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	import { env } from '$env/dynamic/public';
+
+	let { data } = $props();
+
+	// Le lore vit sur un site à part ; le lien n'apparaît que si son adresse est configurée.
+	const loreUrl = env.PUBLIC_LORE_URL;
+
 	onMount(() => {
-        const header = document.querySelectorAll('header');
-        header.forEach((element) => {
-            element.style.display = 'none';
-        });
-
-        const body = document.querySelector('body');
-
-        if(body){
-            body.style.overflowX = 'hidden';
-            body.style.overflowY = 'hidden';
-        }
-
+        // La page tient sur un seul écran : on bloque le défilement tant qu'elle est affichée.
+        document.body.style.overflow = 'hidden';
         hoverFragment();
+
+        return () => {
+            document.body.style.overflow = '';
+        };
     });
 
     let altFragment = $state('Représentation d\'un morceau de verre brisé en 6');
@@ -150,8 +151,10 @@
         <ul>
             <li><a href="/personnages" id="LPersonnages" onmouseenter={() => movingBackground(3, 49, 'Personnages', '6 personnages')}>Personnages</a><div class="brillance"></div></li>
             <li><a href="/outils" id="LOutils" onmouseenter={() => movingBackground(2.5, 49.5, 'Outils', '6 schémas d\'outils')}>Outils</a><div class="brillance"></div></li>
-            <li><a href="/histoires" id="LHistoires" onmouseenter={() => movingBackground(2, 50, 'Vide', '6 Livres')}>Histoires</a><div class="brillance"></div></li>
-            <li><a href="/auth/login" id="LConnexion" onmouseenter={() => movingBackground(1.5, 50.5, 'Connexion', '1 porte enchaînée')}>Connexion</a><div class="brillance"></div></li>
+            {#if loreUrl}
+                <li><a href={loreUrl} id="LHistoires" onmouseenter={() => movingBackground(2, 50, 'Vide', '6 Livres')}>Histoires</a><div class="brillance"></div></li>
+            {/if}
+            <li><a href={data.user ? '/profil' : '/auth/login'} id="LConnexion" onmouseenter={() => movingBackground(1.5, 50.5, 'Connexion', '1 porte enchaînée')}>{data.user ? 'Profil' : 'Connexion'}</a><div class="brillance"></div></li>
             <li><a href="/flux" id="LFlux" onmouseenter={() => movingBackground(1, 51, 'Don_de_flux', '12 Oeils t\'observants')}>Ton don de flux</a><div class="brillance" style="background-color: var(--primary);"></div></li>
         </ul>
     </div>

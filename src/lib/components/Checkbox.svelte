@@ -1,16 +1,31 @@
 <script lang="ts">
+    // Case à icône. En radio, `group` porte la valeur choisie ; en checkbox, `checked` l'état.
     let {
-        svg = "dragons/normal/Artrish.svg",
-        checked = false,
-        id = "",
+        svg = "/dragons/normal/Artrish.svg",
+        label,
         type = "radio",
         name = "",
+        value = "",
+        group = $bindable(),
+        checked = $bindable(false),
+    }: {
+        svg?: string;
+        label: string;
+        type?: "radio" | "checkbox";
+        name?: string;
+        value?: string;
+        group?: string;
+        checked?: boolean;
     } = $props();
 </script>
 
-<label class="checkbox-container">
-    <input {type} {id} {checked} {name} class="checkbox" />
-    <img src={svg} alt="" />
+<label class="checkbox-container" title={label}>
+    {#if type === "radio"}
+        <input type="radio" {name} {value} bind:group class="checkbox" />
+    {:else}
+        <input type="checkbox" {name} bind:checked class="checkbox" />
+    {/if}
+    <img src={svg} alt={label} />
 </label>
 
 <style>
@@ -30,19 +45,26 @@
     img {
         width: 100%;
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         filter: invert(90%) sepia(13%) saturate(311%) hue-rotate(52deg)
             brightness(101%) contrast(81%);
         transition: var(--transition);
     }
 
     .checkbox {
-        display: none;
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
     }
 
     .checkbox:checked + img {
         filter: invert(78%) sepia(52%) saturate(214%) hue-rotate(293deg)
             brightness(95%) contrast(88%);
+    }
+
+    .checkbox:focus-visible + img {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
     }
 
     .checkbox-container:hover > img {
