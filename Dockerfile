@@ -17,22 +17,21 @@ RUN npm prune --omit=dev
 
 # --- Exécution ---
 FROM base AS runtime
-ENV NODE_ENV=production \
-    PORT=3000 \
-    UPLOAD_DIR=/data/uploads \n    NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV UPLOAD_DIR=/data/uploads
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/build ./build
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/package.json ./
+# Fichiers copiés directement au nom de l'utilisateur non-root `node`.
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/build ./build
+COPY --from=build --chown=node:node /app/prisma ./prisma
+COPY --from=build --chown=node:node /app/package.json ./
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Les images envoyées vivent dans un volume ; l'utilisateur non-root `node` doit pouvoir y écrire.
+# Les images envoyées vivent dans un volume où `node` doit pouvoir écrire.
 # `sed` retire d'éventuels retours chariot Windows du script de démarrage.
-RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh \
-    && chmod +x /usr/local/bin/entrypoint.sh \
-    && mkdir -p /data/uploads \
-    && chown -R node:node /data /app
+RUN sed -i 's/$//' /usr/local/bin/entrypoint.sh     && chmod +x /usr/local/bin/entrypoint.sh     && mkdir -p /data/uploads     && chown -R node:node /data     && chown node:node /app
 
 USER node
 EXPOSE 3000
