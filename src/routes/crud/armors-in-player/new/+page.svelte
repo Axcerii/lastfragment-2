@@ -9,7 +9,7 @@
     armorId: 0,
     statistics: '',
     values: '',
-    descriptionAdd: 0,
+    descriptionAdd: '',
     notes: ''
   };
 
@@ -91,7 +91,7 @@
       });
 
       if (response.ok) {
-        goto('/armors-in-player');
+        goto('/crud/armors-in-player');
       } else {
         const result = await response.json();
         error = result.error || 'Failed to equip armor';
@@ -117,7 +117,7 @@
 <div class="container">
   <div class="header">
     <h1>Equip Armor</h1>
-    <a href="/armors-in-player" class="btn btn-secondary">Back to Equipped Armors</a>
+    <a href="/crud/armors-in-player" class="btn btn-secondary">Back to Equipped Armors</a>
   </div>
 
   {#if error}
@@ -203,15 +203,14 @@
       <h2>Additional Information</h2>
 
       <div class="form-group">
-        <label for="descriptionAdd">Description Add *</label>
+        <label for="descriptionAdd">Description Add</label>
         <input
           bind:value={formData.descriptionAdd}
           id="descriptionAdd"
-          type="number"
-          placeholder="Additional description value"
-          required
+          type="text"
+          placeholder="Additional description text / notes"
         />
-        <small>Numeric value for additional description metadata</small>
+        <small>Text for additional description metadata</small>
       </div>
 
       <div class="form-group">

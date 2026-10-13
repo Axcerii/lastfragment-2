@@ -1,29 +1,16 @@
 // src/routes/api/foods/[id]/+server.ts
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { Food, UpdateFoodData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { prisma } from '$lib/server/prisma';
+import type { UpdateFoodData } from '$lib/types';
 
 // GET /api/foods/[id]
 export const GET: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     const food = await prisma.food.findUnique({
       where: { id },
       include: {
@@ -48,8 +35,7 @@ export const GET: RequestHandler = async ({ params }) => {
       return json({ error: 'Food not found' }, { status: 404 });
     }
 
-    const serializedFood: Food = serializeBigInt(food);
-    return json(serializedFood);
+    return json(food);
   } catch (error) {
     console.error('Error fetching food:', error);
     return json({ error: 'Failed to fetch food' }, { status: 500 });
@@ -59,15 +45,18 @@ export const GET: RequestHandler = async ({ params }) => {
 // PUT /api/foods/[id]
 export const PUT: RequestHandler = async ({ params, request }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    const data: UpdateFoodData = await request.json();
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
 
+    const data: UpdateFoodData = await request.json();
     const updateData: any = {};
-    
+
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.weight !== undefined) updateData.weight = BigInt(data.weight);
+    if (data.weight !== undefined) updateData.weight = Number(data.weight);
     if (data.type !== undefined) updateData.type = data.type;
-    if (data.price !== undefined) updateData.price = BigInt(data.price);
+    if (data.price !== undefined) updateData.price = Number(data.price);
 
     const food = await prisma.food.update({
       where: { id },
@@ -82,9 +71,8 @@ export const PUT: RequestHandler = async ({ params, request }) => {
       }
     });
 
-    const serializedFood: Food = serializeBigInt(food);
-    return json(serializedFood);
-  } catch (error:any) {
+    return json(food);
+  } catch (error: any) {
     console.error('Error updating food:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Food not found' }, { status: 404 });
@@ -96,14 +84,17 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 // DELETE /api/foods/[id]
 export const DELETE: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     await prisma.food.delete({
       where: { id }
     });
 
     return json({ message: 'Food deleted successfully' });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error deleting food:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Food not found' }, { status: 404 });

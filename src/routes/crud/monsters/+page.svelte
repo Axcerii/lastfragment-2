@@ -27,7 +27,7 @@
     }
   }
 
-  async function deleteMonster(id: string): Promise<void> {
+  async function deleteMonster(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this monster? This will also delete its image.')) return;
     
     try {
@@ -46,16 +46,16 @@
     }
   }
 
-  function editMonster(id: string): void {
-    goto(`/monsters/${id}/edit`);
+  function editMonster(id: number | string): void {
+    goto(`/crud/monsters/${id}/edit`);
   }
 
-  function viewMonster(id: string): void {
-    goto(`/monsters/${id}`);
+  function viewMonster(id: number | string): void {
+    goto(`/crud/monsters/${id}`);
   }
 
-  function getDangerLevel(dangerosity: string): { level: string, color: string } {
-    const danger = parseInt(dangerosity);
+  function getDangerLevel(dangerosity: number | string): { level: string, color: string } {
+    const danger = typeof dangerosity === 'number' ? dangerosity : parseInt(dangerosity, 10);
     if (danger <= 2) return { level: 'Low', color: '#22c55e' };
     if (danger <= 5) return { level: 'Medium', color: '#f59e0b' };
     if (danger <= 8) return { level: 'High', color: '#ef4444' };
@@ -70,7 +70,7 @@
 <div class="container">
   <div class="header">
     <h1>Monsters Management</h1>
-    <a href="/monsters/new" class="btn btn-primary">Add New Monster</a>
+    <a href="/crud/monsters/new" class="btn btn-primary">Add New Monster</a>
   </div>
 
   {#if error}

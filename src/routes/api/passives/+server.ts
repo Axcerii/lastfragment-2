@@ -1,33 +1,14 @@
 // src/routes/api/passives/+server.ts
-import { json } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { RequestHandler } from '@sveltejs/kit';
-import type { Passive, CreatePassiveData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { prisma } from '$lib/server/prisma';
+import type { CreatePassiveData } from '$lib/types';
 
 // GET /api/passives
 export const GET: RequestHandler = async ({ url }) => {
   try {
     const characterId = url.searchParams.get('characterId');
-    
-    const where = characterId ? { characterId: BigInt(characterId) } : {};
-    
+    const where = characterId ? { characterId: parseInt(characterId, 10) } : {};
+
     const passives = await prisma.passive.findMany({
       where,
       include: {
@@ -43,8 +24,7 @@ export const GET: RequestHandler = async ({ url }) => {
       orderBy: { id: 'desc' }
     });
 
-    const serializedPassives: Passive[] = serializeBigInt(passives);
-    return json(serializedPassives);
+    return json(passives);
   } catch (error) {
     console.error('Error fetching passives:', error);
     return json({ error: 'Failed to fetch passives' }, { status: 500 });
@@ -62,7 +42,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     const character = await prisma.character.findUnique({
-      where: { id: BigInt(characterId) }
+      where: { id: Number(characterId) }
     });
 
     if (!character) {
@@ -71,7 +51,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
     const passive = await prisma.passive.create({
       data: {
-        characterId: BigInt(characterId),
+        characterId: Number(characterId),
         statistics,
         maths
       },
@@ -87,8 +67,7 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     });
 
-    const serializedPassive: Passive = serializeBigInt(passive);
-    return json(serializedPassive, { status: 201 });
+    return json(passive, { status: 201 });
   } catch (error) {
     console.error('Error creating passive:', error);
     return json({ error: 'Failed to create passive' }, { status: 500 });

@@ -1,9 +1,9 @@
-// src/routes/items/new/+page.svelte
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import type { CreateItemData, Item } from '$lib/types';
+  import type { CreateItemData, ItemCategory } from '$lib/types';
 
   let formData: CreateItemData = {
+    name: '',
     category: 'Autre',
     rarity: 1,
     weight: 1,
@@ -13,7 +13,7 @@
   let loading: boolean = false;
   let error: string = '';
 
-  const categories: Array<Item['category']> = [
+  const categories: Array<ItemCategory> = [
     'Casque', 'Torse', 'Gantelets', 'Jambieres', 'Outil', 'Arme', 
     'Fiole', 'Nourriture', 'Munitions', 'Important', 'Autre', 'Materiaux', 
     'Animal', 'Sac'
@@ -24,6 +24,7 @@
       'Casque': '🪖',
       'Torse': '🛡️',
       'Gantelets': '🥊',
+      'Jambieres': '👢',
       'Jambières': '👢',
       'Outil': '🔧',
       'Arme': '⚔️',
@@ -32,6 +33,7 @@
       'Munitions': '💣',
       'Important': '⭐',
       'Autre': '📦',
+      'Materiaux': '⛏️',
       'Matériaux': '⛏️',
       'Animal': '🐾',
       'Sac': '🎒'
@@ -40,7 +42,7 @@
   }
 
   async function handleSubmit(): Promise<void> {
-    if (!formData.description) {
+    if (!formData.name || !formData.description) {
       error = 'Please fill in all required fields';
       return;
     }
@@ -58,7 +60,7 @@
       });
 
       if (response.ok) {
-        goto('/items');
+        goto('/crud/items');
       } else {
         const result = await response.json();
         error = result.error || 'Failed to create item';
@@ -79,7 +81,7 @@
 <div class="container">
   <div class="header">
     <h1>Add New Item</h1>
-    <a href="/items" class="btn btn-secondary">Back to Items</a>
+    <a href="/crud/items" class="btn btn-secondary">Back to Items</a>
   </div>
 
   {#if error}
@@ -91,7 +93,18 @@
   <form on:submit|preventDefault={handleSubmit} class="form">
     <div class="form-section">
       <h2>Item Information</h2>
-      
+
+      <div class="form-group">
+        <label for="name">Name *</label>
+        <input
+          bind:value={formData.name}
+          id="name"
+          type="text"
+          placeholder="e.g. Épée en fer, Potion de soin..."
+          required
+        />
+      </div>
+
       <div class="form-group">
         <label for="category">Category *</label>
         <select bind:value={formData.category} id="category" required>
@@ -168,108 +181,18 @@
 
   h1 {
     font-size: 2rem;
-    font-weight: bold;
-    margin: 0;
+    font-weight: 700;
     color: #1f2937;
-  }
-
-  .error-message {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #dc2626;
-    padding: 12px 16px;
-    border-radius: 6px;
-    margin-bottom: 16px;
-  }
-
-  .form {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-  }
-
-  .form-section {
-    padding: 24px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .form-section:last-child {
-    border-bottom: none;
-  }
-
-  h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0 0 20px 0;
-  }
-
-  .form-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-
-  .form-group {
-    flex: 1;
-    margin-bottom: 16px;
-  }
-
-  label {
-    display: block;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 6px;
-    font-size: 0.875rem;
-  }
-
-  input, select, textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    color: #1f2937;
-    background-color: white;
-    box-sizing: border-box;
-  }
-
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 100px;
-  }
-
-  small {
-    display: block;
-    margin-top: 4px;
-    font-size: 0.75rem;
-    color: #6b7280;
-  }
-
-  .form-actions {
-    padding: 24px;
-    background-color: #f9fafb;
-    display: flex;
-    justify-content: flex-start;
   }
 
   .btn {
-    display: inline-block;
-    padding: 12px 24px;
-    border: none;
+    padding: 10px 20px;
     border-radius: 6px;
-    text-decoration: none;
-    font-size: 0.875rem;
     font-weight: 500;
+    text-decoration: none;
     cursor: pointer;
-    transition: background-color 0.2s;
+    border: none;
+    transition: all 0.2s;
   }
 
   .btn-primary {
@@ -282,29 +205,101 @@
   }
 
   .btn-primary:disabled {
-    background-color: #9ca3af;
+    opacity: 0.6;
     cursor: not-allowed;
   }
 
   .btn-secondary {
-    background-color: #6b7280;
-    color: white;
+    background-color: #e5e7eb;
+    color: #374151;
   }
 
   .btn-secondary:hover {
-    background-color: #4b5563;
+    background-color: #d1d5db;
   }
 
-  @media (max-width: 768px) {
+  .error-message {
+    background-color: #fee2e2;
+    color: #991b1b;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border: 1px solid #fecaca;
+  }
+
+  .form {
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-section {
+    margin-bottom: 24px;
+  }
+
+  .form-section h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    color: #1f2937;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  small {
+    display: block;
+    margin-top: 4px;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  @media (max-width: 640px) {
     .form-row {
-      flex-direction: column;
-      gap: 0;
-    }
-    
-    .header {
-      flex-direction: column;
-      gap: 16px;
-      align-items: stretch;
+      grid-template-columns: 1fr;
     }
   }
 </style>

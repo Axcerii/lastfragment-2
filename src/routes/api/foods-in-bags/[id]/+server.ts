@@ -1,29 +1,16 @@
 // src/routes/api/foods-in-bags/[id]/+server.ts
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { FoodInBag, UpdateFoodInBagData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { prisma } from '$lib/server/prisma';
+import type { UpdateFoodInBagData } from '$lib/types';
 
 // GET /api/foods-in-bags/[id]
 export const GET: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     const foodInBag = await prisma.foodInBag.findUnique({
       where: { id },
       include: {
@@ -52,8 +39,7 @@ export const GET: RequestHandler = async ({ params }) => {
       return json({ error: 'Food in bag not found' }, { status: 404 });
     }
 
-    const serializedFoodInBag: FoodInBag = serializeBigInt(foodInBag);
-    return json(serializedFoodInBag);
+    return json(foodInBag);
   } catch (error) {
     console.error('Error fetching food in bag:', error);
     return json({ error: 'Failed to fetch food in bag' }, { status: 500 });
@@ -63,13 +49,17 @@ export const GET: RequestHandler = async ({ params }) => {
 // PUT /api/foods-in-bags/[id]
 export const PUT: RequestHandler = async ({ params, request }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    const data: UpdateFoodInBagData = await request.json();
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
 
+    const data: UpdateFoodInBagData = await request.json();
     const updateData: any = {};
-    
-    if (data.itemInPlayerId !== undefined) updateData.itemInPlayerId = BigInt(data.itemInPlayerId);
-    if (data.foodId !== undefined) updateData.foodId = BigInt(data.foodId);
+
+    if (data.itemInPlayerId !== undefined) updateData.itemInPlayerId = Number(data.itemInPlayerId);
+    if (data.foodId !== undefined) updateData.foodId = Number(data.foodId);
+    if (data.quantity !== undefined) updateData.quantity = Number(data.quantity);
 
     const foodInBag = await prisma.foodInBag.update({
       where: { id },
@@ -89,9 +79,8 @@ export const PUT: RequestHandler = async ({ params, request }) => {
       }
     });
 
-    const serializedFoodInBag: FoodInBag = serializeBigInt(foodInBag);
-    return json(serializedFoodInBag);
-  } catch (error:any) {
+    return json(foodInBag);
+  } catch (error: any) {
     console.error('Error updating food in bag:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Food in bag not found' }, { status: 404 });
@@ -103,14 +92,17 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 // DELETE /api/foods-in-bags/[id]
 export const DELETE: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     await prisma.foodInBag.delete({
       where: { id }
     });
 
     return json({ message: 'Food in bag deleted successfully' });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error deleting food in bag:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Food in bag not found' }, { status: 404 });

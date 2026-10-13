@@ -1,32 +1,14 @@
 // src/routes/api/skills/+server.ts
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { Skill, CreateSkillData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { prisma } from '$lib/server/prisma';
+import type { CreateSkillData } from '$lib/types';
 
 // GET /api/skills
 export const GET: RequestHandler = async ({ url }) => {
   try {
     const statistics = url.searchParams.get('statistics');
-    
     const where = statistics ? { statistics: statistics as any } : {};
-    
+
     const skills = await prisma.skill.findMany({
       where,
       orderBy: [
@@ -35,8 +17,7 @@ export const GET: RequestHandler = async ({ url }) => {
       ]
     });
 
-    const serializedSkills: Skill[] = serializeBigInt(skills);
-    return json(serializedSkills);
+    return json(skills);
   } catch (error) {
     console.error('Error fetching skills:', error);
     return json({ error: 'Failed to fetch skills' }, { status: 500 });
@@ -58,12 +39,11 @@ export const POST: RequestHandler = async ({ request }) => {
         statistics,
         name,
         description,
-        level: BigInt(level)
+        level: Number(level)
       }
     });
 
-    const serializedSkill: Skill = serializeBigInt(skill);
-    return json(serializedSkill, { status: 201 });
+    return json(skill, { status: 201 });
   } catch (error) {
     console.error('Error creating skill:', error);
     return json({ error: 'Failed to create skill' }, { status: 500 });

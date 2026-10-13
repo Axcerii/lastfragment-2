@@ -1,29 +1,16 @@
 // src/routes/api/characters/[id]/+server.ts
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { Character, UpdateCharacterData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { prisma } from '$lib/server/prisma';
+import type { UpdateCharacterData } from '$lib/types';
 
 // GET /api/characters/[id] - Récupérer un personnage spécifique
 export const GET: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid character ID' }, { status: 400 });
+    }
+
     const character = await prisma.character.findUnique({
       where: { id },
       include: {
@@ -34,7 +21,12 @@ export const GET: RequestHandler = async ({ params }) => {
           }
         },
         statistics: true,
-        passives: true
+        passives: true,
+        characterSkills: {
+          include: {
+            skill: true
+          }
+        }
       }
     });
 
@@ -42,8 +34,7 @@ export const GET: RequestHandler = async ({ params }) => {
       return json({ error: 'Character not found' }, { status: 404 });
     }
 
-    const serializedCharacter: Character = serializeBigInt(character);
-    return json(serializedCharacter);
+    return json(character);
   } catch (error) {
     console.error('Error fetching character:', error);
     return json({ error: 'Failed to fetch character' }, { status: 500 });
@@ -53,7 +44,11 @@ export const GET: RequestHandler = async ({ params }) => {
 // PUT /api/characters/[id] - Mettre à jour un personnage
 export const PUT: RequestHandler = async ({ params, request }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid character ID' }, { status: 400 });
+    }
+
     const data: UpdateCharacterData = await request.json();
 
     const updateData: any = {};
@@ -73,18 +68,11 @@ export const PUT: RequestHandler = async ({ params, request }) => {
             login: true
           }
         },
-        statistics: {
-          select: {
-            id: true,
-            qdf: true,
-            pv: true
-          }
-        }
+        statistics: true
       }
     });
 
-    const serializedCharacter: Character = serializeBigInt(character);
-    return json(serializedCharacter);
+    return json(character);
   } catch (error: any) {
     console.error('Error updating character:', error);
     if (error.code === 'P2025') {
@@ -97,8 +85,11 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 // DELETE /api/characters/[id] - Supprimer un personnage
 export const DELETE: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid character ID' }, { status: 400 });
+    }
+
     await prisma.character.delete({
       where: { id }
     });

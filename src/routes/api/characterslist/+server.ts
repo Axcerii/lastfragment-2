@@ -1,24 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '$lib/server/prisma';
 import jwt from 'jsonwebtoken';
 
-const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
-
-function serializeBigInt(obj: any): any {
-    if (typeof obj === 'bigint') {
-        return obj.toString();
-    }
-    if (Array.isArray(obj)) {
-        return obj.map(serializeBigInt);
-    }
-    if (obj !== null && typeof obj === 'object') {
-        return Object.fromEntries(
-            Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-        );
-    }
-    return obj;
-}
 
 export const GET: RequestHandler = async ({ cookies }) => {
     // Check if user is authenticated via JWT cookie
@@ -28,7 +12,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
     if (token) {
         try {
             const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-            const userId = BigInt(decoded.userId);
+            const userId = parseInt(decoded.userId, 10);
 
             // Fetch the user's role from the database
             const player = await prisma.player.findUnique({
@@ -36,8 +20,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
                 select: { role: true }
             });
 
-            // Check if user is admin (assuming role === 1 means admin, adjust as needed)
-            if (player && player.role === 10n) {
+            if (player && player.role === 10) {
                 isAdmin = true;
             }
         } catch (err) {
@@ -60,6 +43,5 @@ export const GET: RequestHandler = async ({ cookies }) => {
         }
     });
 
-    const serializedCharacters = serializeBigInt(characters);
-    return json(serializedCharacters);
+    return json(characters);
 };

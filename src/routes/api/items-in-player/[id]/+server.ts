@@ -1,30 +1,15 @@
 // src/routes/api/items-in-player/[id]/+server.ts
-import { json } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { RequestHandler } from '@sveltejs/kit';
-import type { ItemInPlayer, UpdateItemInPlayerData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { prisma } from '$lib/server/prisma';
+import type { UpdateItemInPlayerData } from '$lib/types';
 
 // GET /api/items-in-player/[id] - Récupérer un item spécifique d'un joueur
 export const GET: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
 
     const itemInPlayer = await prisma.itemInPlayer.findUnique({
       where: { id },
@@ -59,8 +44,7 @@ export const GET: RequestHandler = async ({ params }) => {
       return json({ error: 'Item in player not found' }, { status: 404 });
     }
 
-    const serializedItemInPlayer: ItemInPlayer = serializeBigInt(itemInPlayer);
-    return json(serializedItemInPlayer);
+    return json(itemInPlayer);
   } catch (error) {
     console.error('Error fetching item in player:', error);
     return json({ error: 'Failed to fetch item in player' }, { status: 500 });
@@ -70,13 +54,17 @@ export const GET: RequestHandler = async ({ params }) => {
 // PUT /api/items-in-player/[id] - Mettre à jour un item d'un joueur
 export const PUT: RequestHandler = async ({ params, request }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    const data: UpdateItemInPlayerData = await request.json();
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
 
+    const data: UpdateItemInPlayerData = await request.json();
     const updateData: any = {};
-    
-    if (data.itemId !== undefined) updateData.itemId = BigInt(data.itemId);
-    if (data.playerId !== undefined) updateData.playerId = BigInt(data.playerId);
+
+    if (data.itemId !== undefined) updateData.itemId = Number(data.itemId);
+    if (data.playerId !== undefined) updateData.playerId = Number(data.playerId);
+    if (data.quantity !== undefined) updateData.quantity = Number(data.quantity);
     if (data.localisation !== undefined) updateData.localisation = data.localisation;
 
     const itemInPlayer = await prisma.itemInPlayer.update({
@@ -105,8 +93,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
       }
     });
 
-    const serializedItemInPlayer: ItemInPlayer = serializeBigInt(itemInPlayer);
-    return json(serializedItemInPlayer);
+    return json(itemInPlayer);
   } catch (error: any) {
     console.error('Error updating item in player:', error);
     if (error.code === 'P2025') {
@@ -119,8 +106,11 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 // DELETE /api/items-in-player/[id] - Supprimer un item d'un joueur
 export const DELETE: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     await prisma.itemInPlayer.delete({
       where: { id }
     });

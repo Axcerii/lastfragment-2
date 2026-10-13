@@ -1,32 +1,17 @@
-import { json } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { RequestHandler } from '@sveltejs/kit';
-import type { Monster, UpdateMonsterData } from '$lib/types';
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { prisma } from '$lib/server/prisma';
 import { saveUploadedFile, isValidImageFile } from '$lib/fileUtils';
 import { unlink } from 'fs/promises';
 import path from 'path';
 
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
-
 // GET /api/monsters/[id] - Récupérer un monstre spécifique
 export const GET: RequestHandler = async ({ params }) => {
   try {
-    const id = typeof params.id === 'string' ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     const monster = await prisma.monster.findUnique({
       where: { id }
     });
@@ -35,8 +20,7 @@ export const GET: RequestHandler = async ({ params }) => {
       return json({ error: 'Monster not found' }, { status: 404 });
     }
 
-    const serializedMonster: Monster = serializeBigInt(monster);
-    return json(serializedMonster);
+    return json(monster);
   } catch (error) {
     console.error('Error fetching monster:', error);
     return json({ error: 'Failed to fetch monster' }, { status: 500 });
@@ -46,10 +30,13 @@ export const GET: RequestHandler = async ({ params }) => {
 // PUT /api/monsters/[id] - Mettre à jour un monstre
 export const PUT: RequestHandler = async ({ params, request }) => {
   try {
-    const id = typeof params.id === 'string' ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     const formData = await request.formData();
 
-    // Vérifier que le monstre existe
     const existingMonster = await prisma.monster.findUnique({
       where: { id }
     });
@@ -59,8 +46,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
     }
 
     const updateData: any = {};
-    
-    // Mettre à jour les champs fournis
+
     const visibility = formData.get('visibility');
     const name = formData.get('name');
     const dragon = formData.get('dragon');
@@ -72,23 +58,21 @@ export const PUT: RequestHandler = async ({ params, request }) => {
     const current = formData.get('current');
     const imageFile = formData.get('image') as File;
 
-    if (visibility !== null) updateData.visibility = parseInt(visibility as string);
+    if (visibility !== null) updateData.visibility = parseInt(visibility as string, 10);
     if (name) updateData.name = name as string;
     if (dragon) updateData.dragon = dragon as string;
     if (size) updateData.size = size as string;
     if (weight) updateData.weight = weight as string;
-    if (dangerosity !== null) updateData.dangerosity = BigInt(parseInt(dangerosity as string));
+    if (dangerosity !== null) updateData.dangerosity = parseInt(dangerosity as string, 10);
     if (effect) updateData.effect = effect as string;
     if (description) updateData.description = description as string;
-    if (current !== null) updateData.current = parseInt(current as string);
+    if (current !== null) updateData.current = parseInt(current as string, 10);
 
-    // Gestion de l'image
     if (imageFile && imageFile.size > 0) {
       if (!isValidImageFile(imageFile)) {
         return json({ error: 'Invalid image file. Please upload a valid image (JPEG, PNG, WebP, GIF) under 5MB' }, { status: 400 });
       }
 
-      // Supprimer l'ancienne image si elle existe
       if (existingMonster.image) {
         try {
           const oldImagePath = path.join(process.cwd(), 'static', existingMonster.image);
@@ -98,7 +82,6 @@ export const PUT: RequestHandler = async ({ params, request }) => {
         }
       }
 
-      // Sauvegarder la nouvelle image
       updateData.image = await saveUploadedFile(imageFile, 'monsters');
     }
 
@@ -107,9 +90,8 @@ export const PUT: RequestHandler = async ({ params, request }) => {
       data: updateData
     });
 
-    const serializedMonster: Monster = serializeBigInt(monster);
-    return json(serializedMonster);
-  } catch (error:any) {
+    return json(monster);
+  } catch (error: any) {
     console.error('Error updating monster:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Monster not found' }, { status: 404 });
@@ -121,9 +103,11 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 // DELETE /api/monsters/[id] - Supprimer un monstre
 export const DELETE: RequestHandler = async ({ params }) => {
   try {
-    const id = typeof params.id === 'string' ? BigInt(params.id) : undefined;
-    
-    // Récupérer le monstre pour obtenir le chemin de l'image
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid ID' }, { status: 400 });
+    }
+
     const monster = await prisma.monster.findUnique({
       where: { id }
     });
@@ -132,7 +116,6 @@ export const DELETE: RequestHandler = async ({ params }) => {
       return json({ error: 'Monster not found' }, { status: 404 });
     }
 
-    // Supprimer l'image du système de fichiers
     if (monster.image) {
       try {
         const imagePath = path.join(process.cwd(), 'static', monster.image);
@@ -142,13 +125,12 @@ export const DELETE: RequestHandler = async ({ params }) => {
       }
     }
 
-    // Supprimer le monstre de la base de données
     await prisma.monster.delete({
       where: { id }
     });
 
     return json({ message: 'Monster deleted successfully' });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error deleting monster:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Monster not found' }, { status: 404 });

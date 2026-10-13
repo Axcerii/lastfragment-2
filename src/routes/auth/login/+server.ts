@@ -1,9 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '$lib/server/prisma';
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {

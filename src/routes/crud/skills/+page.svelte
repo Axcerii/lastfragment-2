@@ -39,7 +39,7 @@
     }
   }
 
-  async function deleteSkill(id: string): Promise<void> {
+  async function deleteSkill(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this skill?')) return;
     
     try {
@@ -58,12 +58,12 @@
     }
   }
 
-  function editSkill(id: string): void {
-    goto(`/skills/${id}/edit`);
+  function editSkill(id: number | string): void {
+    goto(`/crud/skills/${id}/edit`);
   }
 
-  function viewSkill(id: string): void {
-    goto(`/skills/${id}`);
+  function viewSkill(id: number | string): void {
+    goto(`/crud/skills/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {
@@ -109,8 +109,8 @@
     return colors[stat] || '#6b7280';
   }
 
-  function getLevelBadgeColor(level: string): string {
-    const lvl = parseInt(level);
+  function getLevelBadgeColor(level: number | string): string {
+    const lvl = typeof level === 'number' ? level : parseInt(level, 10);
     if (lvl >= 10) return '#ef4444';
     if (lvl >= 7) return '#f59e0b';
     if (lvl >= 4) return '#3b82f6';

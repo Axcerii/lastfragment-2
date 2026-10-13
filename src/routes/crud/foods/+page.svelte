@@ -34,7 +34,7 @@
     }
   }
 
-  async function deleteFood(id: string): Promise<void> {
+  async function deleteFood(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this food?')) return;
     
     try {
@@ -53,12 +53,12 @@
     }
   }
 
-  function editFood(id: string): void {
-    goto(`/foods/${id}/edit`);
+  function editFood(id: number | string): void {
+    goto(`/crud/foods/${id}/edit`);
   }
 
-  function viewFood(id: string): void {
-    goto(`/foods/${id}`);
+  function viewFood(id: number | string): void {
+    goto(`/crud/foods/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {

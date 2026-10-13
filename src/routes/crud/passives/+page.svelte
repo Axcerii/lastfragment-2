@@ -33,7 +33,7 @@
     }
   }
 
-  async function deletePassive(id: string): Promise<void> {
+  async function deletePassive(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this passive?')) return;
     
     try {
@@ -52,12 +52,12 @@
     }
   }
 
-  function editPassive(id: string): void {
-    goto(`/passives/${id}/edit`);
+  function editPassive(id: number | string): void {
+    goto(`/crud/passives/${id}/edit`);
   }
 
-  function viewPassive(id: string): void {
-    goto(`/passives/${id}`);
+  function viewPassive(id: number | string): void {
+    goto(`/crud/passives/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {

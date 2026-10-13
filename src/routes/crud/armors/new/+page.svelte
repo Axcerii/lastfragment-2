@@ -77,7 +77,7 @@
       });
 
       if (response.ok) {
-        goto('/armors');
+        goto('/crud/armors');
       } else {
         const result = await response.json();
         error = result.error || 'Failed to create armor';
@@ -152,7 +152,7 @@
         <select bind:value={formData.itemId} id="itemId" required>
           <option value={0}>Select an item</option>
           {#each items as item}
-            <option value={parseInt(item.id)}>
+            <option value={Number(item.id)}>
               {getCategoryIcon(item.category)} {item.category} - Rarity: {item.rarity} (ID: {item.id})
             </option>
           {/each}

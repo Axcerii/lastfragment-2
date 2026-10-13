@@ -85,15 +85,15 @@ enum SkillStatistic {
 }
 
 model Player {
-  id           BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  id           Int     @id @default(autoincrement())
   login        String  @unique @db.VarChar(255)
   password     String  @db.VarChar(255)
-  role         BigInt  @db.BigInt
-  team         BigInt  @db.BigInt
-  characterId  BigInt? @map("character_id") @db.UnsignedBigInt
+  role         Int     @db.Int
+  team         Int     @db.Int
+  characterId  Int?    @map("character_id")
   
   // Relations
-  character    Character?        @relation(fields: [characterId], references: [id])
+  character    Character?     @relation(fields: [characterId], references: [id])
   itemsInPlayer ItemInPlayer[]
   badgesFusions BadgeFusion[]
   
@@ -102,7 +102,7 @@ model Player {
 }
 
 model Character {
-  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  id          Int      @id @default(autoincrement())
   visibility  Int      @db.SmallInt
   name        String   @db.VarChar(255)
   flux        String?  @db.VarChar(255)
@@ -117,21 +117,22 @@ model Character {
   current     Int      @db.SmallInt
   
   // Relations
-  players     Player[]
-  statistics  Statistic[]
-  passives    Passive[]
+  players         Player[]
+  statistics      Statistic?
+  passives        Passive[]
+  characterSkills CharacterSkill[]
   
   @@map("characters")
 }
 
 model Monster {
-  id           BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  id           Int     @id @default(autoincrement())
   visibility   Int     @db.SmallInt
   name         String  @db.VarChar(255)
   dragon       String  @db.VarChar(255)
   size         String  @db.VarChar(255)
   weight       String  @db.VarChar(255)
-  dangerosity  BigInt  @db.BigInt
+  dangerosity  Int     @db.Int
   image        String  @db.VarChar(255)
   effect       String  @db.Text
   description  String  @db.Text
@@ -141,34 +142,34 @@ model Monster {
 }
 
 model Statistic {
-  id          BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  characterId BigInt @map("character_id") @db.UnsignedBigInt
-  qdf         BigInt @db.BigInt
-  pv          BigInt @db.BigInt
-  endurance   BigInt @db.BigInt
-  strength    BigInt @db.BigInt
-  maitrise    BigInt @db.BigInt
-  defense     BigInt @db.BigInt
-  vitesse     BigInt @db.BigInt
-  accuracy    BigInt @db.BigInt
-  perception  BigInt @db.BigInt
-  furtivite   BigInt @db.BigInt
-  charisme    BigInt @db.BigInt
-  eloquence   BigInt @db.BigInt
-  intelligence BigInt @db.BigInt
+  id           Int       @id @default(autoincrement())
+  characterId  Int       @unique @map("character_id")
+  qdf          Int       @db.Int
+  pv           Int       @db.Int
+  endurance    Int       @db.Int
+  strength     Int       @db.Int
+  maitrise     Int       @db.Int
+  defense      Int       @db.Int
+  vitesse      Int       @db.Int
+  accuracy     Int       @db.Int
+  perception   Int       @db.Int
+  furtivite    Int       @db.Int
+  charisme     Int       @db.Int
+  eloquence    Int       @db.Int
+  intelligence Int       @db.Int
   
   // Relations
-  character   Character @relation(fields: [characterId], references: [id])
+  character    Character @relation(fields: [characterId], references: [id])
   
-  @@index([characterId], map: "statistics_character_id_index")
   @@map("statistics")
 }
 
 model Item {
-  id          BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  id          Int          @id @default(autoincrement())
+  name        String       @default("Objet") @db.VarChar(255)
   category    ItemCategory
-  rarity      BigInt       @db.BigInt
-  weight      BigInt       @db.BigInt
+  rarity      Int          @db.Int
+  weight      Int          @db.Int
   description String       @db.Text
   
   // Relations
@@ -179,42 +180,43 @@ model Item {
 }
 
 model ItemInPlayer {
-  id           BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  itemId       BigInt @map("item_id") @db.UnsignedBigInt
-  playerId     BigInt @map("player_id") @db.UnsignedBigInt
-  localisation String @db.VarChar(255)
+  id           Int      @id @default(autoincrement())
+  itemId       Int      @map("item_id")
+  playerId     Int      @map("player_id")
+  quantity     Int      @default(1) @db.Int
+  localisation String   @db.VarChar(255)
   
   // Relations
-  item         Item              @relation(fields: [itemId], references: [id])
-  player       Player            @relation(fields: [playerId], references: [id])
+  item          Item            @relation(fields: [itemId], references: [id])
+  player        Player          @relation(fields: [playerId], references: [id])
   armorInPlayer ArmorInPlayer[]
-  foodsInBags  FoodInBag[]
+  foodsInBags   FoodInBag[]
   
   @@map("items_in_player")
 }
 
 model Armor {
-  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id         Int    @id @default(autoincrement())
   name       String @db.VarChar(255)
   statistics String @db.VarChar(255)
   values     String @db.VarChar(255)
-  itemId     BigInt @map("item_id") @db.UnsignedBigInt
+  itemId     Int    @map("item_id")
   
   // Relations
-  item       Item            @relation(fields: [itemId], references: [id])
+  item          Item            @relation(fields: [itemId], references: [id])
   armorInPlayer ArmorInPlayer[]
   
   @@map("armors")
 }
 
 model ArmorInPlayer {
-  id               BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  itemInPlayerId   BigInt @map("item_in_player_id") @db.UnsignedBigInt
-  armorId          BigInt @map("armor_id") @db.UnsignedBigInt
-  statistics       String @db.VarChar(255)
-  values           String @db.VarChar(255)
-  descriptionAdd   BigInt @map("description_add") @db.BigInt
-  notes            String @db.Text
+  id               Int          @id @default(autoincrement())
+  itemInPlayerId   Int          @map("item_in_player_id")
+  armorId          Int          @map("armor_id")
+  statistics       String       @db.VarChar(255)
+  values           String       @db.VarChar(255)
+  descriptionAdd   String       @map("description_add") @db.VarChar(255)
+  notes            String       @db.Text
   
   // Relations
   itemInPlayer     ItemInPlayer @relation(fields: [itemInPlayerId], references: [id])
@@ -224,11 +226,11 @@ model ArmorInPlayer {
 }
 
 model Food {
-  id     BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  id     Int      @id @default(autoincrement())
   name   String   @db.VarChar(255)
-  weight BigInt   @db.BigInt
+  weight Int      @db.Int
   type   FoodType
-  price  BigInt   @db.BigInt
+  price  Int      @db.Int
   
   // Relations
   foodsInBags FoodInBag[]
@@ -237,9 +239,10 @@ model Food {
 }
 
 model FoodInBag {
-  id             BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  itemInPlayerId BigInt @map("item_in_player_id") @db.UnsignedBigInt
-  foodId         BigInt @map("food_id") @db.UnsignedBigInt
+  id             Int          @id @default(autoincrement())
+  itemInPlayerId Int          @map("item_in_player_id")
+  foodId         Int          @map("food_id")
+  quantity       Int          @default(1) @db.Int
   
   // Relations
   itemInPlayer   ItemInPlayer @relation(fields: [itemInPlayerId], references: [id])
@@ -249,7 +252,7 @@ model FoodInBag {
 }
 
 model Badge {
-  id          BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id          Int    @id @default(autoincrement())
   badges      String @db.VarChar(255)
   name        String @db.VarChar(255)
   description String @db.Text
@@ -258,10 +261,10 @@ model Badge {
 }
 
 model BadgeFusion {
-  id       BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  id       Int       @id @default(autoincrement())
   badge1   BadgeType @map("badge_1")
   badge2   BadgeType @map("badge_2")
-  playerId BigInt    @map("player_id") @db.UnsignedBigInt
+  playerId Int       @map("player_id")
   
   // Relations
   player   Player    @relation(fields: [playerId], references: [id])
@@ -270,20 +273,35 @@ model BadgeFusion {
 }
 
 model Skill {
-  id          BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
-  statistics  SkillStatistic
-  name        String         @db.VarChar(255)
-  description String         @db.Text
-  level       BigInt         @db.BigInt
+  id              Int              @id @default(autoincrement())
+  statistics      SkillStatistic
+  name            String           @db.VarChar(255)
+  description     String           @db.Text
+  level           Int              @db.Int
+  characterSkills CharacterSkill[]
   
   @@map("skills")
 }
 
+model CharacterSkill {
+  id          Int       @id @default(autoincrement())
+  characterId Int       @map("character_id")
+  skillId     Int       @map("skill_id")
+  level       Int       @default(1) @db.Int
+  
+  // Relations
+  character   Character @relation(fields: [characterId], references: [id])
+  skill       Skill     @relation(fields: [skillId], references: [id])
+  
+  @@unique([characterId, skillId], map: "character_skills_character_skill_unique")
+  @@map("character_skills")
+}
+
 model Passive {
-  id          BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  characterId BigInt @map("character_id") @db.UnsignedBigInt
-  statistics  String @db.VarChar(255)
-  maths       String @db.VarChar(255)
+  id          Int       @id @default(autoincrement())
+  characterId Int       @map("character_id")
+  statistics  String    @db.VarChar(255)
+  maths       String    @db.VarChar(255)
   
   // Relations
   character   Character @relation(fields: [characterId], references: [id])

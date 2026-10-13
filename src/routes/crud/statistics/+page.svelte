@@ -32,7 +32,7 @@
     }
   }
 
-  async function deleteStatistic(id: string): Promise<void> {
+  async function deleteStatistic(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this statistic?')) return;
     
     try {
@@ -51,12 +51,12 @@
     }
   }
 
-  function editStatistic(id: string): void {
-    goto(`/statistics/${id}/edit`);
+  function editStatistic(id: number | string): void {
+    goto(`/crud/statistics/${id}/edit`);
   }
 
-  function viewStatistic(id: string): void {
-    goto(`/statistics/${id}`);
+  function viewStatistic(id: number | string): void {
+    goto(`/crud/statistics/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {
@@ -69,7 +69,7 @@
       stat.qdf, stat.pv, stat.endurance, stat.strength, stat.maitrise,
       stat.defense, stat.vitesse, stat.accuracy, stat.perception,
       stat.furtivite, stat.charisme, stat.eloquence, stat.intelligence
-    ].reduce((sum, val) => sum + parseInt(val), 0);
+    ].reduce((sum, val) => sum + (Number(val) || 0), 0);
   }
 
   function getStatColor(value: number): string {
@@ -87,7 +87,7 @@
 <div class="container">
   <div class="header">
     <h1>Statistics Management</h1>
-    <a href="/statistics/new" class="btn btn-primary">Add New Statistic</a>
+    <a href="/crud/statistics/new" class="btn btn-primary">Add New Statistic</a>
   </div>
 
   {#if error}
@@ -158,19 +158,19 @@
                   <span class="no-data">Unknown</span>
                 {/if}
               </td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.qdf))}">{statistic.qdf}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.pv))}">{statistic.pv}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.endurance))}">{statistic.endurance}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.strength))}">{statistic.strength}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.maitrise))}">{statistic.maitrise}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.defense))}">{statistic.defense}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.vitesse))}">{statistic.vitesse}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.accuracy))}">{statistic.accuracy}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.perception))}">{statistic.perception}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.furtivite))}">{statistic.furtivite}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.charisme))}">{statistic.charisme}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.eloquence))}">{statistic.eloquence}</span></td>
-              <td><span class="stat-value" style="color: {getStatColor(parseInt(statistic.intelligence))}">{statistic.intelligence}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.qdf)}">{statistic.qdf}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.pv)}">{statistic.pv}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.endurance)}">{statistic.endurance}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.strength)}">{statistic.strength}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.maitrise)}">{statistic.maitrise}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.defense)}">{statistic.defense}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.vitesse)}">{statistic.vitesse}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.accuracy)}">{statistic.accuracy}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.perception)}">{statistic.perception}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.furtivite)}">{statistic.furtivite}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.charisme)}">{statistic.charisme}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.eloquence)}">{statistic.eloquence}</span></td>
+              <td><span class="stat-value" style="color: {getStatColor(statistic.intelligence)}">{statistic.intelligence}</span></td>
               <td><strong>{getStatTotal(statistic)}</strong></td>
               <td class="actions">
                 <button

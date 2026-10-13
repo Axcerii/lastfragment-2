@@ -58,7 +58,7 @@
       });
 
       if (response.ok) {
-        goto('/statistics');
+        goto('/crud/statistics');
       } else {
         const result = await response.json();
         error = result.error || 'Failed to create statistic';
@@ -85,7 +85,7 @@
 <div class="container">
   <div class="header">
     <h1>Add New Statistic</h1>
-    <a href="/statistics" class="btn btn-secondary">Back to Statistics</a>
+    <a href="/crud/statistics" class="btn btn-secondary">Back to Statistics</a>
   </div>
 
   {#if error}
@@ -103,7 +103,7 @@
         <select bind:value={formData.characterId} id="characterId" required>
           <option value={0}>Select a character</option>
           {#each characters as character}
-            <option value={parseInt(character.id)}>{character.name} (ID: {character.id})</option>
+            <option value={Number(character.id)}>{character.name} (ID: {character.id})</option>
           {/each}
         </select>
       </div>

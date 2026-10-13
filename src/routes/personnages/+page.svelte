@@ -7,7 +7,7 @@
     ).then((res) => res.json());
 
     interface Character {
-        id: number;
+        id: string;
         name: string;
         country: string;
         image: string;
@@ -45,6 +45,7 @@
         {:then characters}
             {#each characters as personnage}
                 <CharacterCard
+                    id={personnage.id}
                     nom={personnage.name}
                     tags={personnage.category.split(",")}
                     image={personnage.image}
@@ -61,7 +62,7 @@
 
 <style>
     :global(html) {
-        background-image: url("personnages/backgroundpattern.png") !important;
+        background-image: url("/personnages/backgroundpattern.png") !important;
         background-size: 50%;
         background-position: 20% 20%;
     }

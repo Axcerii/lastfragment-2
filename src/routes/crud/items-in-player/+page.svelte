@@ -38,7 +38,7 @@
     }
   }
 
-  async function deleteItemInPlayer(id: string): Promise<void> {
+  async function deleteItemInPlayer(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this item from player inventory?')) return;
     
     try {
@@ -57,12 +57,12 @@
     }
   }
 
-  function editItemInPlayer(id: string): void {
-    goto(`/items-in-player/${id}/edit`);
+  function editItemInPlayer(id: number | string): void {
+    goto(`/crud/items-in-player/${id}/edit`);
   }
 
-  function viewItemInPlayer(id: string): void {
-    goto(`/items-in-player/${id}`);
+  function viewItemInPlayer(id: number | string): void {
+    goto(`/crud/items-in-player/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {

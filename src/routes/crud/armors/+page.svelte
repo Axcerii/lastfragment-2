@@ -33,7 +33,7 @@
     }
   }
 
-  async function deleteArmor(id: string): Promise<void> {
+  async function deleteArmor(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this armor?')) return;
     
     try {
@@ -52,12 +52,12 @@
     }
   }
 
-  function editArmor(id: string): void {
-    goto(`/armors/${id}/edit`);
+  function editArmor(id: number | string): void {
+    goto(`/crud/armors/${id}/edit`);
   }
 
-  function viewArmor(id: string): void {
-    goto(`/armors/${id}`);
+  function viewArmor(id: number | string): void {
+    goto(`/crud/armors/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {

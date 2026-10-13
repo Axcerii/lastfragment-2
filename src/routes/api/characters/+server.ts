@@ -1,27 +1,8 @@
 // src/routes/api/characters/+server.ts
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { Character, CreateCharacterData } from '$lib/types';
+import { prisma } from '$lib/server/prisma';
 import fs from 'fs';
 import path from 'path';
-
-const prisma = new PrismaClient();
-
-// Fonction utilitaire pour sérialiser les BigInt
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
 
 // GET /api/characters - Récupérer tous les personnages
 export const GET: RequestHandler = async () => {
@@ -34,18 +15,17 @@ export const GET: RequestHandler = async () => {
             login: true
           }
         },
-        statistics: {
-          select: {
-            id: true,
-            qdf: true,
-            pv: true
+        statistics: true,
+        passives: true,
+        characterSkills: {
+          include: {
+            skill: true
           }
         }
       }
     });
 
-    const serializedCharacters: Character[] = serializeBigInt(characters);
-    return json(serializedCharacters);
+    return json(characters);
   } catch (error) {
     console.error('Error fetching characters:', error);
     return json({ error: 'Failed to fetch characters' }, { status: 500 });
@@ -53,7 +33,6 @@ export const GET: RequestHandler = async () => {
 };
 
 // POST /api/characters - Créer un nouveau personnage
-
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const form = await request.formData();
@@ -120,7 +99,7 @@ export const POST: RequestHandler = async ({ request }) => {
         theme,
         race,
         country,
-        image: publicPath, // enregistre juste le chemin public
+        image: publicPath,
         description,
         category,
         current
@@ -129,14 +108,12 @@ export const POST: RequestHandler = async ({ request }) => {
         players: {
           select: { id: true, login: true }
         },
-        statistics: {
-          select: { id: true, qdf: true, pv: true }
-        }
+        statistics: true,
+        passives: true
       }
     });
 
-    const serializedCharacter: Character = serializeBigInt(character);
-    return json(serializedCharacter, { status: 201 });
+    return json(character, { status: 201 });
   } catch (error) {
     console.error('Error creating character:', error);
     return json({ error: 'Failed to create character' }, { status: 500 });

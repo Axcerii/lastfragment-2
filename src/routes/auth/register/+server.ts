@@ -1,11 +1,8 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
 import { isPasswordValid, isStringLongEnough } from '$lib/regex';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
-
-const prisma = new PrismaClient();
+import { prisma } from '$lib/server/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
@@ -42,9 +39,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
       data: {
         login,
         password: hashedPassword,
-        role: BigInt(0),
-        team: BigInt(0),
-        characterId: characterId ? BigInt(characterId) : null
+        role: 0,
+        team: 0,
+        characterId: characterId ? Number(characterId) : null
       },
       include: {
         character: true

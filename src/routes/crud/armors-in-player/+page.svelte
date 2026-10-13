@@ -37,7 +37,7 @@
     }
   }
 
-  async function deleteArmorInPlayer(id: string): Promise<void> {
+  async function deleteArmorInPlayer(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to remove this equipped armor?')) return;
     
     try {
@@ -56,12 +56,12 @@
     }
   }
 
-  function editArmorInPlayer(id: string): void {
-    goto(`/armors-in-player/${id}/edit`);
+  function editArmorInPlayer(id: number | string): void {
+    goto(`/crud/armors-in-player/${id}/edit`);
   }
 
-  function viewArmorInPlayer(id: string): void {
-    goto(`/armors-in-player/${id}`);
+  function viewArmorInPlayer(id: number | string): void {
+    goto(`/crud/armors-in-player/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {

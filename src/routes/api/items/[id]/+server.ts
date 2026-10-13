@@ -1,30 +1,16 @@
 // src/routes/api/items/[id]/+server.ts
-import { json } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { RequestHandler } from '@sveltejs/kit';
-import type { Item, UpdateItemData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { prisma } from '$lib/server/prisma';
+import type { UpdateItemData } from '$lib/types';
 
 // GET /api/items/[id] - Récupérer un item spécifique
 export const GET: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid item ID' }, { status: 400 });
+    }
+
     const item = await prisma.item.findUnique({
       where: { id },
       include: {
@@ -46,8 +32,7 @@ export const GET: RequestHandler = async ({ params }) => {
       return json({ error: 'Item not found' }, { status: 404 });
     }
 
-    const serializedItem: Item = serializeBigInt(item);
-    return json(serializedItem);
+    return json(item);
   } catch (error) {
     console.error('Error fetching item:', error);
     return json({ error: 'Failed to fetch item' }, { status: 500 });
@@ -57,14 +42,18 @@ export const GET: RequestHandler = async ({ params }) => {
 // PUT /api/items/[id] - Mettre à jour un item
 export const PUT: RequestHandler = async ({ params, request }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
-    const data: UpdateItemData = await request.json();
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid item ID' }, { status: 400 });
+    }
 
+    const data: UpdateItemData = await request.json();
     const updateData: any = {};
-    
+
+    if (data.name !== undefined) updateData.name = data.name;
     if (data.category !== undefined) updateData.category = data.category;
-    if (data.rarity !== undefined) updateData.rarity = BigInt(data.rarity);
-    if (data.weight !== undefined) updateData.weight = BigInt(data.weight);
+    if (data.rarity !== undefined) updateData.rarity = Number(data.rarity);
+    if (data.weight !== undefined) updateData.weight = Number(data.weight);
     if (data.description !== undefined) updateData.description = data.description;
 
     const item = await prisma.item.update({
@@ -86,9 +75,8 @@ export const PUT: RequestHandler = async ({ params, request }) => {
       }
     });
 
-    const serializedItem: Item = serializeBigInt(item);
-    return json(serializedItem);
-  } catch (error:any) {
+    return json(item);
+  } catch (error: any) {
     console.error('Error updating item:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Item not found' }, { status: 404 });
@@ -100,15 +88,17 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 // DELETE /api/items/[id] - Supprimer un item
 export const DELETE: RequestHandler = async ({ params }) => {
   try {
-    const id = params.id !== undefined ? BigInt(params.id) : undefined;
+    const id = params.id ? parseInt(params.id, 10) : undefined;
+    if (!id || isNaN(id)) {
+      return json({ error: 'Invalid item ID' }, { status: 400 });
+    }
 
-    
     await prisma.item.delete({
       where: { id }
     });
 
     return json({ message: 'Item deleted successfully' });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error('Error deleting item:', error);
     if (error.code === 'P2025') {
       return json({ error: 'Item not found' }, { status: 404 });

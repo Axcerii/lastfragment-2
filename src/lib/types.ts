@@ -1,5 +1,5 @@
 export interface Character {
-  id: string;
+  id: number;
   visibility: number;
   name: string;
   flux: string | null;
@@ -13,14 +13,12 @@ export interface Character {
   category: string;
   current: number;
   players?: Array<{
-    id: string;
+    id: number;
     login: string;
   }>;
-  statistics?: Array<{
-    id: string;
-    qdf: string;
-    pv: string;
-  }>;
+  statistics?: Statistic | null;
+  passives?: Array<Passive>;
+  characterSkills?: Array<CharacterSkill>;
 }
 
 export interface CreateCharacterData {
@@ -41,13 +39,13 @@ export interface CreateCharacterData {
 export interface UpdateCharacterData extends Partial<CreateCharacterData> {}
 
 export interface Monster {
-  id: string;
+  id: number;
   visibility: number;
   name: string;
   dragon: string;
   size: string;
   weight: string;
-  dangerosity: string;
+  dangerosity: number;
   image: string;
   effect: string;
   description: string;
@@ -61,6 +59,7 @@ export interface CreateMonsterData {
   size: string;
   weight: string;
   dangerosity: number;
+  image?: string;
   effect: string;
   description: string;
   current: number;
@@ -69,23 +68,23 @@ export interface CreateMonsterData {
 export interface UpdateMonsterData extends Partial<CreateMonsterData> {}
 
 export interface Statistic {
-  id: string;
-  characterId: string;
-  qdf: string;
-  pv: string;
-  endurance: string;
-  strength: string;
-  maitrise: string;
-  defense: string;
-  vitesse: string;
-  accuracy: string;
-  perception: string;
-  furtivite: string;
-  charisme: string;
-  eloquence: string;
-  intelligence: string;
+  id: number;
+  characterId: number;
+  qdf: number;
+  pv: number;
+  endurance: number;
+  strength: number;
+  maitrise: number;
+  defense: number;
+  vitesse: number;
+  accuracy: number;
+  perception: number;
+  furtivite: number;
+  charisme: number;
+  eloquence: number;
+  intelligence: number;
   character?: {
-    id: string;
+    id: number;
     name: string;
   };
 }
@@ -109,26 +108,42 @@ export interface CreateStatisticData {
 
 export interface UpdateStatisticData extends Partial<CreateStatisticData> {}
 
-// src/lib/types.ts (ajout des types Item)
+export type ItemCategory =
+  | 'Casque'
+  | 'Torse'
+  | 'Gantelets'
+  | 'Jambieres'
+  | 'Outil'
+  | 'Arme'
+  | 'Fiole'
+  | 'Nourriture'
+  | 'Munitions'
+  | 'Important'
+  | 'Autre'
+  | 'Materiaux'
+  | 'Animal'
+  | 'Sac';
+
 export interface Item {
-  id: string;
-  category: 'Casque' | 'Torse' | 'Gantelets' | 'Jambieres' | 'Outil' | 'Arme' | 'Fiole' | 
-            'Nourriture' | 'Munitions' | 'Important' | 'Autre' | 'Materiaux' | 'Animal' | 'Sac';
-  rarity: string;
-  weight: string;
+  id: number;
+  name: string;
+  category: ItemCategory;
+  rarity: number;
+  weight: number;
   description: string;
   itemsInPlayer?: Array<{
-    id: string;
-    playerId: string;
+    id: number;
+    playerId: number;
   }>;
   armors?: Array<{
-    id: string;
+    id: number;
     name: string;
   }>;
 }
 
 export interface CreateItemData {
-  category: Item['category'];
+  name: string;
+  category: ItemCategory;
   rarity: number;
   weight: number;
   description: string;
@@ -136,36 +151,38 @@ export interface CreateItemData {
 
 export interface UpdateItemData extends Partial<CreateItemData> {}
 
-// src/lib/types.ts (ajout des types ItemInPlayer)
 export interface ItemInPlayer {
-  id: string;
-  itemId: string;
-  playerId: string;
+  id: number;
+  itemId: number;
+  playerId: number;
+  quantity: number;
   localisation: string;
   item?: {
-    id: string;
+    id: number;
+    name: string;
     category: string;
-    rarity: string;
-    weight: string;
+    rarity: number;
+    weight: number;
     description: string;
   };
   player?: {
-    id: string;
+    id: number;
     login: string;
   };
   armorInPlayer?: Array<{
-    id: string;
-    armorId: string;
+    id: number;
+    armorId: number;
   }>;
   foodsInBags?: Array<{
-    id: string;
-    foodId: string;
+    id: number;
+    foodId: number;
   }>;
 }
 
 export interface CreateItemInPlayerData {
   itemId: number;
   playerId: number;
+  quantity?: number;
   localisation: string;
 }
 
@@ -174,29 +191,30 @@ export interface UpdateItemInPlayerData extends Partial<CreateItemInPlayerData> 
 export interface Player {
   id: number;
   login: string;
-  password: string;
+  password?: string;
   role: number;
   team: number;
   characterId?: number | null;
+  character?: Character | null;
 }
 
-
 export interface Armor {
-  id: string;
+  id: number;
   name: string;
   statistics: string;
   values: string;
-  itemId: string;
+  itemId: number;
   item?: {
-    id: string;
+    id: number;
+    name: string;
     category: string;
-    rarity: string;
-    weight: string;
+    rarity: number;
+    weight: number;
     description: string;
   };
   armorInPlayer?: Array<{
-    id: string;
-    itemInPlayerId: string;
+    id: number;
+    itemInPlayerId: number;
   }>;
 }
 
@@ -209,26 +227,25 @@ export interface CreateArmorData {
 
 export interface UpdateArmorData extends Partial<CreateArmorData> {}
 
-// src/lib/types.ts (ajout des types ArmorInPlayer)
 export interface ArmorInPlayer {
-  id: string;
-  itemInPlayerId: string;
-  armorId: string;
+  id: number;
+  itemInPlayerId: number;
+  armorId: number;
   statistics: string;
   values: string;
   descriptionAdd: string;
   notes: string;
   itemInPlayer?: {
-    id: string;
-    playerId: string;
+    id: number;
+    playerId: number;
     localisation: string;
     player?: {
-      id: string;
+      id: number;
       login: string;
     };
   };
   armor?: {
-    id: string;
+    id: number;
     name: string;
     statistics: string;
     values: string;
@@ -240,22 +257,21 @@ export interface CreateArmorInPlayerData {
   armorId: number;
   statistics: string;
   values: string;
-  descriptionAdd: number;
+  descriptionAdd: string;
   notes: string;
 }
 
 export interface UpdateArmorInPlayerData extends Partial<CreateArmorInPlayerData> {}
 
-// src/lib/types.ts (ajout des types Food)
 export interface Food {
-  id: string;
+  id: number;
   name: string;
-  weight: string;
+  weight: number;
   type: 'viandes' | 'boissons' | 'fruits' | 'rations';
-  price: string;
+  price: number;
   foodsInBags?: Array<{
-    id: string;
-    itemInPlayerId: string;
+    id: number;
+    itemInPlayerId: number;
   }>;
 }
 
@@ -268,39 +284,39 @@ export interface CreateFoodData {
 
 export interface UpdateFoodData extends Partial<CreateFoodData> {}
 
-// src/lib/types.ts (ajout des types FoodInBag)
 export interface FoodInBag {
-  id: string;
-  itemInPlayerId: string;
-  foodId: string;
+  id: number;
+  itemInPlayerId: number;
+  foodId: number;
+  quantity: number;
   itemInPlayer?: {
-    id: string;
-    playerId: string;
+    id: number;
+    playerId: number;
     localisation: string;
     player?: {
-      id: string;
+      id: number;
       login: string;
     };
   };
   food?: {
-    id: string;
+    id: number;
     name: string;
-    weight: string;
+    weight: number;
     type: string;
-    price: string;
+    price: number;
   };
 }
 
 export interface CreateFoodInBagData {
   itemInPlayerId: number;
   foodId: number;
+  quantity?: number;
 }
 
 export interface UpdateFoodInBagData extends Partial<CreateFoodInBagData> {}
 
-// src/lib/types.ts (ajout des types Badge)
 export interface Badge {
-  id: string;
+  id: number;
   badges: string;
   name: string;
   description: string;
@@ -314,18 +330,26 @@ export interface CreateBadgeData {
 
 export interface UpdateBadgeData extends Partial<CreateBadgeData> {}
 
-
-// src/lib/types.ts (ajout des types BadgeFusion)
-export type BadgeType = 'Artrish' | 'Yinva' | 'Guizamark' | 'Shizari' | 'Pestia' | 
-                        'Chronos' | 'Aqua' | 'Goliath' | 'Drii' | 'Lada' | 'Pura';
+export type BadgeType =
+  | 'Artrish'
+  | 'Yinva'
+  | 'Guizamark'
+  | 'Shizari'
+  | 'Pestia'
+  | 'Chronos'
+  | 'Aqua'
+  | 'Goliath'
+  | 'Drii'
+  | 'Lada'
+  | 'Pura';
 
 export interface BadgeFusion {
-  id: string;
+  id: number;
   badge1: BadgeType;
   badge2: BadgeType;
-  playerId: string;
+  playerId: number;
   player?: {
-    id: string;
+    id: number;
     login: string;
   };
 }
@@ -338,17 +362,27 @@ export interface CreateBadgeFusionData {
 
 export interface UpdateBadgeFusionData extends Partial<CreateBadgeFusionData> {}
 
-// src/lib/types.ts (ajout des types Skill)
-export type SkillStatistic = 'PV' | 'QDF' | 'Endurance' | 'Maitrise' | 'Force' | 'Defense' | 
-                              'Vitesse' | 'Precision' | 'Perception' | 'Furtivite' | 
-                              'Charisme' | 'Eloquence' | 'Intelligence';
+export type SkillStatistic =
+  | 'PV'
+  | 'QDF'
+  | 'Endurance'
+  | 'Maitrise'
+  | 'Force'
+  | 'Defense'
+  | 'Vitesse'
+  | 'Precision'
+  | 'Perception'
+  | 'Furtivite'
+  | 'Charisme'
+  | 'Eloquence'
+  | 'Intelligence';
 
 export interface Skill {
-  id: string;
+  id: number;
   statistics: SkillStatistic;
   name: string;
   description: string;
-  level: string;
+  level: number;
 }
 
 export interface CreateSkillData {
@@ -360,15 +394,31 @@ export interface CreateSkillData {
 
 export interface UpdateSkillData extends Partial<CreateSkillData> {}
 
+export interface CharacterSkill {
+  id: number;
+  characterId: number;
+  skillId: number;
+  level: number;
+  character?: {
+    id: number;
+    name: string;
+  };
+  skill?: Skill;
+}
 
-// src/lib/types.ts (ajout des types Passive)
+export interface CreateCharacterSkillData {
+  characterId: number;
+  skillId: number;
+  level?: number;
+}
+
 export interface Passive {
-  id: string;
-  characterId: string;
+  id: number;
+  characterId: number;
   statistics: string;
   maths: string;
   character?: {
-    id: string;
+    id: number;
     name: string;
     race: string;
     country: string;

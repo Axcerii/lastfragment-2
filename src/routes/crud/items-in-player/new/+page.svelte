@@ -59,7 +59,7 @@
       });
 
       if (response.ok) {
-        goto('/items-in-player');
+        goto('/crud/items-in-player');
       } else {
         const result = await response.json();
         error = result.error || 'Failed to add item to player';
@@ -100,7 +100,7 @@
 <div class="container">
   <div class="header">
     <h1>Add Item to Player</h1>
-    <a href="/items-in-player" class="btn btn-secondary">Back to Items In Player</a>
+    <a href="/crud/items-in-player" class="btn btn-secondary">Back to Player Items</a>
   </div>
 
   {#if error}
@@ -118,7 +118,7 @@
         <select bind:value={formData.playerId} id="playerId" required>
           <option value={0}>Select a player</option>
             {#each players as player}
-            <option value={player.id.toString()}>
+            <option value={Number(player.id)}>
                 {player.login} (ID: {player.id})
             </option>
             {/each}
@@ -130,7 +130,7 @@
         <select bind:value={formData.itemId} id="itemId" required>
           <option value={0}>Select an item</option>
           {#each items as item}
-            <option value={parseInt(item.id)}>
+            <option value={Number(item.id)}>
               {getCategoryIcon(item.category)} {item.category} - Rarity: {item.rarity} (ID: {item.id})
             </option>
           {/each}

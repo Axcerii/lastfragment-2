@@ -28,7 +28,7 @@
     }
   }
 
-  async function deleteBadge(id: string): Promise<void> {
+  async function deleteBadge(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this badge?')) return;
     
     try {
@@ -47,12 +47,12 @@
     }
   }
 
-  function editBadge(id: string): void {
-    goto(`/badges/${id}/edit`);
+  function editBadge(id: number | string): void {
+    goto(`/crud/badges/${id}/edit`);
   }
 
-  function viewBadge(id: string): void {
-    goto(`/badges/${id}`);
+  function viewBadge(id: number | string): void {
+    goto(`/crud/badges/${id}`);
   }
 
   function getBadgeEmoji(badgeName: string): string {

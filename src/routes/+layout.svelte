@@ -10,6 +10,8 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<Header connected={data.connected} />
+<div data-sveltekit-reload>
+	<Header connected={data.connected} />
+</div>
 
 {@render children?.()}

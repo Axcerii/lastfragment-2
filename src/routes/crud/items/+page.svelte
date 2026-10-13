@@ -39,7 +39,7 @@
     }
   }
 
-  async function deleteItem(id: string): Promise<void> {
+  async function deleteItem(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this item?')) return;
     
     try {
@@ -58,12 +58,12 @@
     }
   }
 
-  function editItem(id: string): void {
-    goto(`/items/${id}/edit`);
+  function editItem(id: number | string): void {
+    goto(`/crud/items/${id}/edit`);
   }
 
-  function viewItem(id: string): void {
-    goto(`/items/${id}`);
+  function viewItem(id: number | string): void {
+    goto(`/crud/items/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {
@@ -71,8 +71,8 @@
     await loadItems();
   }
 
-  function getRarityColor(rarity: string): string {
-    const rarityNum = parseInt(rarity);
+  function getRarityColor(rarity: number | string): string {
+    const rarityNum = typeof rarity === 'number' ? rarity : parseInt(rarity, 10);
     if (rarityNum >= 5) return '#a855f7'; // Legendary
     if (rarityNum >= 4) return '#f59e0b'; // Epic
     if (rarityNum >= 3) return '#3b82f6'; // Rare
@@ -80,8 +80,8 @@
     return '#6b7280'; // Common
   }
 
-  function getRarityLabel(rarity: string): string {
-    const rarityNum = parseInt(rarity);
+  function getRarityLabel(rarity: number | string): string {
+    const rarityNum = typeof rarity === 'number' ? rarity : parseInt(rarity, 10);
     if (rarityNum >= 5) return 'Legendary';
     if (rarityNum >= 4) return 'Epic';
     if (rarityNum >= 3) return 'Rare';
@@ -117,7 +117,7 @@
 <div class="container">
   <div class="header">
     <h1>Items Management</h1>
-    <a href="/items/new" class="btn btn-primary">Add New Item</a>
+    <a href="/crud/items/new" class="btn btn-primary">Add New Item</a>
   </div>
 
   {#if error}
@@ -168,6 +168,7 @@
           </div>
 
           <div class="item-body">
+            <h3 style="margin: 0 0 8px 0; font-size: 1.15rem; color: #111827;">{item.name}</h3>
             <div class="item-info">
               <div class="info-row">
                 <span class="label">ID:</span>

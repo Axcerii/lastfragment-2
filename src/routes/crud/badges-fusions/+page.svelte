@@ -33,7 +33,7 @@
     }
   }
 
-  async function deleteBadgeFusion(id: string): Promise<void> {
+  async function deleteBadgeFusion(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this badge fusion?')) return;
     
     try {
@@ -52,12 +52,12 @@
     }
   }
 
-  function editBadgeFusion(id: string): void {
-    goto(`/badges-fusions/${id}/edit`);
+  function editBadgeFusion(id: number | string): void {
+    goto(`/crud/badges-fusions/${id}/edit`);
   }
 
-  function viewBadgeFusion(id: string): void {
-    goto(`/badges-fusions/${id}`);
+  function viewBadgeFusion(id: number | string): void {
+    goto(`/crud/badges-fusions/${id}`);
   }
 
   async function handleFilterChange(): Promise<void> {

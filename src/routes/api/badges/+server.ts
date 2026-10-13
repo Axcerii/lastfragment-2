@@ -1,25 +1,7 @@
 // src/routes/api/badges/+server.ts
-import { json } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { RequestHandler } from './$types';
-import type { Badge, CreateBadgeData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { prisma } from '$lib/server/prisma';
+import type { CreateBadgeData } from '$lib/types';
 
 // GET /api/badges
 export const GET: RequestHandler = async () => {
@@ -28,8 +10,7 @@ export const GET: RequestHandler = async () => {
       orderBy: { name: 'asc' }
     });
 
-    const serializedBadges: Badge[] = serializeBigInt(badges);
-    return json(serializedBadges);
+    return json(badges);
   } catch (error) {
     console.error('Error fetching badges:', error);
     return json({ error: 'Failed to fetch badges' }, { status: 500 });
@@ -54,8 +35,7 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     });
 
-    const serializedBadge: Badge = serializeBigInt(badge);
-    return json(serializedBadge, { status: 201 });
+    return json(badge, { status: 201 });
   } catch (error) {
     console.error('Error creating badge:', error);
     return json({ error: 'Failed to create badge' }, { status: 500 });

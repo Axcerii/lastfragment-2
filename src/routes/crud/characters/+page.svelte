@@ -27,7 +27,7 @@
     }
   }
 
-  async function deleteCharacter(id: string): Promise<void> {
+  async function deleteCharacter(id: number | string): Promise<void> {
     if (!confirm('Are you sure you want to delete this character?')) return;
     
     try {
@@ -46,12 +46,12 @@
     }
   }
 
-  function editCharacter(id: string): void {
-    goto(`/characters/${id}/edit`);
+  function editCharacter(id: number | string): void {
+    goto(`/crud/characters/${id}/edit`);
   }
 
-  function viewCharacter(id: string): void {
-    goto(`/characters/${id}`);
+  function viewCharacter(id: number | string): void {
+    goto(`/crud/characters/${id}`);
   }
 </script>
 

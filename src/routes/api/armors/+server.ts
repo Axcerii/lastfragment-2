@@ -1,33 +1,14 @@
 // src/routes/api/armors/+server.ts
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { PrismaClient } from '@prisma/client';
-import type { Armor, CreateArmorData } from '$lib/types';
-
-const prisma = new PrismaClient();
-
-// Fonction utilitaire pour sérialiser les BigInt
-function serializeBigInt(obj: any): any {
-  if (typeof obj === 'bigint') {
-    return obj.toString();
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeBigInt);
-  }
-  if (obj !== null && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [key, serializeBigInt(value)])
-    );
-  }
-  return obj;
-}
+import { prisma } from '$lib/server/prisma';
+import type { CreateArmorData } from '$lib/types';
 
 // GET /api/armors - Récupérer toutes les armures
 export const GET: RequestHandler = async ({ url }) => {
   try {
     const itemId = url.searchParams.get('itemId');
-    
-    const where = itemId ? { itemId: BigInt(itemId) } : {};
-    
+    const where = itemId ? { itemId: parseInt(itemId, 10) } : {};
+
     const armors = await prisma.armor.findMany({
       where,
       include: {
@@ -42,8 +23,7 @@ export const GET: RequestHandler = async ({ url }) => {
       orderBy: { name: 'asc' }
     });
 
-    const serializedArmors: Armor[] = serializeBigInt(armors);
-    return json(serializedArmors);
+    return json(armors);
   } catch (error) {
     console.error('Error fetching armors:', error);
     return json({ error: 'Failed to fetch armors' }, { status: 500 });
@@ -56,14 +36,12 @@ export const POST: RequestHandler = async ({ request }) => {
     const data: CreateArmorData = await request.json();
     const { name, statistics, values, itemId } = data;
 
-    // Validation des champs requis
     if (!name || !statistics || !values || itemId === undefined) {
       return json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Vérifier que l'item existe
     const item = await prisma.item.findUnique({
-      where: { id: BigInt(itemId) }
+      where: { id: Number(itemId) }
     });
 
     if (!item) {
@@ -75,7 +53,7 @@ export const POST: RequestHandler = async ({ request }) => {
         name,
         statistics,
         values,
-        itemId: BigInt(itemId)
+        itemId: Number(itemId)
       },
       include: {
         item: true,
@@ -88,8 +66,7 @@ export const POST: RequestHandler = async ({ request }) => {
       }
     });
 
-    const serializedArmor: Armor = serializeBigInt(armor);
-    return json(serializedArmor, { status: 201 });
+    return json(armor, { status: 201 });
   } catch (error) {
     console.error('Error creating armor:', error);
     return json({ error: 'Failed to create armor' }, { status: 500 });
