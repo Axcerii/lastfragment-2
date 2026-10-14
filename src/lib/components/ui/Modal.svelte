@@ -4,8 +4,17 @@
     let {
         open = $bindable(false),
         title,
+        side = false,
+        id,
         children,
-    }: { open?: boolean; title: string; children: Snippet } = $props();
+    }: {
+        open?: boolean;
+        title: string;
+        /** Panneau qui glisse depuis la droite, pleine hauteur, au lieu d'une fenêtre centrée. */
+        side?: boolean;
+        id?: string;
+        children: Snippet;
+    } = $props();
 
     let dialog: HTMLDialogElement | undefined = $state();
 
@@ -19,6 +28,8 @@
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <dialog
     bind:this={dialog}
+    {id}
+    class:side
     onclose={() => (open = false)}
     onclick={(e) => {
         // Un clic sur le fond (le dialog lui-même, hors de son contenu) ferme la fenêtre.
@@ -45,6 +56,31 @@
         color: var(--foreground);
         width: min(40rem, 92vw);
         max-height: 85dvh;
+    }
+
+    dialog.side {
+        margin: 0 0 0 auto;
+        width: min(36rem, 100vw);
+        height: 100dvh;
+        max-height: 100dvh;
+        border-width: 0 0 0 1px;
+        border-radius: 0;
+    }
+
+    dialog.side[open] {
+        animation: slide-in 250ms ease-out;
+    }
+
+    @keyframes slide-in {
+        from {
+            transform: translateX(100%);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        dialog.side[open] {
+            animation: none;
+        }
     }
 
     dialog::backdrop {

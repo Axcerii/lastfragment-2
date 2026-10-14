@@ -1,6 +1,5 @@
 <script lang="ts">
     import Notice from "$lib/components/layout/Notice.svelte";
-    import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import PlayerSheet from "$lib/components/sheet/PlayerSheet.svelte";
 
     let { data, form } = $props();
@@ -10,7 +9,6 @@
     <title>{data.sheet.character?.name ?? "Profil"} : Last Fragment</title>
 </svelte:head>
 
-<PatternBackground />
 
 {#if data.sheet.character}
     <PlayerSheet

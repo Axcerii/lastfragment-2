@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Gauge from "$lib/components/ui/Gauge.svelte";
+    import SectionTitle from "$lib/components/ui/SectionTitle.svelte";
     import StatBar from "$lib/components/ui/StatBar.svelte";
     import { passivePower, type Sheet } from "$lib/game/bonus";
     import {
@@ -9,37 +9,43 @@
         STAT_KEYS,
         totalPower,
         type StatBlock,
+        type StatKey,
     } from "$lib/game/stats";
 
-    // Bloc complet des stats : jauges, stats de combat et hors-combat, puissance totale.
+    // Bloc complet des stats, d'après la maquette du profil : consommables sur toute la largeur,
+    // puis combat et hors-combat côte à côte. `compact` sert à la vue de combat.
     let { sheet, compact = false }: { sheet: Sheet; compact?: boolean } = $props();
 
     let base = $derived(
         Object.fromEntries(STAT_KEYS.map((k) => [k, sheet[k].base])) as StatBlock,
     );
     let bonus = $derived(passivePower(sheet));
+
+    const GROUPS: { title: string; short: string; stats: StatKey[] }[] = [
+        { title: "Statistiques Consommables", short: "Consommables", stats: CONSO_STATS },
+        { title: "Statistiques de Combat", short: "Combat", stats: COMBAT_STATS },
+        { title: "Statistiques de Hors-Combat", short: "Hors-combat", stats: SOCIAL_STATS },
+    ];
 </script>
 
-<div class="stats" class:compact>
-    <div class="conso">
-        {#each CONSO_STATS as stat}
-            <Gauge {stat} line={sheet[stat]} />
+{#snippet group({ title, short, stats }: (typeof GROUPS)[number])}
+    <section class="group">
+        {#if compact}
+            <h3>{short}</h3>
+        {:else}
+            <SectionTitle level={3}>{title}</SectionTitle>
+        {/if}
+        {#each stats as stat (stat)}
+            <StatBar {stat} line={sheet[stat]} {compact} />
         {/each}
-    </div>
+    </section>
+{/snippet}
 
+<div class="stats" class:compact>
+    {@render group(GROUPS[0])}
     <div class="columns">
-        <section>
-            <h3>Combat</h3>
-            {#each COMBAT_STATS as stat}
-                <StatBar {stat} line={sheet[stat]} {compact} />
-            {/each}
-        </section>
-        <section>
-            <h3>Hors-combat</h3>
-            {#each SOCIAL_STATS as stat}
-                <StatBar {stat} line={sheet[stat]} {compact} />
-            {/each}
-        </section>
+        {@render group(GROUPS[1])}
+        {@render group(GROUPS[2])}
     </div>
 
     <p class="power">
@@ -56,34 +62,38 @@
     .stats {
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 35px;
     }
 
-    .stats.compact {
-        gap: 0.75rem;
-    }
-
-    .conso {
+    .group {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 10px;
+        min-width: 0;
     }
 
     .columns {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 2rem;
+        gap: 35px;
     }
 
-    /* En vue compacte, les deux groupes s'empilent pour laisser toute la largeur aux barres. */
+    /* Vue de combat : tout s'empile, plus serré. */
+    .compact {
+        gap: 0.75rem;
+    }
+
+    .compact .group {
+        gap: 0.3rem;
+    }
+
     .compact .columns {
         grid-template-columns: 1fr;
         gap: 0.75rem;
     }
 
     h3 {
-        font-size: 1.2rem;
-        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
         color: var(--primary);
     }
 
@@ -97,10 +107,9 @@
         color: var(--secondary);
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 800px) {
         .columns {
             grid-template-columns: 1fr;
-            gap: 1rem;
         }
     }
 </style>

@@ -109,6 +109,7 @@ model Character {
   visibility  Int     @db.SmallInt
   name        String  @db.VarChar(255)
   flux        String? @db.VarChar(255)
+  job         String? @db.VarChar(255)
   dragon      String  @db.VarChar(255)
   title       String? @db.VarChar(255)
   theme       String? @db.VarChar(255)

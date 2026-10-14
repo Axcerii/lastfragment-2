@@ -1,7 +1,6 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import Notice from "$lib/components/layout/Notice.svelte";
-    import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import PlayerSheet from "$lib/components/sheet/PlayerSheet.svelte";
     import { CONTAINER_KEYS, CONTAINERS } from "$lib/game/inventory";
 
@@ -14,7 +13,6 @@
     <title>Fiche de {sheet.player.login} : Espace MJ</title>
 </svelte:head>
 
-<PatternBackground />
 
 {#if sheet.character}
     <PlayerSheet

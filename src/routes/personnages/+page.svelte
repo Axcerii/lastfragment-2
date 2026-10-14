@@ -52,20 +52,20 @@
             name="vue"
             value="personnages"
             bind:group={filters.view}
-            svg="/personnages/Personnages.svg"
+            icon="/personnages/Personnages.svg"
         />
         <Checkbox
             label="Bestiaire"
             name="vue"
             value="bestiaire"
             bind:group={filters.view}
-            svg="/personnages/Bestiaire.svg"
+            icon="/personnages/Bestiaire.svg"
         />
         <Checkbox
             label="Arc actuel uniquement"
             type="checkbox"
             bind:checked={filters.currentOnly}
-            svg="/personnages/Important.svg"
+            icon="/personnages/Important.svg"
         />
     </div>
     <div class="search">

@@ -1,5 +1,4 @@
 <script lang="ts">
-    import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import TransferBoard from "$lib/components/sheet/TransferBoard.svelte";
 
     let { data, form } = $props();
@@ -9,7 +8,6 @@
     <title>Inventaire : Last Fragment</title>
 </svelte:head>
 
-<PatternBackground />
 
 <main>
     <header>

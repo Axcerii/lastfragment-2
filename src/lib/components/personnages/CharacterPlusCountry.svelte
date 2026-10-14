@@ -6,16 +6,19 @@
         name = "Erreur",
         title = "",
         country = "Inconnu",
+        compact = false,
     }: {
         /** Sans image, la silhouette par défaut est affichée. */
         image?: string | null;
         name?: string;
         title?: string;
         country?: string;
+        /** Format du profil : portrait de 207 px, ornement sous le nom au lieu de chevaucher le portrait. */
+        compact?: boolean;
     } = $props();
 </script>
 
-<div class="container">
+<div class="container" class:compact>
     <div class="image">
         <div
             class="background-pays secondary-svg"
@@ -91,6 +94,41 @@
 
     h2 {
         font-size: 2rem;
+    }
+
+    .compact {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: auto;
+        gap: 0;
+    }
+
+    .compact .image {
+        width: 207px;
+        height: 214px;
+        flex-shrink: 0;
+    }
+
+    .compact .image img {
+        top: 0;
+        height: 205px;
+    }
+
+    .compact .background-pays {
+        top: 9px;
+        height: 205px;
+    }
+
+    .compact h2 {
+        margin-top: 0.75rem;
+        font-size: 32px;
+        font-weight: normal;
+    }
+
+    .compact .dialogue-box {
+        position: static;
+        transform: none;
+        width: 110px;
     }
 
     .dialogue-box {

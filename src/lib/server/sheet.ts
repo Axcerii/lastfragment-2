@@ -103,6 +103,7 @@ export async function loadSheet(playerId: number) {
 			country: character.country as string,
 			race: character.race as string,
 			flux: character.flux,
+			job: character.job,
 			dragon: character.dragon,
 			description: character.description
 		},

@@ -89,6 +89,7 @@ const resources: Resource[] = [
 			{ name: 'race', label: 'Race', type: 'select', options: option(Object.keys(RACE_LABELS), RACE_LABELS), required: true },
 			{ name: 'dragon', label: 'Dragon de descendance', type: 'select', options: dragons, required: true },
 			{ name: 'flux', label: 'Flux', type: 'text' },
+			{ name: 'job', label: 'Métier', type: 'text' },
 			{ name: 'category', label: 'Tags', type: 'text', list: true, help: 'Séparés par des virgules : Promo, Soldats, Arènes' },
 			{ name: 'description', label: 'Description', type: 'textarea' },
 			{ name: 'visibility', label: 'Visible des joueurs', type: 'flag', list: true },

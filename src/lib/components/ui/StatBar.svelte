@@ -1,8 +1,9 @@
 <script lang="ts">
+    import Bar from "./Bar.svelte";
     import { STATS, barPercent, type StatKey } from "$lib/game/stats";
     import type { StatLine } from "$lib/game/bonus";
 
-    // Barre d'une stat : base, puis bonus de passifs et d'armure empilés par-dessus.
+    // Ligne de stat de la maquette : nom, valeur, puis barre à la couleur du dragon de la stat.
     let {
         stat,
         line,
@@ -10,127 +11,85 @@
     }: { stat: StatKey; line: StatLine; compact?: boolean } = $props();
 
     let info = $derived(STATS[stat]);
-    let pct = $derived((v: number) => barPercent(stat, v));
-
-    // Un gain prolonge la barre (passifs puis armure) ; une perte la rogne et laisse la partie perdue en rouge.
+    let modified = $derived(line.total !== line.base);
     let loss = $derived(line.total < line.base);
-    let segments = $derived({
-        base: pct(Math.min(line.base, line.total)),
-        passive: loss ? 0 : pct(Math.min(line.total, line.base + Math.max(line.passive, 0))),
-        top: pct(Math.max(line.base, line.total)),
-    });
 
     const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+
+    // Détail affiché au survol quand l'armure ou les passifs changent la valeur.
+    let detail = $derived(
+        [
+            `Base ${line.base}`,
+            line.armor ? `armure ${signed(line.armor)}` : "",
+            line.passive ? `passifs ${signed(line.passive)}` : "",
+        ]
+            .filter(Boolean)
+            .join(" · "),
+    );
 </script>
 
 <div class="row" class:compact>
-    <span class="name" title={info.label}>{compact ? info.abbr : info.label}</span>
-    <span class="value">
-        <span title={line.total !== line.base ? `Total : ${line.total}` : undefined}>
-            {line.base}
-        </span>
-        {#if line.armor}
-            <span class="armor" class:malus={line.armor < 0} title="Armure">
-                {signed(line.armor)}
-            </span>
-        {/if}
-        {#if line.passive}
-            <span class="passive" class:malus={line.passive < 0} title="Passifs">
-                {signed(line.passive)}
-            </span>
-        {/if}
+    <span class="name" title={info.label}>{compact ? info.abbr : (info.barLabel ?? info.label)}</span>
+    <span class="value" class:up={modified && !loss} class:down={loss} title={modified ? detail : undefined}>
+        {line.total}
     </span>
-    <span
-        class="track"
-        role="meter"
-        aria-label={info.label}
-        aria-valuenow={Math.min(line.total, 100 * info.scale)}
-        aria-valuetext={String(line.total)}
-        aria-valuemin={0}
-        aria-valuemax={100 * info.scale}
-    >
-        <span class="fill top-fill" class:loss style="width: {segments.top}%"></span>
-        <span class="fill passive-fill" style="width: {segments.passive}%"></span>
-        <span class="fill base-fill" style="width: {segments.base}%"></span>
-    </span>
+    <Bar
+        label={info.label}
+        valueText="{line.total}{modified ? ` (${detail})` : ''}"
+        value={barPercent(stat, Math.min(line.base, line.total))}
+        extra={barPercent(stat, Math.max(line.base, line.total)) - barPercent(stat, Math.min(line.base, line.total))}
+        {loss}
+        color="var(--{info.dragon})"
+        icon="/dragons/normal/{info.dragon}.svg"
+        height={compact ? "16px" : "24px"}
+    />
 </div>
 
 <style>
     .row {
         display: grid;
-        grid-template-columns: 7rem 6.5rem 1fr;
+        grid-template-columns: 111px 54px 1fr;
         align-items: center;
-        gap: 0.75rem;
-        min-height: 2rem;
+        gap: 12px;
+        font-size: 20px;
     }
 
     .row.compact {
-        grid-template-columns: 2.75rem 5.5rem 1fr;
+        grid-template-columns: 2.75rem 3.5rem 1fr;
         gap: 0.5rem;
-        min-height: 1.6rem;
         font-size: 0.9rem;
     }
 
     .name {
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .value {
-        display: flex;
-        gap: 0.35rem;
-        justify-content: flex-end;
+        text-align: center;
         font-variant-numeric: tabular-nums;
     }
 
-    .armor {
+    .value.up {
         color: var(--primary);
     }
 
-    .passive {
-        color: var(--secondary);
-    }
-
-    .malus {
+    .value.down {
         color: #ff9c9c;
     }
 
-    .track {
-        position: relative;
-        display: block;
-        height: 0.6rem;
-        background-color: rgba(255, 255, 255, 0.08);
-        border-radius: 999px;
-        overflow: hidden;
-    }
-
-    .fill {
-        position: absolute;
-        inset: 0 auto 0 0;
-        border-radius: 999px;
-        transition: width 600ms ease-out;
-    }
-
-    .base-fill {
-        background-color: var(--accent);
-    }
-
-    .passive-fill {
-        background-color: var(--secondary);
-    }
-
-    .top-fill {
-        background-color: var(--primary);
-    }
-
-    .top-fill.loss {
-        background-color: rgba(202, 68, 68, 0.6);
+    .value[title] {
+        text-decoration: underline dotted;
+        text-underline-offset: 4px;
+        cursor: help;
     }
 
     @media (max-width: 600px) {
-        .row {
-            grid-template-columns: 5.5rem 5rem 1fr;
-            gap: 0.5rem;
-            font-size: 0.9rem;
+        .row:not(.compact) {
+            grid-template-columns: 100px 48px 1fr;
+            gap: 0.6rem;
+            font-size: 18px;
         }
     }
 </style>

@@ -28,27 +28,31 @@ interface StatInfo {
 	scale: number;
 	/** Valeur de l'enum Prisma `SkillStatistic` correspondante. */
 	skill: string;
+	/** Dragon associé : couleur et logo de la barre de la stat. */
+	dragon: string;
+	/** Nom court affiché devant la barre, quand il diffère du libellé complet. */
+	barLabel?: string;
 }
 
 export const STATS: Record<StatKey, StatInfo> = {
-	qdf: { abbr: 'QDF', label: 'Quantité de flux', group: 'conso', scale: 30, skill: 'QDF' },
-	pv: { abbr: 'HP', label: 'Santé', group: 'conso', scale: 30, skill: 'PV' },
-	endurance: { abbr: 'END', label: 'Endurance', group: 'conso', scale: 20, skill: 'Endurance' },
-	maitrise: { abbr: 'MDF', label: 'Maîtrise', group: 'combat', scale: 1, skill: 'Maitrise' },
-	strength: { abbr: 'FOR', label: 'Force', group: 'combat', scale: 1, skill: 'Force' },
-	defense: { abbr: 'DEF', label: 'Défense', group: 'combat', scale: 1, skill: 'Defense' },
-	vitesse: { abbr: 'VIT', label: 'Vitesse', group: 'combat', scale: 1, skill: 'Vitesse' },
-	accuracy: { abbr: 'ACC', label: 'Précision', group: 'combat', scale: 1, skill: 'Precision' },
-	perception: { abbr: 'PER', label: 'Perception', group: 'social', scale: 1, skill: 'Perception' },
-	furtivite: { abbr: 'FUR', label: 'Furtivité', group: 'social', scale: 1, skill: 'Furtivite' },
-	charisme: { abbr: 'CHA', label: 'Charisme', group: 'social', scale: 1, skill: 'Charisme' },
-	eloquence: { abbr: 'ELO', label: 'Éloquence', group: 'social', scale: 1, skill: 'Eloquence' },
+	qdf: { abbr: 'QDF', label: 'Quantité de flux', group: 'conso', scale: 30, skill: 'QDF', dragon: 'Guizamark', barLabel: 'QdF' },
+	pv: { abbr: 'HP', label: 'Santé', group: 'conso', scale: 30, skill: 'PV', dragon: 'Guizamark', barLabel: 'PV' },
+	endurance: { abbr: 'END', label: 'Endurance', group: 'conso', scale: 20, skill: 'Endurance', dragon: 'Goliath' },
+	maitrise: { abbr: 'MDF', label: 'Maîtrise', group: 'combat', scale: 1, skill: 'Maitrise', dragon: 'Drii' },
+	strength: { abbr: 'FOR', label: 'Force', group: 'combat', scale: 1, skill: 'Force', dragon: 'Pura' },
+	defense: { abbr: 'DEF', label: 'Défense', group: 'combat', scale: 1, skill: 'Defense', dragon: 'Aqua' },
+	vitesse: { abbr: 'VIT', label: 'Vitesse', group: 'combat', scale: 1, skill: 'Vitesse', dragon: 'Lada' },
+	accuracy: { abbr: 'ACC', label: 'Précision', group: 'combat', scale: 1, skill: 'Precision', dragon: 'Chronos' },
+	perception: { abbr: 'PER', label: 'Perception', group: 'social', scale: 1, skill: 'Perception', dragon: 'Pestia' },
+	furtivite: { abbr: 'FUR', label: 'Furtivité', group: 'social', scale: 1, skill: 'Furtivite', dragon: 'Shizari' },
+	charisme: { abbr: 'CHA', label: 'Charisme', group: 'social', scale: 1, skill: 'Charisme', dragon: 'Artrish' },
+	eloquence: { abbr: 'ELO', label: 'Éloquence', group: 'social', scale: 1, skill: 'Eloquence', dragon: 'Yinva' },
 	intelligence: {
 		abbr: 'INT',
 		label: 'Intelligence',
 		group: 'social',
 		scale: 1,
-		skill: 'Intelligence'
+		skill: 'Intelligence', dragon: 'Guizamark'
 	}
 };
 
