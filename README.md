@@ -44,9 +44,13 @@ Le site répond sur `http://localhost:3010` (réglable avec `APP_PORT`). Au dém
 |---|---|
 | `src/lib/game/` | Règles de jeu pures : stats, puissance, bonus d'armure et de passifs, inventaire. Testées. |
 | `src/lib/server/` | Accès à la base, sessions, chargement et actions de la fiche de jeu, uploads. |
+| `src/lib/server/table/` | Table de jeu : vues filtrées par joueur (`state.ts`), diffusion temps réel (`hub.ts`), actions (`actions.ts`). |
+| `src/lib/table/` | Types partagés et client navigateur de la table de jeu. |
 | `src/lib/server/admin/` | Back-office générique : `resources.ts` décrit chaque table, `crud.ts` fait le reste. |
 | `src/lib/components/` | Composants : `ui/` (briques de base), `game/`, `sheet/` (fiche de jeu), `admin/`, `layout/`. |
 | `src/routes/` | Pages. Tout ce qui est sous `/admin` est réservé au MJ par `hooks.server.ts`. |
+
+La table de jeu (`/outils/table`) garde les connexions en mémoire : le site doit tourner en une seule instance (c'est le cas avec Docker). Derrière nginx, le flux `/outils/table/*/events` ne doit pas être mis en tampon (l'en-tête `X-Accel-Buffering: no` est déjà envoyé).
 
 Pour ajouter une table au back-office, il suffit de la décrire dans `src/lib/server/admin/resources.ts`.
 

@@ -5,8 +5,10 @@
 
 	let { children, data } = $props();
 
-	// L'accueil occupe tout l'écran et sert lui-même de menu.
-	let bare = $derived(page.route.id === "/accueil");
+	// L'accueil occupe tout l'écran et sert lui-même de menu ; la table de jeu et sa vue OBS aussi.
+	let bare = $derived(
+		page.route.id === "/accueil" || (page.route.id ?? "").startsWith("/outils/table/[id]")
+	);
 </script>
 
 <svelte:head>

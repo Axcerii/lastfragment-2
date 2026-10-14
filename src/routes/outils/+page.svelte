@@ -2,6 +2,12 @@
     // Index des outils. Chaque outil est une carte ; les suivants s'ajouteront ici.
     const TOOLS = [
         {
+            href: "/outils/table",
+            title: "Table de jeu",
+            text: "Rejoins la partie ouverte par le MJ : plateau, jets de dés, combats et musique en direct.",
+            dragon: "Chronos",
+        },
+        {
             href: "/outils/createur",
             title: "Créateur de personnage",
             text: "Génère des stats à la puissance voulue, imagine un personnage ou un monstre, et propose-le au MJ.",

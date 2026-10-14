@@ -29,8 +29,8 @@ services:
       ADMIN_LOGIN: ${ADMIN_LOGIN:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
-      # Taille maximale d'une requête : les images envoyées font jusqu'à 8 Mo.
-      BODY_SIZE_LIMIT: 10M
+      # Taille maximale d’une requête : images jusqu’à 8 Mo, musiques de la table de jeu jusqu’à 40 Mo.
+      BODY_SIZE_LIMIT: 50M
     volumes:
       - uploads:/data/uploads
 

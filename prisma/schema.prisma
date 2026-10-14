@@ -378,3 +378,130 @@ model Draft {
 
   @@map("drafts")
 }
+
+// ─── Table de jeu (outil JDR en ligne) ───────────────────────────────────────
+
+// Une partie menée par le MJ. Les joueurs la rejoignent depuis Outils quand elle est ouverte.
+model TableSession {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  open         Boolean  @default(false)
+  // Scène montrée aux joueurs
+  sceneId      Int?     @map("scene_id")
+  // Clé secrète de la vue OBS, partagée par lien
+  obsKey       String   @map("obs_key") @db.VarChar(64)
+  combat       Boolean  @default(false)
+  // Ordre de passage (ids de jetons), affiché aux joueurs si `orderVisible`
+  order        Json
+  orderVisible Boolean  @default(false) @map("order_visible")
+  turn         Int?
+  // Image montrée en plein écran à tous les joueurs
+  showcase     String?  @db.VarChar(255)
+  // Piste en cours : { url, name, loop, playing, startedAt, offset }
+  music        Json?
+  // Ambiances superposées : [{ id, url, name, volume }]
+  ambiences    Json
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  scenes TableScene[]
+  tokens TableToken[]
+  logs   TableLog[]
+
+  @@map("table_sessions")
+}
+
+model TableScene {
+  id          Int     @id @default(autoincrement())
+  sessionId   Int     @map("session_id")
+  name        String  @db.VarChar(255)
+  background  String? @db.VarChar(255)
+  cols        Int     @default(24)
+  rows        Int     @default(16)
+  gridVisible Boolean @default(true) @map("grid_visible")
+  fogEnabled  Boolean @default(false) @map("fog_enabled")
+  // Indices des cases révélées (y * cols + x)
+  fog         Json
+  // Musique lancée automatiquement quand la scène est montrée
+  musicUrl    String? @map("music_url") @db.VarChar(255)
+  musicName   String? @map("music_name") @db.VarChar(255)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  // Relations
+  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tokens  TableToken[]
+
+  @@index([sessionId])
+  @@map("table_scenes")
+}
+
+model TableToken {
+  id        Int     @id @default(autoincrement())
+  sessionId Int     @map("session_id")
+  sceneId   Int?    @map("scene_id")
+  // "player", "character", "monster" ou "custom"
+  kind      String  @db.VarChar(20)
+  playerId  Int?    @map("player_id")
+  // Personnage ou monstre d'origine
+  refId     Int?    @map("ref_id")
+  name      String  @db.VarChar(255)
+  image     String? @db.VarChar(255)
+  // "ally", "enemy" ou "neutral"
+  side      String  @default("enemy") @db.VarChar(10)
+  x         Int     @default(0)
+  y         Int     @default(0)
+  size      Int     @default(1)
+  // Invisible des joueurs
+  hidden    Boolean @default(false)
+  // Stats visibles des joueurs
+  revealed  Boolean @default(false)
+  // Stats finales (base + armure + passifs) et part due à l'armure, clés de `statistics`
+  stats     Json
+  armor     Json
+  // Jauges actuelles, en points bruts (le maximum est dans `stats`)
+  pv        Int     @default(0)
+  qdf       Int     @default(0)
+  endurance Int     @default(0)
+
+  // Relations
+  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  scene   TableScene?  @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@map("table_tokens")
+}
+
+// Journal de la partie : jets, attaques, messages, événements
+model TableLog {
+  id        Int      @id @default(autoincrement())
+  sessionId Int      @map("session_id")
+  // "roll", "stat", "opposed", "attack", "chat", "system", "alert"
+  kind      String   @db.VarChar(20)
+  author    String   @db.VarChar(255)
+  playerId  Int?     @map("player_id")
+  // Visible du MJ seulement
+  hidden    Boolean  @default(false)
+  text      String   @db.Text
+  // Détail chiffré : `detail` pour le MJ, `publicDetail` pour les joueurs
+  data      Json?
+  undone    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, id])
+  @@map("table_logs")
+}
+
+// Bibliothèque de médias du MJ, partagée entre les parties
+model TableAsset {
+  id        Int      @id @default(autoincrement())
+  // "fond", "jeton", "image", "musique", "ambiance", "effet"
+  kind      String   @db.VarChar(20)
+  name      String   @db.VarChar(255)
+  url       String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("table_assets")
+}

@@ -26,6 +26,7 @@ Les sections 0 à 13 ci-dessous gardent l'état des lieux d'origine et tes annot
 | Inventaire | E1 à E7. Conteneurs, cartes d'objets, transfert à deux panneaux, coffre commun, capacité et surcharge, conteneurs ouverts ou fermés par le MJ, contenu des sacs de nourriture. |
 | MJ | G1, G2, G4, G5, G6. Back-office unique pour 12 tables (recherche, tri, interrupteurs modifiables dans le tableau, images, éditeur d'effets), distribution d'argent en masse, don et retrait d'objets depuis la fiche d'un joueur. |
 | Règles | Annexe A portée dans `src/lib/game/`, avec tests (`npm test`). |
+| Table de jeu (section 13, G7 à G10) | `/outils/table` : le MJ crée et ouvre une partie, les joueurs la rejoignent depuis Outils sans code (compte + personnage). Plateau à grille avec fond, zoom, jetons déplaçables (le joueur bouge le sien), brouillard de guerre peint à la souris, plusieurs scènes préparées à l'avance. Jetons issus des fiches (joueur avec armure et passifs, personnage, monstre) ou libres ; jauges PV/QdF/END propres à la partie. Jets de stat d100 seuls ou opposés, attaques Force/Maîtrise au d20 avec les formules V1 (dégâts et coût appliqués, annulables), dés libres (`2d6+3`, `/r` dans le chat), alertes de fatigue et de K.O. Ordre de passage indicatif, montrable aux joueurs. Stats ennemies cachées par défaut, révélables par jeton ; jets cachés du MJ. Musique synchronisée, ambiances superposées, effets sonores, image montrée en plein écran. Médiathèque partagée. Vue OBS sans interface par lien secret. Temps réel par Server-Sent Events. |
 | Créateur (H3, H4) | `/outils/createur` : générateur de stats par fourchette de puissance (préréglages Facile à Boss), retouche manuelle, noms aléatoires. N'importe quel visiteur peut proposer un personnage ou un monstre ; la proposition va dans la table `drafts` et le MJ la valide (formulaire prérempli, informations manquantes à compléter) ou la refuse dans Espace MJ → Brouillons. |
 
 ### Choix faits en ton absence, à valider
@@ -42,10 +43,8 @@ Les sections 0 à 13 ci-dessous gardent l'état des lieux d'origine et tes annot
 
 | Sujet | Sections |
 |---|---|
-| Simulateur de combat (« un truc à part ») | G7 à G10 |
 | Outils publics et quiz | H1 à H5, K1, K2 |
 | Easter eggs | J1 à J5 |
-| Table de jeu à la Roll20 / Daggerheart | Section 13 |
 | Version mobile de l'accueil | A2 |
 
 Abandonné : marché, entraînement, état du monde, histoires, thèmes par joueur, filtre par dragon, compte invité, groupes.
