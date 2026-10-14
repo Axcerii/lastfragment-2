@@ -98,6 +98,7 @@ model Player {
   itemsInPlayer ItemInPlayer[]
   badgesFusions BadgeFusion[]
   badges        PlayerBadge[]
+  drafts        Draft[]
 
   @@index([characterId], map: "players_character_id_index")
   @@map("players")
@@ -353,4 +354,26 @@ model GameState {
   commonOpen Boolean @default(true) @map("common_open")
 
   @@map("game_state")
+}
+
+// Personnage ou monstre proposé depuis le créateur, en attente de validation par le MJ.
+// Validé, il est recopié dans `characters` ou `monsters` puis supprimé d'ici.
+model Draft {
+  id          Int      @id @default(autoincrement())
+  // "personnage" ou "monstre"
+  kind        String   @db.VarChar(20)
+  name        String   @db.VarChar(255)
+  description String   @db.Text
+  image       String?  @db.VarChar(255)
+  // Pseudo libre de l'auteur ; le compte est aussi gardé s'il était connecté
+  author      String?  @db.VarChar(100)
+  playerId    Int?     @map("player_id")
+  // Les 13 stats, mêmes clés que la table `statistics`
+  stats       Json
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  player Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@map("drafts")
 }

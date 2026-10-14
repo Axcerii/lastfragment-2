@@ -195,6 +195,9 @@ async function readColumns(resource: Resource, form: FormData, creating: boolean
 					data[field.name] = await saveImage(file, field.folder);
 				} else if (readFlag(form, `${field.name}_remove`) && !field.required) {
 					data[field.name] = null;
+				} else if (creating && text(form, `${field.name}_current`).startsWith('/uploads/')) {
+					// Création à partir d'un brouillon : on reprend l'image déjà envoyée.
+					data[field.name] = text(form, `${field.name}_current`);
 				} else if (creating && field.required) {
 					throw missing();
 				}

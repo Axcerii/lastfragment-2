@@ -61,6 +61,8 @@
             <div class="image">
                 {#if value}
                     <img src={value} alt="" />
+                    <!-- Reprise de l'image existante quand on crée à partir d'un brouillon. -->
+                    <input type="hidden" name="{field.name}_current" value={value} />
                 {/if}
                 <div>
                     <input

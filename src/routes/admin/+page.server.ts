@@ -5,7 +5,7 @@ import { readFlag } from '$lib/server/stats';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [counts, players, state] = await Promise.all([
+	const [counts, players, state, drafts] = await Promise.all([
 		// Compte générique : un modèle Prisma par ressource du back-office.
 		Promise.all(RESOURCES.map((r) => (prisma as any)[r.model].count() as Promise<number>)),
 		prisma.player.findMany({
@@ -13,7 +13,8 @@ export const load: PageServerLoad = async () => {
 			select: { id: true, login: true, money: true, character: { select: { name: true, image: true } } },
 			orderBy: { login: 'asc' }
 		}),
-		getGameState()
+		getGameState(),
+		prisma.draft.count()
 	]);
 
 	return {
@@ -24,7 +25,8 @@ export const load: PageServerLoad = async () => {
 			count: counts[i]
 		})),
 		players,
-		access: openContainers(state)
+		access: openContainers(state),
+		drafts
 	};
 };
 

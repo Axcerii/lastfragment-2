@@ -26,6 +26,7 @@ Les sections 0 à 13 ci-dessous gardent l'état des lieux d'origine et tes annot
 | Inventaire | E1 à E7. Conteneurs, cartes d'objets, transfert à deux panneaux, coffre commun, capacité et surcharge, conteneurs ouverts ou fermés par le MJ, contenu des sacs de nourriture. |
 | MJ | G1, G2, G4, G5, G6. Back-office unique pour 12 tables (recherche, tri, interrupteurs modifiables dans le tableau, images, éditeur d'effets), distribution d'argent en masse, don et retrait d'objets depuis la fiche d'un joueur. |
 | Règles | Annexe A portée dans `src/lib/game/`, avec tests (`npm test`). |
+| Créateur (H3, H4) | `/outils/createur` : générateur de stats par fourchette de puissance (préréglages Facile à Boss), retouche manuelle, noms aléatoires. N'importe quel visiteur peut proposer un personnage ou un monstre ; la proposition va dans la table `drafts` et le MJ la valide (formulaire prérempli, informations manquantes à compléter) ou la refuse dans Espace MJ → Brouillons. |
 
 ### Choix faits en ton absence, à valider
 

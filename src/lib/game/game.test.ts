@@ -125,3 +125,32 @@ describe('inventaire', () => {
 		expect(formatMoney(12600, true)).toMatch(/^12.600$/);
 	});
 });
+
+import { checkOptions, generateStats, powerRange, randomName } from './generator';
+
+describe('générateur', () => {
+	it('reste dans la fourchette de puissance et les bornes de stats', () => {
+		const options = { minPower: 300, maxPower: 450, minStat: 5, maxStat: 100 };
+		for (let i = 0; i < 20; i++) {
+			const stats = generateStats(options)!;
+			const power = totalPower(stats);
+			expect(power).toBeGreaterThanOrEqual(300);
+			expect(power).toBeLessThanOrEqual(450);
+			expect(stats.qdf % 30).toBe(0);
+			expect(stats.endurance % 20).toBe(0);
+			expect(stats.strength).toBeGreaterThanOrEqual(5);
+			expect(stats.strength).toBeLessThanOrEqual(100);
+		}
+	});
+
+	it('refuse une fourchette impossible', () => {
+		const options = { minPower: 3000, maxPower: 3500, minStat: 5, maxStat: 50 };
+		expect(checkOptions(options)).toMatch(/de \d+ à \d+/);
+		expect(generateStats(options)).toBeNull();
+		expect(powerRange(5, 50)).toEqual({ min: 32, max: 487 });
+	});
+
+	it('invente des noms capitalisés', () => {
+		expect(randomName()).toMatch(/^[A-Z][a-z]+$/);
+	});
+});

@@ -14,6 +14,15 @@
 <main>
     <h1>Espace MJ</h1>
 
+    <a class="drafts panel" class:waiting={data.drafts > 0} href="/admin/brouillons">
+        <strong>Brouillons proposés</strong>
+        <span>
+            {data.drafts === 0
+                ? "Aucune proposition en attente."
+                : `${data.drafts} personnage${data.drafts > 1 ? "s ou monstres" : " ou monstre"} à examiner.`}
+        </span>
+    </a>
+
     <section>
         <h2>Joueurs</h2>
         {#if data.players.length === 0}
@@ -170,6 +179,25 @@
         font-variant-numeric: tabular-nums;
     }
 
+    .drafts {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.5rem 1rem;
+        transition: var(--transition);
+    }
+
+    .drafts strong {
+        font-family: var(--titleFont);
+        font-size: 1.3rem;
+    }
+
+    .drafts.waiting {
+        border-color: var(--accent);
+        background-color: rgba(229, 184, 204, 0.1);
+    }
+
+    .drafts:hover,
     .player:hover,
     .resource:hover {
         border-color: var(--accent);
