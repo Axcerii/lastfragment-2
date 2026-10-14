@@ -13,19 +13,62 @@ export const SIDE_LABELS: Record<Side, string> = {
 	neutral: 'Neutre'
 };
 
-export const ASSET_KINDS = ['fond', 'jeton', 'image', 'musique', 'ambiance', 'effet'] as const;
+export const ASSET_KINDS = ['fond', 'jeton', 'image', 'calque', 'musique', 'ambiance', 'effet'] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
 
 export const ASSET_LABELS: Record<AssetKind, string> = {
 	fond: 'Fonds',
 	jeton: 'Jetons',
 	image: 'Images',
+	calque: 'Calques',
 	musique: 'Musiques',
 	ambiance: 'Ambiances',
 	effet: 'Effets sonores'
 };
 
 export const AUDIO_KINDS: AssetKind[] = ['musique', 'ambiance', 'effet'];
+
+/** Fichiers vidéo acceptés comme calque (webm transparent, mp4). */
+export const isVideo = (url: string) => /\.(webm|mp4)$/i.test(url);
+
+// ─── Effets de scène ───
+
+export const WEATHERS = ['aucune', 'pluie', 'orage', 'neige', 'vent', 'brume', 'braises'] as const;
+export type Weather = (typeof WEATHERS)[number];
+
+export const WEATHER_LABELS: Record<Weather, string> = {
+	aucune: 'Aucune',
+	pluie: 'Pluie',
+	orage: 'Orage',
+	neige: 'Neige',
+	vent: 'Vent',
+	brume: 'Brume',
+	braises: 'Braises'
+};
+
+export const BLENDS = ['normal', 'multiply', 'screen', 'overlay', 'soft-light'] as const;
+export type Blend = (typeof BLENDS)[number];
+
+export const BLEND_LABELS: Record<Blend, string> = {
+	normal: 'Normal',
+	multiply: 'Produit (assombrit)',
+	screen: 'Écran (fond noir transparent)',
+	overlay: 'Incrustation',
+	'soft-light': 'Lumière douce'
+};
+
+export interface SceneEffects {
+	/** Voile coloré posé sur le fond, sous les jetons. */
+	tint: { color: string; opacity: number; blend: Blend } | null;
+	/** Météo animée, au-dessus des jetons. */
+	weather: Weather;
+	/** 0,2 à 1 */
+	intensity: number;
+	/** Gif, image ou vidéo (webm transparent) posé sur toute la scène, au-dessus des jetons. */
+	overlay: { url: string; opacity: number; blend: Blend } | null;
+}
+
+export const NO_EFFECTS: SceneEffects = { tint: null, weather: 'aucune', intensity: 0.6, overlay: null };
 
 export interface Asset {
 	id: number;
@@ -90,6 +133,7 @@ export interface SceneView {
 	fog: number[];
 	musicUrl: string | null;
 	musicName: string | null;
+	effects: SceneEffects;
 }
 
 export interface TableView {

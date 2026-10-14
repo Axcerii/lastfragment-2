@@ -422,6 +422,8 @@ model TableScene {
   fogEnabled  Boolean @default(false) @map("fog_enabled")
   // Indices des cases révélées (y * cols + x)
   fog         Json
+  // Effets posés sur le fond : teinte, météo animée, calque (gif/webm) — voir SceneEffects
+  effects     Json?
   // Musique lancée automatiquement quand la scène est montrée
   musicUrl    String? @map("music_url") @db.VarChar(255)
   musicName   String? @map("music_name") @db.VarChar(255)
@@ -497,7 +499,7 @@ model TableLog {
 // Bibliothèque de médias du MJ, partagée entre les parties
 model TableAsset {
   id        Int      @id @default(autoincrement())
-  // "fond", "jeton", "image", "musique", "ambiance", "effet"
+  // "fond", "jeton", "image", "calque", "musique", "ambiance", "effet"
   kind      String   @db.VarChar(20)
   name      String   @db.VarChar(255)
   url       String   @db.VarChar(255)

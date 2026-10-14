@@ -95,15 +95,6 @@
         });
     }
 
-    // ─── Dés libres ───
-    let formula = $state("d20");
-    let reason = $state("");
-    const QUICK = ["d4", "d6", "d8", "d10", "d12", "d20", "d100"];
-
-    function rollDice(f = formula) {
-        client.act("roll.dice", { formula: f, label: reason, hidden });
-    }
-
     const nameOf = (id: number | null) => tokens.find((t) => t.id === id)?.name ?? "—";
 </script>
 
@@ -224,20 +215,6 @@
             </button>
         </section>
     {/if}
-
-    <section>
-        <h3>Dés libres</h3>
-        <div class="chips">
-            {#each QUICK as die (die)}
-                <button class="chip" onclick={() => rollDice(die)}>{die}</button>
-            {/each}
-        </div>
-        <div class="grid2">
-            <label>Formule <input bind:value={formula} placeholder="2d6+3" maxlength="60" /></label>
-            <label>Raison <input bind:value={reason} placeholder="facultatif" maxlength="80" /></label>
-        </div>
-        <button class="btn" onclick={() => rollDice()}>Lancer {formula}</button>
-    </section>
 
     {#if isAdmin}
         <label class="check secret">

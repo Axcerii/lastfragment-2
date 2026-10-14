@@ -26,7 +26,15 @@ import {
 	type Gauge
 } from '$lib/game/combat';
 import { STATS, STAT_KEYS, emptyStats, type StatBlock, type StatKey } from '$lib/game/stats';
-import { SIDES, type Ambience, type MusicState } from '$lib/table/types';
+import {
+	BLENDS,
+	SIDES,
+	WEATHERS,
+	type Ambience,
+	type Blend,
+	type MusicState,
+	type SceneEffects
+} from '$lib/table/types';
 import { prisma } from '../prisma';
 import { broadcast, pushEvent, pushLogs } from './hub';
 import { numbers, statsOf, visibleToPlayers, type LogData, type RawToken, type Viewer } from './state';
@@ -64,6 +72,39 @@ function mediaUrl(value: unknown): string | null {
 	if (!url) return null;
 	if (!url.startsWith('/') || url.startsWith('//')) error(400, 'Média invalide.');
 	return url;
+}
+
+const color = (value: unknown) => (/^#[0-9a-f]{6}$/i.test(String(value)) ? String(value) : '#000000');
+const blend = (value: unknown): Blend => (BLENDS.includes(value as Blend) ? (value as Blend) : 'normal');
+
+/** Effets de scène reçus du navigateur, vérifiés champ par champ. */
+function sceneEffects(value: unknown): Prisma.InputJsonValue {
+	const input = (value && typeof value === 'object' ? value : {}) as Record<string, any>;
+	const effects: SceneEffects = {
+		tint: input.tint
+			? { color: color(input.tint.color), opacity: num(input.tint.opacity, 0.4, 0, 0.95), blend: blend(input.tint.blend) }
+			: null,
+		weather: WEATHERS.includes(input.weather) ? input.weather : 'aucune',
+		intensity: num(input.intensity, 0.6, 0.1, 1),
+		overlay: input.overlay?.url
+			? { url: mediaUrl(input.overlay.url)!, opacity: num(input.overlay.opacity, 1, 0, 1), blend: blend(input.overlay.blend) }
+			: null
+	};
+	return effects as unknown as Prisma.InputJsonValue;
+}
+
+/** Recalcule le brouillard pour une nouvelle grille : chaque case reprend l'état de celle qu'elle recouvre. */
+function resizeFog(fog: number[], oldCols: number, oldRows: number, cols: number, rows: number): number[] {
+	const revealed = new Set(fog);
+	const result: number[] = [];
+	for (let y = 0; y < rows; y++) {
+		for (let x = 0; x < cols; x++) {
+			const ox = Math.min(oldCols - 1, Math.floor(((x + 0.5) * oldCols) / cols));
+			const oy = Math.min(oldRows - 1, Math.floor(((y + 0.5) * oldRows) / rows));
+			if (revealed.has(oy * oldCols + ox)) result.push(y * cols + x);
+		}
+	}
+	return result;
 }
 
 // ─── Contexte d'une action ───────────────────────────────────────────────────
@@ -268,9 +309,24 @@ const handlers: Record<string, Handler> = {
 			data.musicUrl = mediaUrl(body.musicUrl);
 			data.musicName = data.musicUrl ? optionalText(body.musicName) : null;
 		}
-		// Changer les dimensions décale les indices du brouillard : on repart d'une scène cachée.
-		if ((data.cols && data.cols !== scene.cols) || (data.rows && data.rows !== scene.rows)) {
-			data.fog = [];
+		if (body.effects !== undefined) data.effects = sceneEffects(body.effects);
+
+		// Nouvelle taille de cases : le brouillard et les jetons sont replacés à proportion.
+		const cols = (data.cols as number | undefined) ?? scene.cols;
+		const rows = (data.rows as number | undefined) ?? scene.rows;
+		if (cols !== scene.cols || rows !== scene.rows) {
+			data.fog = resizeFog(numbers(scene.fog), scene.cols, scene.rows, cols, rows);
+			const tokens = await prisma.tableToken.findMany({ where: { sceneId: scene.id } });
+			for (const token of tokens) {
+				const size = Math.min(token.size, cols, rows);
+				await prisma.tableToken.update({
+					where: { id: token.id },
+					data: {
+						x: Math.max(0, Math.min(cols - size, Math.round((token.x * cols) / scene.cols))),
+						y: Math.max(0, Math.min(rows - size, Math.round((token.y * rows) / scene.rows)))
+					}
+				});
+			}
 		}
 		await prisma.tableScene.update({ where: { id: scene.id }, data });
 	}),
@@ -314,8 +370,8 @@ const handlers: Record<string, Handler> = {
 				offset: 0
 			} satisfies MusicState;
 		}
+		// Pas d'annonce au journal : le nom de la scène pourrait en dire trop aux joueurs.
 		await prisma.tableSession.update({ where: { id: ctx.sessionId }, data });
-		await ctx.log('system', `Nouvelle scène : ${scene.name}.`, { author: 'Table' });
 	}),
 
 	// ── Brouillard ──

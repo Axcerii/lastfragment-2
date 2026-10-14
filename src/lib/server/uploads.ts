@@ -34,6 +34,11 @@ const AUDIO_EXTENSIONS: Record<string, string> = {
 };
 const MAX_AUDIO_SIZE = 40 * 1024 * 1024;
 
+const VIDEO_EXTENSIONS: Record<string, string> = {
+	'video/webm': '.webm',
+	'video/mp4': '.mp4'
+};
+
 export class UploadError extends Error {}
 
 /**
@@ -52,6 +57,14 @@ export async function saveAudio(file: File, folder: string): Promise<string> {
 	const extension = AUDIO_EXTENSIONS[file.type] ?? audioExtensionOf(file.name);
 	if (!extension) throw new UploadError('Format audio non pris en charge (mp3, ogg, wav, m4a, flac).');
 	if (file.size > MAX_AUDIO_SIZE) throw new UploadError('Fichier audio trop lourd (40 Mo maximum).');
+	return writeUpload(file, folder, extension);
+}
+
+/** Enregistre une vidéo courte (calque animé, webm transparent ou mp4) et renvoie son URL publique. */
+export async function saveVideo(file: File, folder: string): Promise<string> {
+	const extension = VIDEO_EXTENSIONS[file.type];
+	if (!extension) throw new UploadError('Format vidéo non pris en charge (webm, mp4).');
+	if (file.size > MAX_AUDIO_SIZE) throw new UploadError('Vidéo trop lourde (40 Mo maximum).');
 	return writeUpload(file, folder, extension);
 }
 

@@ -9,6 +9,8 @@
         type AssetKind,
         type SceneView,
         type TableView,
+        isVideo,
+        NO_EFFECTS,
     } from "$lib/table/types";
 
     let {
@@ -150,7 +152,7 @@
                 bind:this={input}
                 type="file"
                 multiple
-                accept={isAudio ? "audio/*" : "image/*"}
+                accept={isAudio ? "audio/*" : kind === "calque" ? "image/*,video/webm,video/mp4" : "image/*"}
                 aria-label="Fichiers à envoyer"
             />
             <button class="btn btn-small btn-accent" disabled={uploading} onclick={upload}>
@@ -158,13 +160,19 @@
             </button>
         </div>
         <p class="muted small">
-            {isAudio ? "mp3, ogg, wav, m4a, flac · 40 Mo maximum" : "jpg, png, webp, gif, svg · 8 Mo maximum"}
+            {isAudio
+                ? "mp3, ogg, wav, m4a, flac · 40 Mo maximum"
+                : kind === "calque"
+                  ? "gif, webp animé, png (8 Mo) ou vidéo webm / mp4 (40 Mo). Les webm transparents ne le sont pas sur Safari."
+                  : "jpg, png, webp, gif, svg · 8 Mo maximum"}
         </p>
 
         <ul class:grid={!isAudio}>
             {#each list as asset (asset.id)}
                 <li>
-                    {#if !isAudio}
+                    {#if isVideo(asset.url)}
+                        <video src={asset.url} muted loop autoplay playsinline></video>
+                    {:else if !isAudio}
                         <img src={asset.url} alt="" loading="lazy" />
                     {/if}
                     <button class="asset-name" title="Renommer" onclick={() => rename(asset)}>{asset.name}</button>
@@ -176,6 +184,18 @@
                         {:else if kind === "jeton"}
                             <button class="btn btn-small" disabled={!scene} onclick={() => client.act("token.add", { sceneId: scene?.id, source: "custom", name: asset.name, image: asset.url })}>
                                 Placer
+                            </button>
+                        {:else if kind === "calque"}
+                            <button
+                                class="btn btn-small"
+                                disabled={!scene}
+                                onclick={() =>
+                                    client.act("scene.update", {
+                                        id: scene?.id,
+                                        effects: { ...(scene?.effects ?? NO_EFFECTS), overlay: { url: asset.url, opacity: 0.8, blend: "screen" } },
+                                    })}
+                            >
+                                Poser sur la scène
                             </button>
                         {:else if kind === "image"}
                             <button class="btn btn-small" onclick={() => client.act("showcase.set", { url: asset.url })}>
@@ -311,7 +331,8 @@
         border-radius: var(--radius);
     }
 
-    li img {
+    li img,
+    li video {
         width: 100%;
         aspect-ratio: 4 / 3;
         object-fit: cover;

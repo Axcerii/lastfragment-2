@@ -3,7 +3,7 @@
         volumes = $bindable(),
         unlocked,
     }: {
-        volumes: { music: number; ambience: number; effects: number; muted: boolean };
+        volumes: { music: number; ambience: number; effects: number; muted: boolean; animations: boolean };
         unlocked: boolean;
     } = $props();
 
@@ -27,6 +27,9 @@
             <label>Ambiances <input type="range" min="0" max="1" step="0.05" bind:value={volumes.ambience} /></label>
             <label>Effets <input type="range" min="0" max="1" step="0.05" bind:value={volumes.effects} /></label>
             <label class="check"><input type="checkbox" bind:checked={volumes.muted} /> Couper le son</label>
+            <label class="check" title="Pluie, neige… À couper sur un ordinateur peu puissant.">
+                <input type="checkbox" bind:checked={volumes.animations} /> Météo animée
+            </label>
         </div>
     {/if}
 </div>

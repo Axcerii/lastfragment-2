@@ -17,7 +17,9 @@ const TYPES: Record<string, string> = {
 	'.mp3': 'audio/mpeg',
 	'.ogg': 'audio/ogg',
 	'.wav': 'audio/wav',
-	'.webm': 'audio/webm',
+	// video/webm convient aussi aux balises <audio>.
+	'.webm': 'video/webm',
+	'.mp4': 'video/mp4',
 	'.m4a': 'audio/mp4',
 	'.aac': 'audio/aac',
 	'.flac': 'audio/flac'

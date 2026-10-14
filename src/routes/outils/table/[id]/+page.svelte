@@ -13,6 +13,8 @@
     import VolumeControl from "$lib/components/table/VolumeControl.svelte";
     import OrderStrip from "$lib/components/table/OrderStrip.svelte";
     import Showcase from "$lib/components/table/Showcase.svelte";
+    import DiceMenu from "$lib/components/table/DiceMenu.svelte";
+    import FloatingWindow from "$lib/components/ui/FloatingWindow.svelte";
     import { TableClient } from "$lib/table/client.svelte";
     import type { TokenView } from "$lib/table/types";
 
@@ -59,7 +61,24 @@
         { value: "medias", label: "Médias" },
     ];
 
-    let volumes = $state({ music: 0.7, ambience: 0.7, effects: 0.8, muted: false });
+    let volumes = $state({ music: 0.7, ambience: 0.7, effects: 0.8, muted: false, animations: true });
+
+    // Écran étroit : le journal reste rangé sous les panneaux au lieu de flotter sur le plateau.
+    let narrow = $state(false);
+    onMount(() => {
+        const query = matchMedia("(max-width: 900px)");
+        narrow = query.matches;
+        const onChange = () => (narrow = query.matches);
+        query.addEventListener("change", onChange);
+        return () => query.removeEventListener("change", onChange);
+    });
+
+    async function deleteScene() {
+        if (!scene || !view || view.scenes.length < 2) return;
+        if (!confirm(`Supprimer la scène « ${scene.name} » et ses jetons (hors joueurs) ?`)) return;
+        await client.act("scene.delete", { id: scene.id });
+        viewSceneId = view.session.sceneId;
+    }
     let unlocked = $state(false);
 
     function move(token: TokenView, x: number, y: number) {
@@ -108,6 +127,15 @@
                     <option value={s.id}>{s.name}{s.id === view.session.sceneId ? " (montrée)" : ""}</option>
                 {/each}
             </select>
+            <button
+                class="btn btn-small btn-danger delete-scene"
+                disabled={view.scenes.length < 2}
+                onclick={deleteScene}
+                aria-label="Supprimer la scène {scene?.name ?? ''}"
+                title={view.scenes.length < 2 ? "Il faut garder au moins une scène" : "Supprimer cette scène"}
+            >
+                ✕
+            </button>
             {#if preparing && scene}
                 <button class="btn btn-small btn-accent" onclick={() => client.act("scene.activate", { id: scene!.id })}>
                     Montrer aux joueurs
@@ -142,6 +170,7 @@
                         turn={view.session.turn}
                         fogTool={isAdmin ? fogTool : null}
                         {fogBrush}
+                        animations={volumes.animations}
                         onmove={move}
                         onfog={fog}
                     />
@@ -152,12 +181,15 @@
                 {/if}
 
                 <div class="overlay top">
-                    <OrderStrip
+                    <div class="top-row">
+                        <DiceMenu {client} {isAdmin} />
+                        <OrderStrip
                         order={view.session.order}
                         tokens={view.tokens}
                         turn={view.session.turn}
                         combat={view.session.combat}
-                    />
+                        />
+                    </div>
                     {#if preparing}
                         <span class="banner">Préparation : les joueurs voient une autre scène.</span>
                     {/if}
@@ -185,6 +217,16 @@
                             onclose={() => (selectedId = null)}
                         />
                     </div>
+                {/if}
+
+                {#if !narrow}
+                    <FloatingWindow
+                        title="Journal"
+                        storageKey="lf-table-journal"
+                        initial={{ x: -12, y: -60, width: 360, height: 380 }}
+                    >
+                        <LogPanel {client} {isAdmin} />
+                    </FloatingWindow>
                 {/if}
 
                 {#if client.notice}
@@ -232,10 +274,12 @@
                         </div>
                     {/if}
                 </div>
-                <div class="journal">
-                    <h2>Journal</h2>
-                    <LogPanel {client} {isAdmin} />
-                </div>
+                {#if narrow}
+                    <div class="journal">
+                        <h2>Journal</h2>
+                        <LogPanel {client} {isAdmin} />
+                    </div>
+                {/if}
             </aside>
         </div>
 
@@ -341,7 +385,22 @@
         pointer-events: none;
     }
 
+    .top-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        max-width: 100%;
+    }
+
+    .delete-scene {
+        min-height: 32px;
+        width: 32px;
+        padding: 0;
+    }
+
     .overlay.top {
+        /* Au-dessus du journal flottant, pour que le menu des dés passe devant. */
+        z-index: 40;
         top: 0.75rem;
         left: 0.75rem;
         right: 0.75rem;
@@ -398,14 +457,15 @@
     }
 
     .side {
-        display: grid;
-        grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr);
+        display: flex;
+        flex-direction: column;
         min-height: 0;
         border-left: 1px solid var(--border);
         background-color: var(--surface);
     }
 
     .tools {
+        flex: 1;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;

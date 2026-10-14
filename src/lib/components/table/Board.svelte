@@ -5,8 +5,9 @@
 </script>
 
 <script lang="ts">
-    import type { SceneView, TokenView } from "$lib/table/types";
+    import { isVideo, type SceneView, type TokenView } from "$lib/table/types";
     import TokenPiece from "./TokenPiece.svelte";
+    import WeatherLayer from "./WeatherLayer.svelte";
 
     let {
         scene,
@@ -17,6 +18,7 @@
         turn = null,
         fogTool = null,
         fogBrush = 1,
+        animations = true,
         onmove,
         onfog,
     }: {
@@ -30,6 +32,8 @@
         fogTool?: FogTool;
         /** Largeur du pinceau de brouillard, en cases (1, 3, 5…). */
         fogBrush?: number;
+        /** Météo animée affichée (réglage propre à chaque spectateur). */
+        animations?: boolean;
         onmove?: (token: TokenView, x: number, y: number) => void;
         onfog?: (cells: number[], revealed: boolean) => void;
     } = $props();
@@ -42,6 +46,18 @@
 
     let width = $derived(scene.cols * CELL);
     let height = $derived(scene.rows * CELL);
+    let effects = $derived(scene.effects);
+
+    // Partie du plateau visible à l'écran : seule zone où la météo est dessinée.
+    let viewWidth = $state(0);
+    let viewHeight = $state(0);
+    let weatherRect = $derived.by(() => {
+        const left = Math.max(0, panX);
+        const top = Math.max(0, panY);
+        const right = Math.min(viewWidth, panX + width * zoom);
+        const bottom = Math.min(viewHeight, panY + height * zoom);
+        return { left, top, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+    });
 
     // ─── Cadrage ───
     export function fit() {
@@ -231,6 +247,8 @@
     class:painting={fogTool && isAdmin}
     class:readonly
     bind:this={viewport}
+    bind:clientWidth={viewWidth}
+    bind:clientHeight={viewHeight}
     onpointerdown={onDown}
     onpointermove={onMoveEvent}
     onpointerup={onUp}
@@ -247,6 +265,13 @@
             <img class="background" src={scene.background} alt="" draggable="false" />
         {:else}
             <div class="background empty"></div>
+        {/if}
+
+        {#if effects.tint}
+            <div
+                class="tint"
+                style="background-color: {effects.tint.color}; opacity: {effects.tint.opacity}; mix-blend-mode: {effects.tint.blend};"
+            ></div>
         {/if}
 
         {#if scene.gridVisible}
@@ -269,7 +294,43 @@
         {/each}
 
         <canvas class="fog" bind:this={canvas}></canvas>
+
+        {#if effects.overlay}
+            {#if isVideo(effects.overlay.url)}
+                <video
+                    class="overlay"
+                    src={effects.overlay.url}
+                    autoplay
+                    loop
+                    muted
+                    playsinline
+                    style="opacity: {effects.overlay.opacity}; mix-blend-mode: {effects.overlay.blend};"
+                ></video>
+            {:else}
+                <img
+                    class="overlay"
+                    src={effects.overlay.url}
+                    alt=""
+                    draggable="false"
+                    style="opacity: {effects.overlay.opacity}; mix-blend-mode: {effects.overlay.blend};"
+                />
+            {/if}
+        {/if}
     </div>
+
+    {#if animations && effects.weather !== "aucune" && weatherRect.width > 0 && weatherRect.height > 0}
+        <div
+            class="weather"
+            style="left: {weatherRect.left}px; top: {weatherRect.top}px; width: {weatherRect.width}px; height: {weatherRect.height}px;"
+        >
+            <WeatherLayer
+                weather={effects.weather}
+                intensity={effects.intensity}
+                width={weatherRect.width}
+                height={weatherRect.height}
+            />
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -316,8 +377,34 @@
         background-image: url("/layout/soft-neige1B1B1B.png");
     }
 
+    .tint,
+    .overlay {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .tint {
+        z-index: 1;
+    }
+
+    .overlay {
+        z-index: 7;
+        object-fit: cover;
+    }
+
+    .weather {
+        position: absolute;
+        z-index: 8;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
     .grid {
         position: absolute;
+        z-index: 2;
         inset: 0;
         pointer-events: none;
         background-image:

@@ -8,14 +8,14 @@
         music,
         ambiences,
         clockOffset,
-        volumes = $bindable({ music: 0.7, ambience: 0.7, effects: 0.8, muted: false }),
+        volumes = $bindable({ music: 0.7, ambience: 0.7, effects: 0.8, muted: false, animations: true }),
         unlocked = $bindable(false),
         registerSfx,
     }: {
         music: MusicState | null;
         ambiences: Ambience[];
         clockOffset: number;
-        volumes?: { music: number; ambience: number; effects: number; muted: boolean };
+        volumes?: { music: number; ambience: number; effects: number; muted: boolean; animations: boolean };
         unlocked?: boolean;
         /** Reçoit la fonction qui joue un effet sonore ponctuel. */
         registerSfx: (play: (url: string) => void) => void;

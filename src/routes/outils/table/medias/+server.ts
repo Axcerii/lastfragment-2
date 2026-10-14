@@ -2,7 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAdmin } from '$lib/server/auth';
 import { prisma } from '$lib/server/prisma';
-import { UploadError, removeUpload, saveAudio, saveImage } from '$lib/server/uploads';
+import { UploadError, removeUpload, saveAudio, saveImage, saveVideo } from '$lib/server/uploads';
 import { ASSET_KINDS, AUDIO_KINDS, type AssetKind } from '$lib/table/types';
 
 // Bibliothèque de médias du MJ : envoi de fichiers (plusieurs à la fois), renommage, suppression.
@@ -21,7 +21,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		for (const file of files) {
 			const url = AUDIO_KINDS.includes(kind)
 				? await saveAudio(file, `table/${kind}`)
-				: await saveImage(file, `table/${kind}`);
+				: kind === 'calque' && file.type.startsWith('video/')
+					? await saveVideo(file, `table/${kind}`)
+					: await saveImage(file, `table/${kind}`);
 			const name = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim().slice(0, 255) || kind;
 			const asset = await prisma.tableAsset.create({ data: { kind, name, url } });
 			created.push({ id: asset.id, kind: asset.kind, name: asset.name, url: asset.url });

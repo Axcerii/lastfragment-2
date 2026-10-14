@@ -1,16 +1,18 @@
 // Lecture d'une partie et vue filtrée selon qui regarde (MJ, joueur, vue OBS).
 import type { Prisma, TableLog } from '@prisma/client';
 import { toStatBlock, type StatBlock } from '$lib/game/stats';
-import type {
-	Ambience,
-	GaugeView,
-	LogView,
-	MusicState,
-	SceneView,
-	Side,
-	TableView,
-	TokenKind,
-	TokenView
+import {
+	NO_EFFECTS,
+	type SceneEffects,
+	type Ambience,
+	type GaugeView,
+	type LogView,
+	type MusicState,
+	type SceneView,
+	type Side,
+	type TableView,
+	type TokenKind,
+	type TokenView
 } from '$lib/table/types';
 import { prisma } from '../prisma';
 
@@ -109,7 +111,8 @@ function sceneView(scene: RawScene, viewer: Viewer): SceneView {
 		fogEnabled: scene.fogEnabled,
 		fog: numbers(scene.fog),
 		musicUrl: viewer.isAdmin ? scene.musicUrl : null,
-		musicName: viewer.isAdmin ? scene.musicName : null
+		musicName: viewer.isAdmin ? scene.musicName : null,
+		effects: { ...NO_EFFECTS, ...((scene.effects as Partial<SceneEffects> | null) ?? {}) }
 	};
 }
 

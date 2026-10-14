@@ -1,6 +1,15 @@
 <script lang="ts">
     import type { TableClient } from "$lib/table/client.svelte";
-    import type { Asset, SceneView } from "$lib/table/types";
+    import {
+        BLENDS,
+        BLEND_LABELS,
+        WEATHERS,
+        WEATHER_LABELS,
+        type Asset,
+        type Blend,
+        type SceneEffects,
+        type SceneView,
+    } from "$lib/table/types";
     import type { FogTool } from "./Board.svelte";
 
     let {
@@ -26,6 +35,7 @@
     let scene = $derived(scenes.find((s) => s.id === viewId) ?? null);
     let backgrounds = $derived(assets.filter((a) => a.kind === "fond"));
     let musics = $derived(assets.filter((a) => a.kind === "musique"));
+    let overlays = $derived(assets.filter((a) => a.kind === "calque"));
 
     const update = (fields: Record<string, unknown>) =>
         scene && client.act("scene.update", { id: scene.id, ...fields });
@@ -35,22 +45,60 @@
         if (result) viewId = result.id;
     }
 
-    async function remove() {
-        if (!scene || !confirm(`Supprimer la scène « ${scene.name} » et ses jetons (hors joueurs) ?`)) return;
-        await client.act("scene.delete", { id: scene.id });
-        viewId = activeId;
+    async function remove(target: SceneView) {
+        if (!confirm(`Supprimer la scène « ${target.name} » et ses jetons (hors joueurs) ?`)) return;
+        await client.act("scene.delete", { id: target.id });
+        if (viewId === target.id) viewId = activeId;
     }
 
-    /** Garde les proportions de l'image de fond : nombre de lignes déduit des colonnes. */
-    function fitToBackground() {
-        if (!scene?.background) return;
+    // ─── Taille des cases ───
+    // Moins de colonnes = des cases (et donc des jetons) plus grandes sur le même fond.
+    // Les lignes suivent les proportions du fond, ou à défaut celles de la grille actuelle.
+    let ratio = $state(2 / 3);
+    let colsDraft = $state<number | null>(null);
+
+    $effect(() => {
+        if (!scene) return;
+        ratio = scene.rows / scene.cols;
+        if (!scene.background) return;
         const img = new Image();
+        const id = scene.id;
         img.onload = () => {
-            const rows = Math.max(4, Math.round((scene!.cols * img.naturalHeight) / img.naturalWidth));
-            update({ rows });
+            if (scene?.id === id && img.naturalWidth) ratio = img.naturalHeight / img.naturalWidth;
         };
         img.src = scene.background;
+    });
+
+    let cols = $derived(colsDraft ?? scene?.cols ?? 24);
+    let rows = $derived(Math.max(4, Math.round(cols * ratio)));
+
+    function applySize() {
+        if (colsDraft === null) return;
+        update({ cols: colsDraft, rows: Math.max(4, Math.min(120, Math.round(colsDraft * ratio))) });
+        colsDraft = null;
     }
+
+    // ─── Effets ───
+    const TINTS: { label: string; color: string; opacity: number; blend: Blend }[] = [
+        { label: "Nuit", color: "#1d2b5e", opacity: 0.6, blend: "multiply" },
+        { label: "Obscurité", color: "#000000", opacity: 0.55, blend: "normal" },
+        { label: "Crépuscule", color: "#c0602a", opacity: 0.45, blend: "soft-light" },
+        { label: "Sang", color: "#8a0f0f", opacity: 0.45, blend: "multiply" },
+        { label: "Poison", color: "#3d7a24", opacity: 0.4, blend: "multiply" },
+        { label: "Sépia", color: "#704214", opacity: 0.4, blend: "overlay" },
+        { label: "Flux", color: "#cfdfc4", opacity: 0.3, blend: "overlay" },
+    ];
+
+    let effects = $derived(scene?.effects);
+
+    const setEffects = (patch: Partial<SceneEffects>) =>
+        scene && update({ effects: { ...scene.effects, ...patch } });
+
+    const setTint = (patch: Partial<NonNullable<SceneEffects["tint"]>>) =>
+        effects?.tint && setEffects({ tint: { ...effects.tint, ...patch } });
+
+    const setOverlay = (patch: Partial<NonNullable<SceneEffects["overlay"]>>) =>
+        effects?.overlay && setEffects({ overlay: { ...effects.overlay, ...patch } });
 
     function setMusic(url: string) {
         const asset = musics.find((m) => m.url === url);
@@ -72,6 +120,9 @@
                         <button class="btn btn-small btn-accent" onclick={() => client.act("scene.activate", { id: s.id })}>
                             Montrer
                         </button>
+                    {/if}
+                    {#if scenes.length > 1}
+                        <button class="btn btn-small btn-danger" onclick={() => remove(s)} aria-label="Supprimer la scène {s.name}" title="Supprimer">✕</button>
                     {/if}
                 </li>
             {/each}
@@ -98,26 +149,30 @@
             {#if backgrounds.length === 0}
                 <p class="muted small">Envoie des fonds (cartes, décors) dans l'onglet Médias.</p>
             {/if}
-            <div class="grid2">
-                <label>
-                    Colonnes
-                    <input type="number" min="4" max="120" value={scene.cols} onchange={(e) => update({ cols: Number(e.currentTarget.value) })} />
-                </label>
-                <label>
-                    Lignes
-                    <input type="number" min="4" max="120" value={scene.rows} onchange={(e) => update({ rows: Number(e.currentTarget.value) })} />
-                </label>
+            <label>
+                Taille des cases
+                <input
+                    type="range"
+                    min="6"
+                    max="60"
+                    step="1"
+                    value={cols}
+                    oninput={(e) => (colsDraft = Number(e.currentTarget.value))}
+                    onchange={applySize}
+                />
+            </label>
+            <div class="scale muted small">
+                <span>Grandes cases</span>
+                <span>{cols} × {rows}</span>
+                <span>Petites cases</span>
             </div>
-            <div class="row">
-                <button class="btn btn-small" disabled={!scene.background} onclick={fitToBackground}>
-                    Lignes selon le fond
-                </button>
-                <label class="check">
-                    <input type="checkbox" checked={scene.gridVisible} onchange={(e) => update({ gridVisible: e.currentTarget.checked })} />
-                    Grille visible
-                </label>
-            </div>
-            <p class="muted small">Changer les dimensions recouvre toute la scène de brouillard.</p>
+            <label class="check">
+                <input type="checkbox" checked={scene.gridVisible} onchange={(e) => update({ gridVisible: e.currentTarget.checked })} />
+                Grille visible
+            </label>
+            <p class="muted small">
+                Le brouillard et les jetons sont replacés à proportion quand la taille change.
+            </p>
             <label>
                 Musique jouée à l'ouverture
                 <select value={scene.musicUrl ?? ""} onchange={(e) => setMusic(e.currentTarget.value)}>
@@ -177,8 +232,94 @@
             {/if}
         </section>
 
-        {#if scenes.length > 1}
-            <button class="btn btn-small btn-danger" onclick={remove}>Supprimer cette scène</button>
+        {#if effects}
+            <section>
+                <h3>Effets</h3>
+
+                <span class="sub">Teinte <span class="muted">(sur le fond, sous les jetons)</span></span>
+                <div class="chips" role="radiogroup" aria-label="Teinte">
+                    <button class="chip" class:on={!effects.tint} onclick={() => setEffects({ tint: null })}>Aucune</button>
+                    {#each TINTS as tint (tint.label)}
+                        <button
+                            class="chip"
+                            class:on={effects.tint?.color === tint.color && effects.tint?.blend === tint.blend}
+                            onclick={() => setEffects({ tint: { color: tint.color, opacity: tint.opacity, blend: tint.blend } })}
+                        >
+                            <span class="swatch" style="background-color: {tint.color}"></span>{tint.label}
+                        </button>
+                    {/each}
+                </div>
+                {#if effects.tint}
+                    <div class="grid3">
+                        <label>
+                            Couleur
+                            <input type="color" value={effects.tint.color} onchange={(e) => setTint({ color: e.currentTarget.value })} />
+                        </label>
+                        <label>
+                            Force
+                            <input type="range" min="0.05" max="0.95" step="0.05" value={effects.tint.opacity} onchange={(e) => setTint({ opacity: Number(e.currentTarget.value) })} />
+                        </label>
+                        <label>
+                            Mélange
+                            <select value={effects.tint.blend} onchange={(e) => setTint({ blend: e.currentTarget.value as Blend })}>
+                                {#each BLENDS as b (b)}<option value={b}>{BLEND_LABELS[b]}</option>{/each}
+                            </select>
+                        </label>
+                    </div>
+                {/if}
+
+                <span class="sub">Météo <span class="muted">(animée, au-dessus des jetons)</span></span>
+                <div class="chips" role="radiogroup" aria-label="Météo">
+                    {#each WEATHERS as w (w)}
+                        <button class="chip" class:on={effects.weather === w} onclick={() => setEffects({ weather: w })}>
+                            {WEATHER_LABELS[w]}
+                        </button>
+                    {/each}
+                </div>
+                {#if effects.weather !== "aucune"}
+                    <label>
+                        Intensité
+                        <input type="range" min="0.1" max="1" step="0.05" value={effects.intensity} onchange={(e) => setEffects({ intensity: Number(e.currentTarget.value) })} />
+                    </label>
+                {/if}
+
+                <span class="sub">Calque <span class="muted">(gif, webp animé ou vidéo webm)</span></span>
+                <select
+                    value={effects.overlay?.url ?? ""}
+                    aria-label="Calque"
+                    onchange={(e) => {
+                        const url = e.currentTarget.value;
+                        setEffects({
+                            overlay: url
+                                ? { url, opacity: effects?.overlay?.opacity ?? 0.8, blend: effects?.overlay?.blend ?? "screen" }
+                                : null,
+                        });
+                    }}
+                >
+                    <option value="">Aucun</option>
+                    {#each overlays as asset (asset.id)}
+                        <option value={asset.url}>{asset.name}</option>
+                    {/each}
+                </select>
+                {#if overlays.length === 0}
+                    <p class="muted small">Envoie des calques dans l'onglet Médias → Calques.</p>
+                {/if}
+                {#if effects.overlay}
+                    <div class="grid2">
+                        <label>
+                            Opacité
+                            <input type="range" min="0.05" max="1" step="0.05" value={effects.overlay.opacity} onchange={(e) => setOverlay({ opacity: Number(e.currentTarget.value) })} />
+                        </label>
+                        <label>
+                            Mélange
+                            <select value={effects.overlay.blend} onchange={(e) => setOverlay({ blend: e.currentTarget.value as Blend })}>
+                                {#each BLENDS as b (b)}<option value={b}>{BLEND_LABELS[b]}</option>{/each}
+                            </select>
+                        </label>
+                    </div>
+                    <p class="muted small">« Écran » rend le noir transparent : idéal pour les effets vendus sur fond noir.</p>
+                {/if}
+            </section>
         {/if}
     {/if}
 </div>
@@ -227,10 +368,48 @@
         padding: 0 0.5rem;
     }
 
-    .grid2 {
+    .grid2,
+    .grid3 {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.5rem;
+    }
+
+    .grid3 {
+        grid-template-columns: 4rem 1fr 1fr;
+    }
+
+    input[type="range"] {
+        height: auto;
+        padding: 0;
+        background: none;
+        border: none;
+    }
+
+    input[type="color"] {
+        height: 34px;
+        padding: 0.1rem;
+    }
+
+    .scale {
+        display: flex;
+        justify-content: space-between;
+        margin-top: -0.3rem;
+    }
+
+    .sub {
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    .swatch {
+        display: inline-block;
+        width: 0.7rem;
+        height: 0.7rem;
+        margin-right: 0.3rem;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        vertical-align: -1px;
     }
 
     .row,
