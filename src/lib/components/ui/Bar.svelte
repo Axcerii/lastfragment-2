@@ -91,17 +91,18 @@
         background-color: rgba(202, 68, 68, 0.55);
     }
 
+    /* Le logo remplit sa case en largeur et déborde en hauteur : la barre le rogne (overflow: hidden). */
     .icon {
         position: absolute;
         left: 1.63%;
-        top: 1px;
-        bottom: 1px;
+        top: 0;
+        bottom: 0;
         width: 17.88%;
-        max-width: calc(var(--height) * 1.2);
+        min-width: calc(var(--height) * 1.5);
         opacity: 0.3;
         background-color: #000;
-        mask: var(--icon) left center / contain no-repeat;
-        -webkit-mask: var(--icon) left center / contain no-repeat;
+        mask: var(--icon) center / cover no-repeat;
+        -webkit-mask: var(--icon) center / cover no-repeat;
         pointer-events: none;
     }
 </style>

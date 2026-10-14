@@ -6,6 +6,7 @@
     import PassivesPanel from "./PassivesPanel.svelte";
     import SkillsPanel from "./SkillsPanel.svelte";
     import Checkbox from "$lib/components/Checkbox.svelte";
+    import Cta from "$lib/components/Cta.svelte";
     import StatsPanel from "$lib/components/game/StatsPanel.svelte";
     import CharacterPlusCountry from "$lib/components/personnages/CharacterPlusCountry.svelte";
     import InfoList from "$lib/components/ui/InfoList.svelte";
@@ -66,7 +67,9 @@
             controls="panneau-inventaire"
             bind:checked={bagOpen}
         />
-        <a class="btn btn-small combat" href="{base}/combat">Vue de combat</a>
+        <div class="combat">
+            <Cta text="Vue de combat" dragon="Goliath" border="Pura" href="{base}/combat" />
+        </div>
     </aside>
 
     <main>
@@ -176,8 +179,17 @@
     }
 
     .combat {
+        width: 100%;
         margin-top: 0.5rem;
-        text-align: center;
+        font-size: 16px;
+    }
+
+    .combat :global(.cta) {
+        height: auto;
+        min-height: 48px;
+        padding: 0.4rem;
+        font-size: 18px;
+        line-height: 1.1;
     }
 
     main {
@@ -245,7 +257,12 @@
         }
 
         .combat {
+            width: auto;
             margin: 0 0 0 auto;
+        }
+
+        .combat :global(.cta) {
+            padding: 0 1.25rem;
         }
     }
 

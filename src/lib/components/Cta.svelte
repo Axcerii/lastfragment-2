@@ -1,32 +1,43 @@
 <script lang="ts">
-    // Sans `onClick`, le bouton valide le formulaire qui le contient.
+    // Bouton principal au fond d'un dragon. Avec `href` c'est un lien ; sans `onClick`, il valide le formulaire parent.
     let {
         dragon = "Artrish",
         border = "Yinva",
         text,
         onClick,
+        href,
         disabled = false,
     }: {
         dragon?: string;
         border?: string;
         text: string;
         onClick?: () => void;
+        href?: string;
         disabled?: boolean;
     } = $props();
 </script>
 
-<button
-    type={onClick ? "button" : "submit"}
-    style="background-color: var(--{dragon}); border-color: var(--{border});"
-    onclick={onClick}
-    {disabled}
->
-    <img src="/dragons/normal/{dragon}.svg" alt="" />
-    {text}
-</button>
+{#if href}
+    <a class="cta" {href} style="background-color: var(--{dragon}); border-color: var(--{border});">
+        <img src="/dragons/normal/{dragon}.svg" alt="" />
+        {text}
+    </a>
+{:else}
+    <button
+        class="cta"
+        type={onClick ? "button" : "submit"}
+        style="background-color: var(--{dragon}); border-color: var(--{border});"
+        onclick={onClick}
+        {disabled}
+    >
+        <img src="/dragons/normal/{dragon}.svg" alt="" />
+        {text}
+    </button>
+{/if}
 
 <style>
-    button {
+    .cta {
+        box-sizing: border-box;
         font-size: 20px;
         text-align: center;
         width: 100%;
@@ -44,11 +55,11 @@
         transition: all ease-in-out 200ms;
     }
 
-    button:hover {
+    .cta:hover {
         opacity: 0.8;
     }
 
-    button:disabled {
+    .cta:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }

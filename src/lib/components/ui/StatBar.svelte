@@ -40,7 +40,7 @@
         extra={barPercent(stat, Math.max(line.base, line.total)) - barPercent(stat, Math.min(line.base, line.total))}
         {loss}
         color="var(--{info.dragon})"
-        icon="/dragons/normal/{info.dragon}.svg"
+        icon={info.icon ?? `/dragons/normal/${info.dragon}.svg`}
         height={compact ? "16px" : "24px"}
     />
 </div>

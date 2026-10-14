@@ -1,5 +1,4 @@
 <script lang="ts">
-	import favicon from "$lib/assets/favicon.svg";
 	import "../app.css";
 	import { page } from "$app/state";
 	import Header from "$lib/components/layout/Header.svelte";
@@ -11,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 </svelte:head>
 
 {#if !bare}
