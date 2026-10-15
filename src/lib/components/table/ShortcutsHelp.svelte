@@ -10,6 +10,7 @@
             title: "Général",
             items: [
                 { keys: ["?"], label: "Afficher cette aide" },
+                { keys: ["Ctrl", "/"], label: "Afficher / masquer cette aide (même pendant la saisie)" },
                 { keys: ["Échap"], label: "Désélectionner, ranger l'outil, fermer les menus" },
                 { keys: ["Entrée"], label: "Écrire dans le journal" },
                 { keys: ["J"], label: "Réduire / déplier le journal" },

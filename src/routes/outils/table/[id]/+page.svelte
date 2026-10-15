@@ -190,7 +190,15 @@
         (target instanceof HTMLElement && target.isContentEditable);
 
     function onKey(e: KeyboardEvent) {
-        if (!view || typing(e.target)) return;
+        if (!view) return;
+        // Ctrl + / ouvre l'aide même depuis un champ de saisie, et la referme. « / » se tape avec
+        // Maj sur un clavier français : on lit le caractère (e.key) plutôt que la touche.
+        if ((e.ctrlKey || e.metaKey) && (e.key === "/" || e.code === "NumpadDivide")) {
+            e.preventDefault();
+            helpOpen = !helpOpen;
+            return;
+        }
+        if (typing(e.target)) return;
         if (e.key === "Escape") {
             selectedId = null;
             fogTool = null;
@@ -314,7 +322,7 @@
         {/if}
 
         <span class="spacer"></span>
-        <button class="btn btn-small help" onclick={() => (helpOpen = true)} title="Raccourcis clavier (?)" aria-label="Raccourcis clavier">
+        <button class="btn btn-small help" onclick={() => (helpOpen = true)} title="Raccourcis clavier (? ou Ctrl + /)" aria-label="Raccourcis clavier">
             ⌨ <kbd>?</kbd>
         </button>
         <VolumeControl bind:volumes {unlocked} />
