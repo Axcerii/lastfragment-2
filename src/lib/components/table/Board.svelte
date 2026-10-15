@@ -24,6 +24,7 @@
         fogBrush = 1,
         animations = true,
         drawTool = null,
+        playerId = null,
         onmove,
         onfog,
         onresize,
@@ -43,11 +44,15 @@
         /** Météo animée affichée (réglage propre à chaque spectateur). */
         animations?: boolean;
         drawTool?: DrawTool;
+        /** Joueur qui regarde : ses traits sont ceux qu'il peut annuler. */
+        playerId?: number | null;
         onmove?: (token: TokenView, x: number, y: number) => void;
         onfog?: (cells: number[], revealed: boolean) => void;
         onresize?: (token: TokenView, size: number) => void;
-        ondraw?: (points: number[], color: string, width: number) => void;
-        onerase?: (id: number) => void;
+        /** Enregistre un trait ; renvoie son id, ou null si le serveur l'a refusé. */
+        ondraw?: (points: number[], color: string, width: number) => Promise<number | null>;
+        /** Efface un trait ; renvoie false si le serveur a refusé. */
+        onerase?: (id: number) => Promise<boolean>;
     } = $props();
 
     let viewport: HTMLDivElement | undefined = $state();
@@ -143,8 +148,137 @@
     let resizing = $state<{ id: number; size: number } | null>(null);
     /** Trait en cours, en coordonnées du plateau. */
     let stroke = $state<number[]>([]);
-    /** Traits envoyés, affichés jusqu'à ce que le serveur les renvoie. */
-    let pending = $state<{ points: number[]; color: string; width: number }[]>([]);
+
+    // ─── Dessins : affichage optimiste ───
+    // Un trait envoyé s'affiche tout de suite (« local ») jusqu'à ce que le serveur le renvoie
+    // dans l'état partagé ; un trait effacé disparaît tout de suite (« gone ») jusqu'à ce que
+    // le serveur confirme. En cas de refus, on revient à l'état du serveur.
+    interface LocalStroke {
+        key: number;
+        points: number[];
+        color: string;
+        width: number;
+        /** Id attribué par le serveur, null tant que l'envoi est en cours. */
+        id: number | null;
+        /** Effacé avant même d'avoir reçu son id : on l'efface dès qu'il arrive. */
+        doomed: boolean;
+    }
+    let local = $state<LocalStroke[]>([]);
+    let gone = $state<Set<number>>(new Set());
+    let seq = 0;
+    let hoverId = $state<number | null>(null);
+
+    interface ShownStroke {
+        key: string;
+        id: number | null;
+        points: number[];
+        color: string;
+        width: number;
+        erasable: boolean;
+        mine: boolean;
+    }
+
+    let shown = $derived.by((): ShownStroke[] => {
+        const serverIds = new Set(scene.drawings.map((d) => d.id));
+        return [
+            ...scene.drawings
+                .filter((d) => !gone.has(d.id))
+                .map((d) => ({
+                    key: `s${d.id}`,
+                    id: d.id,
+                    points: d.points,
+                    color: d.color,
+                    width: d.width,
+                    erasable: d.erasable,
+                    mine: playerId !== null && d.playerId === playerId,
+                })),
+            ...local
+                .filter((l) => !l.doomed && (l.id === null || (!serverIds.has(l.id) && !gone.has(l.id))))
+                .map((l) => ({
+                    key: `l${l.key}`,
+                    id: l.id,
+                    points: l.points,
+                    color: l.color,
+                    width: l.width,
+                    erasable: l.id !== null,
+                    mine: true,
+                })),
+        ];
+    });
+
+    // Quand l'état du serveur contient un trait local, la version locale n'a plus lieu d'être.
+    // Les ids effacés restent dans « gone » : un id supprimé ne revient jamais, et cela évite
+    // qu'un état parti avant l'effacement ne fasse réapparaître le trait un instant.
+    $effect(() => {
+        const serverIds = new Set(scene.drawings.map((d) => d.id));
+        if (local.some((l) => l.id !== null && serverIds.has(l.id))) {
+            local = local.filter((l) => l.id === null || !serverIds.has(l.id));
+        }
+    });
+
+    async function sendStroke(points: number[], color: string, width: number) {
+        const entry: LocalStroke = { key: ++seq, points, color, width, id: null, doomed: false };
+        local = [...local, entry];
+        const id = (await ondraw?.(points, color, width)) ?? null;
+        const current = local.find((l) => l.key === entry.key);
+        if (id === null || !current) {
+            local = local.filter((l) => l.key !== entry.key);
+            return;
+        }
+        if (current.doomed) {
+            // Effacé pendant l'envoi : on le retire aussi côté serveur.
+            local = local.filter((l) => l.key !== entry.key);
+            void onerase?.(id);
+            return;
+        }
+        local = local.map((l) => (l.key === entry.key ? { ...l, id } : l));
+        // Filet de sécurité : si l'état partagé ne l'a jamais contenu (effacé entre-temps), on l'oublie.
+        setTimeout(() => (local = local.filter((l) => l.key !== entry.key)), 5000);
+    }
+
+    /** Masque des traits tout de suite (effacement en cours). */
+    export function hideDrawings(ids: number[]) {
+        if (!ids.length) return;
+        gone = new Set([...gone, ...ids]);
+        local = local.filter((l) => l.id === null || !ids.includes(l.id));
+    }
+
+    /** Annule un masquage refusé par le serveur. */
+    export function showDrawings(ids: number[]) {
+        gone = new Set([...gone].filter((id) => !ids.includes(id)));
+    }
+
+    /** Oublie les traits encore en cours d'envoi (« effacer » pendant l'envoi). */
+    export function dropSending() {
+        local = local.map((l) => (l.id === null ? { ...l, doomed: true } : l));
+    }
+
+    /** Traits affichés : ceux du spectateur, ou tous ceux qu'il peut effacer. */
+    export function drawingIds(which: "mine" | "erasable"): number[] {
+        return shown
+            .filter((d) => d.id !== null && (which === "mine" ? d.mine : d.erasable))
+            .map((d) => d.id as number);
+    }
+
+    /** Son dernier trait : id connu, « sending » s'il part encore, ou null. */
+    export function lastOwn(): number | "sending" | null {
+        const sending = local.filter((l) => l.id === null && !l.doomed);
+        if (sending.length) return "sending";
+        const mine = shown.filter((d) => d.mine && d.id !== null);
+        return mine.length ? (mine[mine.length - 1].id as number) : null;
+    }
+
+    /** Oublie le dernier trait encore en cours d'envoi (annuler pendant l'envoi). */
+    export function dropLastSending() {
+        const last = [...local].reverse().find((l) => l.id === null && !l.doomed);
+        if (last) local = local.map((l) => (l === last ? { ...l, doomed: true } : l));
+    }
+
+    async function eraseOne(id: number) {
+        hideDrawings([id]);
+        const ok = (await onerase?.(id)) ?? false;
+        if (!ok) showDrawings([id]);
+    }
 
     function boardPoint(e: PointerEvent) {
         const rect = viewport!.getBoundingClientRect();
@@ -190,17 +324,33 @@
         fogPreview = next;
     }
 
-    /** Gomme : efface les traits survolés pendant le geste. */
+    /** Traits effaçables sous un point de l'écran (zones de prise invisibles, plus larges). */
+    function drawingsAt(x: number, y: number): number[] {
+        const ids: number[] = [];
+        for (const el of document.elementsFromPoint(x, y)) {
+            const id = Number((el as SVGElement).dataset?.drawing);
+            if (id && !ids.includes(id)) ids.push(id);
+        }
+        return ids;
+    }
+
+    let lastErase: { x: number; y: number } | null = null;
+
+    /** Gomme : efface les traits survolés, en suivant tout le chemin du pointeur. */
     function eraseAt(e: PointerEvent) {
         if (gesture?.kind !== "erase") return;
-        for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
-            const id = Number((el as HTMLElement).dataset?.drawing);
-            if (!id || gesture.erased.has(id)) continue;
-            const drawing = scene.drawings.find((d) => d.id === id);
-            if (!drawing?.erasable) continue;
-            gesture.erased.add(id);
-            onerase?.(id);
+        const from = lastErase ?? { x: e.clientX, y: e.clientY };
+        const steps = Math.max(1, Math.ceil(Math.hypot(e.clientX - from.x, e.clientY - from.y) / 6));
+        for (let i = 0; i <= steps; i++) {
+            const x = from.x + ((e.clientX - from.x) * i) / steps;
+            const y = from.y + ((e.clientY - from.y) * i) / steps;
+            for (const id of drawingsAt(x, y)) {
+                if (gesture.erased.has(id)) continue;
+                gesture.erased.add(id);
+                void eraseOne(id);
+            }
         }
+        lastErase = { x: e.clientX, y: e.clientY };
     }
 
     function addPoint(e: PointerEvent) {
@@ -240,6 +390,7 @@
                 addPoint(e);
             } else {
                 gesture = { kind: "erase", erased: new Set() };
+                lastErase = null;
                 eraseAt(e);
             }
             return;
@@ -256,6 +407,8 @@
     }
 
     function onMoveEvent(e: PointerEvent) {
+        // Gomme au repos : on montre quel trait partirait.
+        if (!gesture && drawTool?.mode === "erase") hoverId = drawingsAt(e.clientX, e.clientY)[0] ?? null;
         if (!gesture) return;
         if (gesture.kind === "pan") {
             panX = gesture.panX + e.clientX - gesture.startX;
@@ -294,11 +447,7 @@
             if (Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < 4) selectedId = null;
         } else if (g.kind === "draw") {
             if (stroke.length >= 4 && drawTool?.mode === "draw") {
-                ondraw?.(stroke, drawTool.color, drawTool.width);
-                // L'aperçu reste affiché le temps que le trait revienne du serveur.
-                const sent = { points: stroke, color: drawTool.color, width: drawTool.width };
-                pending = [...pending, sent];
-                setTimeout(() => (pending = pending.filter((p) => p !== sent)), 1500);
+                void sendStroke(stroke, drawTool.color, drawTool.width);
             }
             stroke = [];
         } else if (g.kind === "resize") {
@@ -402,20 +551,26 @@
             height={height}
             aria-hidden="true"
         >
-            {#each scene.drawings as d (d.id)}
+            {#each shown as d (d.key)}
                 <polyline
                     points={pointsOf(d.points)}
                     stroke={d.color}
                     stroke-width={d.width}
-                    class:erasable={d.erasable}
-                    data-drawing={d.id}
-                >
-                    <title>{d.author}</title>
-                </polyline>
+                    class:hovered={hoverId !== null && hoverId === d.id}
+                />
             {/each}
-            {#each pending as p, i (i)}
-                <polyline points={pointsOf(p.points)} stroke={p.color} stroke-width={p.width} />
-            {/each}
+            {#if drawTool?.mode === "erase"}
+                <!-- Zones de prise invisibles, au moins 18 px à l'écran quel que soit le zoom. -->
+                {#each shown.filter((d) => d.erasable) as d (d.key)}
+                    <polyline
+                        class="hit"
+                        points={pointsOf(d.points)}
+                        stroke="transparent"
+                        stroke-width={Math.max(d.width, 18 / zoom)}
+                        data-drawing={d.id}
+                    />
+                {/each}
+            {/if}
             {#if stroke.length >= 2 && drawTool?.mode === "draw"}
                 <polyline points={pointsOf(stroke)} stroke={drawTool.color} stroke-width={drawTool.width} />
             {/if}
@@ -535,14 +690,13 @@
         stroke-linejoin: round;
     }
 
-    /* Gomme : seuls les traits effaçables réagissent, avec une zone de prise plus large. */
-    .drawings.erasing polyline.erasable {
+    /* Gomme : seules les zones de prise des traits effaçables réagissent. */
+    .drawings polyline.hit {
         pointer-events: stroke;
-        cursor: pointer;
     }
 
-    .drawings.erasing polyline.erasable:hover {
-        opacity: 0.4;
+    .drawings polyline.hovered {
+        opacity: 0.35;
     }
 
     .viewport.erasing {

@@ -1,21 +1,21 @@
 <script lang="ts">
     // Dessin à main levée sur le plateau : bouton crayon et petit menu en dessous
     // (couleur, épaisseur, gomme, effacer). Tout le monde dessine ; le MJ peut tout effacer.
-    import type { TableClient } from "$lib/table/client.svelte";
     import { DRAW_COLORS, DRAW_WIDTHS } from "$lib/table/types";
     import type { DrawTool } from "./Board.svelte";
 
     let {
-        client,
         isAdmin,
-        sceneId,
         tool = $bindable(),
+        onundo,
+        onclear,
     }: {
-        client: TableClient;
         isAdmin: boolean;
-        /** Scène sur laquelle on dessine. */
-        sceneId: number | null;
         tool: DrawTool;
+        /** Retire son dernier trait. */
+        onundo: () => void;
+        /** Efface ses traits, ou tous (`all`, MJ). */
+        onclear: (all: boolean) => void;
     } = $props();
 
     let open = $state(false);
@@ -37,9 +37,6 @@
         tool = tool?.mode === "erase" ? null : { mode: "erase" };
     }
 
-    export function undo() {
-        if (sceneId) client.act("draw.undo", { sceneId });
-    }
 
     function pick(next: { color?: string; width?: number }) {
         if (next.color) color = next.color;
@@ -47,15 +44,6 @@
         tool = { mode: "draw", color, width };
     }
 
-    function clearMine() {
-        if (sceneId) client.act("draw.clear", { sceneId });
-    }
-
-    function clearAll() {
-        if (sceneId && confirm("Effacer tous les dessins de cette scène, ceux des joueurs compris ?")) {
-            client.act("draw.clear", { sceneId, all: true });
-        }
-    }
 
     function onWindowDown(e: PointerEvent) {
         if (open && menu && !menu.contains(e.target as Node)) open = false;
@@ -112,10 +100,10 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn-small" onclick={undo}>Annuler mon dernier trait <kbd>Ctrl+Z</kbd></button>
-                <button class="btn btn-small" onclick={clearMine}>Effacer mes dessins</button>
+                <button class="btn btn-small" onclick={onundo}>Annuler mon dernier trait <kbd>Ctrl+Z</kbd></button>
+                <button class="btn btn-small" onclick={() => onclear(false)}>Effacer mes dessins</button>
                 {#if isAdmin}
-                    <button class="btn btn-small btn-danger" onclick={clearAll}>Tout effacer (MJ)</button>
+                    <button class="btn btn-small btn-danger" onclick={() => onclear(true)}>Tout effacer (MJ)</button>
                 {/if}
             </div>
         </div>

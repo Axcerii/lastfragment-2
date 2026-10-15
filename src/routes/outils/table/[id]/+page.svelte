@@ -112,8 +112,35 @@
         client.act("token.update", { id: token.id, size: Math.max(1, Math.min(MAX_TOKEN_SIZE, size)) });
     }
 
-    function draw(points: number[], color: string, width: number) {
-        if (viewSceneId) client.act("draw.add", { sceneId: viewSceneId, points, color, width });
+    // ─── Dessin ───
+    // Le plateau affiche tout de suite traits et effacements ; le serveur les partage ensuite
+    // à tout le monde. Un refus du serveur rétablit l'affichage.
+
+    async function draw(points: number[], color: string, width: number): Promise<number | null> {
+        if (!viewSceneId) return null;
+        const result = await client.act<{ id: number }>("draw.add", { sceneId: viewSceneId, points, color, width });
+        return result?.id ?? null;
+    }
+
+    async function eraseDrawing(id: number): Promise<boolean> {
+        return (await client.act("draw.delete", { id })) !== null;
+    }
+
+    async function undoDrawing() {
+        const last = board?.lastOwn();
+        if (last === "sending") return board?.dropLastSending();
+        if (last == null) return;
+        board?.hideDrawings([last]);
+        if (!(await eraseDrawing(last))) board?.showDrawings([last]);
+    }
+
+    async function clearDrawings(all: boolean) {
+        if (!viewSceneId || !board) return;
+        const ids = board.drawingIds(all ? "erasable" : "mine");
+        board.hideDrawings(ids);
+        board.dropSending();
+        const result = await client.act("draw.clear", { sceneId: viewSceneId, all });
+        if (result === null) board.showDrawings(ids);
     }
 
     // ─── Raccourcis clavier ───
@@ -181,7 +208,7 @@
 
         // ── Avec Ctrl / Cmd ──
         if (ctrl) {
-            if (key === "z" && !e.shiftKey) drawMenu?.undo();
+            if (key === "z" && !e.shiftKey) undoDrawing();
             else if (key === "d" && isAdmin && selected && selected.kind !== "player") {
                 client.act("token.duplicate", { id: selected.id });
             } else handled = false;
@@ -316,10 +343,11 @@
                         {fogBrush}
                         animations={volumes.animations}
                         {drawTool}
+                        playerId={view.viewer.playerId}
                         onmove={move}
                         onresize={resize}
                         ondraw={draw}
-                        onerase={(id) => client.act("draw.delete", { id })}
+                        onerase={eraseDrawing}
                         onfog={fog}
                     />
                 {:else}
@@ -331,7 +359,13 @@
                 <div class="overlay top">
                     <div class="top-row">
                         <DiceMenu bind:this={diceMenu} {client} {isAdmin} />
-                        <DrawMenu bind:this={drawMenu} {client} {isAdmin} sceneId={viewSceneId} bind:tool={drawTool} />
+                        <DrawMenu
+                            bind:this={drawMenu}
+                            {isAdmin}
+                            bind:tool={drawTool}
+                            onundo={undoDrawing}
+                            onclear={clearDrawings}
+                        />
                         <OrderStrip
                         order={view.session.order}
                         tokens={view.tokens}
