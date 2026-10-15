@@ -69,6 +69,7 @@
             <span class="muted">
                 {KIND_LABELS[token.kind]} · {SIDE_LABELS[token.side]}
                 {#if token.hidden}· <strong class="warn">caché</strong>{/if}
+                {#if token.nameHidden && isAdmin}· <strong class="warn">nom caché</strong>{/if}
             </span>
         </div>
         <button class="btn btn-small" onclick={onclose} aria-label="Fermer la fiche">✕</button>
@@ -144,23 +145,21 @@
                         {/each}
                     </select>
                 </label>
-                <label class="inline">
-                    Taille
-                    <select value={token.size} onchange={(e) => update({ size: Number(e.currentTarget.value) })}>
-                        {#each [1, 2, 3, 4] as size (size)}
-                            <option value={size}>{size}×{size}</option>
-                        {/each}
-                    </select>
-                </label>
+                <span class="muted small hint">Taille {token.size}×{token.size} : tire le coin rose du jeton.</span>
             </div>
             <div class="row">
-                <button class="btn btn-small" onclick={() => update({ hidden: !token.hidden })}>
+                <button class="btn btn-small" title="Raccourci : H" onclick={() => update({ hidden: !token.hidden })}>
                     {token.hidden ? "Montrer aux joueurs" : "Cacher aux joueurs"}
                 </button>
-                <button class="btn btn-small" onclick={() => update({ revealed: !token.revealed })}>
+                {#if token.kind !== "player"}
+                    <button class="btn btn-small" title="Raccourci : N" onclick={() => update({ nameHidden: !token.nameHidden })}>
+                        {token.nameHidden ? "Montrer le nom" : "Cacher le nom"}
+                    </button>
+                {/if}
+                <button class="btn btn-small" title="Raccourci : S" onclick={() => update({ revealed: !token.revealed })}>
                     {token.revealed ? "Masquer les stats" : "Révéler les stats"}
                 </button>
-                <button class="btn btn-small" onclick={toggleOrder}>
+                <button class="btn btn-small" title="Raccourci : O" onclick={toggleOrder}>
                     {inOrder ? "Retirer de l'ordre" : "Ajouter à l'ordre"}
                 </button>
             </div>
@@ -178,7 +177,12 @@
                         onclick={() => client.act("token.refresh", { id: token.id })}>Relire la fiche</button
                     >
                 {/if}
-                <button class="btn btn-small btn-danger" onclick={remove}>Retirer</button>
+                {#if token.kind !== "player"}
+                    <button class="btn btn-small" title="Raccourci : Ctrl+D" onclick={() => client.act("token.duplicate", { id: token.id })}>
+                        Dupliquer
+                    </button>
+                {/if}
+                <button class="btn btn-small btn-danger" title="Raccourci : Suppr" onclick={remove}>Retirer</button>
             </div>
         </div>
     {/if}
@@ -346,6 +350,10 @@
 
     .inline select {
         width: auto;
+    }
+
+    .hint {
+        align-self: center;
     }
 
     .small {

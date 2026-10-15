@@ -28,6 +28,7 @@ import {
 import { STATS, STAT_KEYS, emptyStats, type StatBlock, type StatKey } from '$lib/game/stats';
 import {
 	BLENDS,
+	HIDDEN_NAME,
 	SIDES,
 	WEATHERS,
 	type Ambience,
@@ -107,10 +108,15 @@ function resizeFog(fog: number[], oldCols: number, oldRows: number, cols: number
 	return result;
 }
 
+/** Nombre maximal de points d'un trait (au-delà, le trait est tronqué). */
+const MAX_DRAW_POINTS = 1500;
+
 // ─── Contexte d'une action ───────────────────────────────────────────────────
 
 class Context {
 	logs: TableLog[] = [];
+	/** Vrais noms des jetons masqués cités pendant l'action, rappelés au MJ dans le détail. */
+	masked = new Set<string>();
 
 	constructor(
 		readonly sessionId: number,
@@ -166,7 +172,20 @@ class Context {
 		return token;
 	}
 
+	/** Nom d'un jeton dans le journal : « ??? » si le MJ l'a masqué. */
+	name(token: RawToken) {
+		if (!token.nameHidden) return token.name;
+		this.masked.add(token.name);
+		return HIDDEN_NAME;
+	}
+
 	async log(kind: string, text: string, options: { hidden?: boolean; data?: LogData; author?: string } = {}) {
+		if (this.masked.size) {
+			const reminder = `${HIDDEN_NAME} = ${[...this.masked].join(', ')}`;
+			const data = { ...(options.data ?? {}) };
+			data.detail = data.detail ? `${data.detail} · ${reminder}` : reminder;
+			options = { ...options, data };
+		}
 		const log = await prisma.tableLog.create({
 			data: {
 				sessionId: this.sessionId,
@@ -188,7 +207,7 @@ class Context {
 		await prisma.tableToken.update({ where: { id: token.id }, data: { [gauge]: value } });
 		token[gauge] = value;
 		const max = statsOf(token)[gauge];
-		for (const alert of gaugeAlerts(gauge, before, value, max, token.name)) {
+		for (const alert of gaugeAlerts(gauge, before, value, max, this.name(token))) {
 			await this.log('alert', alert, { hidden: hidden || token.hidden, author: 'Table' });
 		}
 		return value - before;
@@ -205,9 +224,6 @@ const admin =
 		ctx.requireAdmin();
 		return handler(ctx, body);
 	};
-
-/** Nom affiché d'un jeton dans le journal. */
-const label = (token: RawToken) => token.name;
 
 function signed(n: number) {
 	return n >= 0 ? `+${n}` : `${n}`;
@@ -274,7 +290,7 @@ const handlers: Record<string, Handler> = {
 		await prisma.tableSession.update({ where: { id: ctx.sessionId }, data: { turn } });
 		if (turn !== null) {
 			const token = await ctx.token(turn);
-			await ctx.log('system', `Au tour de ${label(token)}.`, { author: 'Table', hidden: token.hidden });
+			await ctx.log('system', `Au tour de ${ctx.name(token)}.`, { author: 'Table', hidden: token.hidden });
 		}
 	}),
 
@@ -464,6 +480,7 @@ const handlers: Record<string, Handler> = {
 		if (body.side !== undefined && SIDES.includes(body.side as never)) data.side = String(body.side);
 		if (body.size !== undefined) data.size = int(body.size, 1, 6);
 		if (body.hidden !== undefined) data.hidden = Boolean(body.hidden);
+		if (body.nameHidden !== undefined) data.nameHidden = Boolean(body.nameHidden);
 		if (body.revealed !== undefined) data.revealed = Boolean(body.revealed);
 		if (body.stats && typeof body.stats === 'object') {
 			const stats = statsOf(token);
@@ -474,6 +491,27 @@ const handlers: Record<string, Handler> = {
 			data.stats = stats;
 		}
 		await prisma.tableToken.update({ where: { id: token.id }, data });
+	}),
+
+	/** Copie d'un jeton (un deuxième loup…), placée à côté, jauges pleines. Pas pour les joueurs. */
+	'token.duplicate': admin(async (ctx, body) => {
+		const token = await ctx.token(body.id);
+		if (token.kind === 'player') error(400, 'Un joueur n’a qu’un jeton.');
+		const scene = token.sceneId ? await ctx.scene(token.sceneId) : null;
+		const { id: _id, ...copy } = token;
+		const stats = statsOf(token);
+		const created = await prisma.tableToken.create({
+			data: {
+				...copy,
+				stats: copy.stats as Prisma.InputJsonValue,
+				armor: copy.armor as Prisma.InputJsonValue,
+				x: scene ? Math.min(scene.cols - token.size, token.x + token.size) : token.x,
+				pv: stats.pv,
+				qdf: stats.qdf,
+				endurance: stats.endurance
+			}
+		});
+		return { id: created.id };
 	}),
 
 	'token.delete': admin(async (ctx, body) => {
@@ -573,7 +611,7 @@ const handlers: Record<string, Handler> = {
 
 		if (!body.targetId) {
 			const outcome = soloOutcome(roll, own);
-			await ctx.log('stat', `Jet de ${s.label} de ${label(actor)} : ${roll} — ${OUTCOME_LABELS[outcome]}`, {
+			await ctx.log('stat', `Jet de ${s.label} de ${ctx.name(actor)} : ${roll} — ${OUTCOME_LABELS[outcome]}`, {
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden,
 				data: {
 					detail: `${s.abbr} ${own}${bonus ? ` (bonus ${signed(bonus)})` : ''} · réussi dès ${100 - own}`,
@@ -595,7 +633,7 @@ const handlers: Record<string, Handler> = {
 
 		await ctx.log(
 			'opposed',
-			`${s.label} de ${label(actor)} contre ${t.label} de ${label(target)} : ${roll} — ${OUTCOME_LABELS[outcome]}`,
+			`${s.label} de ${ctx.name(actor)} contre ${t.label} de ${ctx.name(target)} : ${roll} — ${OUTCOME_LABELS[outcome]}`,
 			{
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden || target.hidden,
 				data: {
@@ -643,7 +681,7 @@ const handlers: Record<string, Handler> = {
 		const costText = `−${cost} ${STATS[costStat].abbr}`;
 		const log = await ctx.log(
 			'attack',
-			`${label(attacker)} ${verb} ${label(target)} (puissance ${power}) : ${rollText} → ${damage} dégâts`,
+			`${ctx.name(attacker)} ${verb} ${ctx.name(target)} (puissance ${power}) : ${rollText} → ${damage} dégâts`,
 			{
 				hidden,
 				data: {
@@ -660,6 +698,69 @@ const handlers: Record<string, Handler> = {
 		// L'attaque passe avant ses alertes dans le journal.
 		ctx.logs = [log, ...ctx.logs.filter((l) => l.id !== log.id)];
 		return { roll, damage };
+	},
+
+	// ── Dessin ──
+	/** Ajoute un trait. Un joueur ne dessine que sur la scène montrée. */
+	'draw.add': async (ctx, body) => {
+		const scene = await ctx.scene(body.sceneId);
+		if (!ctx.viewer.isAdmin) {
+			const session = await ctx.session();
+			if (session.sceneId !== scene.id) error(403, 'Tu ne peux dessiner que sur la scène montrée.');
+		}
+		const raw = Array.isArray(body.points) ? body.points : [];
+		const maxX = scene.cols * 64;
+		const maxY = scene.rows * 64;
+		const points: number[] = [];
+		for (let i = 0; i + 1 < raw.length && points.length < MAX_DRAW_POINTS * 2; i += 2) {
+			points.push(
+				Math.round(num(raw[i], 0, -64, maxX + 64)),
+				Math.round(num(raw[i + 1], 0, -64, maxY + 64))
+			);
+		}
+		if (points.length < 4) error(400, 'Trait trop court.');
+		const drawing = await prisma.tableDrawing.create({
+			data: {
+				sceneId: scene.id,
+				playerId: ctx.viewer.playerId,
+				author: ctx.viewer.name,
+				color: color(body.color),
+				width: int(body.width ?? 4, 1, 40),
+				points
+			}
+		});
+		return { id: drawing.id };
+	},
+
+	/** Efface un trait : le sien, ou n'importe lequel pour le MJ. */
+	'draw.delete': async (ctx, body) => {
+		const drawing = await prisma.tableDrawing.findFirst({
+			where: { id: int(body.id), scene: { sessionId: ctx.sessionId } }
+		});
+		if (!drawing) error(404, 'Trait introuvable.');
+		if (!ctx.viewer.isAdmin && drawing.playerId !== ctx.viewer.playerId) {
+			error(403, 'Ce trait ne t’appartient pas.');
+		}
+		await prisma.tableDrawing.delete({ where: { id: drawing.id } });
+	},
+
+	/** Retire son dernier trait sur la scène. */
+	'draw.undo': async (ctx, body) => {
+		const scene = await ctx.scene(body.sceneId);
+		const last = await prisma.tableDrawing.findFirst({
+			where: { sceneId: scene.id, playerId: ctx.viewer.playerId },
+			orderBy: { id: 'desc' }
+		});
+		if (last) await prisma.tableDrawing.delete({ where: { id: last.id } });
+	},
+
+	/** Efface ses propres traits de la scène ; `all` (MJ) efface tout le monde. */
+	'draw.clear': async (ctx, body) => {
+		const scene = await ctx.scene(body.sceneId);
+		if (body.all) ctx.requireAdmin();
+		await prisma.tableDrawing.deleteMany({
+			where: { sceneId: scene.id, ...(body.all ? {} : { playerId: ctx.viewer.playerId }) }
+		});
 	},
 
 	chat: async (ctx, body) => {

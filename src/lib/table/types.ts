@@ -111,6 +111,8 @@ export interface TokenView {
 	y: number;
 	size: number;
 	hidden: boolean;
+	/** Nom masqué aux joueurs (ils voient « ??? »). */
+	nameHidden: boolean;
 	revealed: boolean;
 	/** Le jeton appartient au spectateur (son personnage). */
 	mine: boolean;
@@ -134,6 +136,25 @@ export interface SceneView {
 	musicUrl: string | null;
 	musicName: string | null;
 	effects: SceneEffects;
+	drawings: DrawingView[];
+}
+
+/** Nom affiché aux joueurs à la place d'un nom masqué. */
+export const HIDDEN_NAME = '???';
+
+export const DRAW_COLORS = ['#e5b8cc', '#cfdfc4', '#d2b674', '#7fa8e0', '#ca4444', '#ffffff', '#1b1b1b'] as const;
+export const DRAW_WIDTHS = [3, 6, 12] as const;
+
+export interface DrawingView {
+	id: number;
+	playerId: number | null;
+	author: string;
+	color: string;
+	width: number;
+	/** Coordonnées du plateau à plat : [x1, y1, x2, y2, …] */
+	points: number[];
+	/** Le spectateur peut l'effacer (son propre trait, ou n'importe lequel pour le MJ). */
+	erasable: boolean;
 }
 
 export interface TableView {

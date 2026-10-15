@@ -132,7 +132,7 @@
         save();
     }
 
-    function toggle() {
+    export function toggle() {
         collapsed = !collapsed;
         clamp();
         save();

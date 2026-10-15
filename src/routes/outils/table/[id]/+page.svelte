@@ -1,7 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Tabs from "$lib/components/ui/Tabs.svelte";
-    import Board, { type FogTool } from "$lib/components/table/Board.svelte";
+    import Board, { MAX_TOKEN_SIZE, type DrawTool, type FogTool } from "$lib/components/table/Board.svelte";
+    import DrawMenu from "$lib/components/table/DrawMenu.svelte";
+    import ShortcutsHelp from "$lib/components/table/ShortcutsHelp.svelte";
     import TokenCard from "$lib/components/table/TokenCard.svelte";
     import LogPanel from "$lib/components/table/LogPanel.svelte";
     import ActionsPanel from "$lib/components/table/ActionsPanel.svelte";
@@ -49,7 +51,24 @@
 
     let fogTool = $state<FogTool>(null);
     let fogBrush = $state(3);
+    let drawTool = $state<DrawTool>(null);
     let board: Board | undefined = $state();
+    let diceMenu: DiceMenu | undefined = $state();
+    let drawMenu: DrawMenu | undefined = $state();
+    let journal: FloatingWindow | undefined = $state();
+    let helpOpen = $state(false);
+
+    // Un seul outil à la fois : prendre le crayon range le pinceau de brouillard, et inversement.
+    let lastDraw: DrawTool = null;
+    let lastFog: FogTool = null;
+    $effect(() => {
+        if (drawTool && !lastDraw) fogTool = null;
+        lastDraw = drawTool;
+    });
+    $effect(() => {
+        if (fogTool && !lastFog) drawTool = null;
+        lastFog = fogTool;
+    });
 
     type Tab = "actions" | "jetons" | "scenes" | "combat" | "medias";
     let tab = $state<Tab>("actions");
@@ -89,13 +108,135 @@
         if (scene) client.act("fog.set", { sceneId: scene.id, cells, revealed });
     }
 
-    // Raccourcis clavier : Échap désélectionne / range le pinceau.
+    function resize(token: TokenView, size: number) {
+        client.act("token.update", { id: token.id, size: Math.max(1, Math.min(MAX_TOKEN_SIZE, size)) });
+    }
+
+    function draw(points: number[], color: string, width: number) {
+        if (viewSceneId) client.act("draw.add", { sceneId: viewSceneId, points, color, width });
+    }
+
+    // ─── Raccourcis clavier ───
+    // Les lettres suivent la touche tapée (AZERTY comme QWERTY) ; les chiffres suivent la position
+    // de la touche, pour que 1 à 5 marchent sans Maj sur un clavier français.
+
+    const canMove = (token: TokenView) => isAdmin || token.mine;
+
+    function nudge(dx: number, dy: number) {
+        if (!selected || !scene || !canMove(selected)) return false;
+        const x = Math.max(0, Math.min(scene.cols - selected.size, selected.x + dx));
+        const y = Math.max(0, Math.min(scene.rows - selected.size, selected.y + dy));
+        if (x !== selected.x || y !== selected.y) move(selected, x, y);
+        return true;
+    }
+
+    function cycleToken(step: number) {
+        if (sceneTokens.length === 0) return;
+        const index = sceneTokens.findIndex((t) => t.id === selectedId);
+        selectedId = sceneTokens[(index + step + sceneTokens.length) % sceneTokens.length].id;
+    }
+
+    function stepScene(step: number) {
+        if (!view || view.scenes.length === 0) return;
+        const index = view.scenes.findIndex((s) => s.id === viewSceneId);
+        viewSceneId = view.scenes[(index + step + view.scenes.length) % view.scenes.length].id;
+    }
+
+    function nextTurn() {
+        const order = view?.session.order ?? [];
+        if (order.length === 0) return;
+        const index = view?.session.turn == null ? -1 : order.indexOf(view.session.turn);
+        client.act("order.turn", { turn: order[(index + 1) % order.length] });
+    }
+
+    function toggleOrder(token: TokenView) {
+        const order = view?.session.order ?? [];
+        client.act("order.set", {
+            order: order.includes(token.id) ? order.filter((id) => id !== token.id) : [...order, token.id],
+        });
+    }
+
+    const typing = (target: EventTarget | null) =>
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable);
+
     function onKey(e: KeyboardEvent) {
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+        if (!view || typing(e.target)) return;
         if (e.key === "Escape") {
             selectedId = null;
             fogTool = null;
+            drawTool = null;
+            diceMenu?.close();
+            return;
         }
+        // Une fenêtre (aide, confirmation) est ouverte : on ne touche à rien.
+        if (document.querySelector("dialog[open]")) return;
+        if (e.altKey) return;
+
+        const key = e.key.toLowerCase();
+        const ctrl = e.ctrlKey || e.metaKey;
+        let handled = true;
+
+        // ── Avec Ctrl / Cmd ──
+        if (ctrl) {
+            if (key === "z" && !e.shiftKey) drawMenu?.undo();
+            else if (key === "d" && isAdmin && selected && selected.kind !== "player") {
+                client.act("token.duplicate", { id: selected.id });
+            } else handled = false;
+            if (handled) e.preventDefault();
+            return;
+        }
+
+        // ── Pour tout le monde ──
+        if (e.key === "?") helpOpen = true;
+        else if (e.key === "Enter") document.getElementById("table-chat")?.focus();
+        else if (key === "j") journal?.toggle();
+        else if (key === "m") volumes.muted = !volumes.muted;
+        else if (key === "d" && e.shiftKey) client.act("roll.dice", { formula: "d20" });
+        else if (key === "d") diceMenu?.toggle();
+        else if (key === "p") drawMenu?.togglePen();
+        else if (key === "e") drawMenu?.toggleEraser();
+        else if (e.key === "+" || e.key === "=" || e.code === "NumpadAdd") board?.zoomBy(1.2);
+        else if (e.key === "-" || e.key === "_" || e.code === "NumpadSubtract") board?.zoomBy(1 / 1.2);
+        else if (e.code === "Digit0" || e.code === "Numpad0") board?.fit();
+        else if (e.key === "ArrowUp") handled = nudge(0, -1);
+        else if (e.key === "ArrowDown") handled = nudge(0, 1);
+        else if (e.key === "ArrowLeft") handled = nudge(-1, 0);
+        else if (e.key === "ArrowRight") handled = nudge(1, 0);
+        else if (e.key === "Tab" && (document.activeElement === document.body || document.activeElement === null)) {
+            cycleToken(e.shiftKey ? -1 : 1);
+        } else handled = false;
+
+        // ── MJ ──
+        if (!handled && isAdmin) {
+            handled = true;
+            const digit = /^(?:Digit|Numpad)([1-5])$/.exec(e.code);
+            if (digit && !e.shiftKey) tab = ADMIN_TABS[Number(digit[1]) - 1].value;
+            else if (e.key === "PageUp") stepScene(-1);
+            else if (e.key === "PageDown") stepScene(1);
+            else if (key === "a" && preparing && scene) client.act("scene.activate", { id: scene.id });
+            else if (key === "g" && scene) client.act("scene.update", { id: scene.id, gridVisible: !scene.gridVisible });
+            else if (key === "f" && scene) {
+                if (!scene.fogEnabled) client.act("scene.update", { id: scene.id, fogEnabled: true });
+                const wanted = e.shiftKey ? "hide" : "reveal";
+                fogTool = fogTool === wanted ? null : wanted;
+            } else if (e.key === "[" || e.key === "<") fogBrush = Math.max(1, fogBrush - 2);
+            else if (e.key === "]" || e.key === ">") fogBrush = Math.min(9, fogBrush + 2);
+            else if (key === "c") client.act("combat.set", { combat: !view.session.combat });
+            else if (key === "t") nextTurn();
+            else if (selected && key === "h") client.act("token.update", { id: selected.id, hidden: !selected.hidden });
+            else if (selected && key === "n" && selected.kind !== "player") {
+                client.act("token.update", { id: selected.id, nameHidden: !selected.nameHidden });
+            } else if (selected && key === "s") client.act("token.update", { id: selected.id, revealed: !selected.revealed });
+            else if (selected && key === "o") toggleOrder(selected);
+            else if (selected && (e.key === "Delete" || e.key === "Backspace")) {
+                if (confirm(`Retirer ${selected.name} du plateau ?`)) client.act("token.delete", { id: selected.id });
+            } else handled = false;
+        }
+
+        if (handled) e.preventDefault();
     }
 </script>
 
@@ -146,6 +287,9 @@
         {/if}
 
         <span class="spacer"></span>
+        <button class="btn btn-small help" onclick={() => (helpOpen = true)} title="Raccourcis clavier (?)" aria-label="Raccourcis clavier">
+            ⌨ <kbd>?</kbd>
+        </button>
         <VolumeControl bind:volumes {unlocked} />
     </header>
 
@@ -171,7 +315,11 @@
                         fogTool={isAdmin ? fogTool : null}
                         {fogBrush}
                         animations={volumes.animations}
+                        {drawTool}
                         onmove={move}
+                        onresize={resize}
+                        ondraw={draw}
+                        onerase={(id) => client.act("draw.delete", { id })}
                         onfog={fog}
                     />
                 {:else}
@@ -182,7 +330,8 @@
 
                 <div class="overlay top">
                     <div class="top-row">
-                        <DiceMenu {client} {isAdmin} />
+                        <DiceMenu bind:this={diceMenu} {client} {isAdmin} />
+                        <DrawMenu bind:this={drawMenu} {client} {isAdmin} sceneId={viewSceneId} bind:tool={drawTool} />
                         <OrderStrip
                         order={view.session.order}
                         tokens={view.tokens}
@@ -192,6 +341,12 @@
                     </div>
                     {#if preparing}
                         <span class="banner">Préparation : les joueurs voient une autre scène.</span>
+                    {/if}
+                    {#if drawTool}
+                        <span class="banner">
+                            {drawTool.mode === "draw" ? "Crayon" : "Gomme"} actif
+                            <button class="btn btn-small" onclick={() => (drawTool = null)}>Terminer <kbd>Échap</kbd></button>
+                        </span>
                     {/if}
                     {#if fogTool && isAdmin}
                         <span class="banner">
@@ -221,6 +376,7 @@
 
                 {#if !narrow}
                     <FloatingWindow
+                        bind:this={journal}
                         title="Journal"
                         storageKey="lf-table-journal"
                         initial={{ x: -12, y: -60, width: 360, height: 380 }}
@@ -284,6 +440,7 @@
         </div>
 
         <Showcase url={view.session.showcase} />
+        <ShortcutsHelp bind:open={helpOpen} {isAdmin} />
         <AudioEngine
             music={view.session.music}
             ambiences={view.session.ambiences}
@@ -390,6 +547,16 @@
         align-items: center;
         gap: 0.6rem;
         max-width: 100%;
+    }
+
+    .help kbd,
+    .banner kbd {
+        font-family: monospace;
+        font-size: 0.75rem;
+        padding: 0 0.3rem;
+        border: 1px solid currentColor;
+        border-radius: 3px;
+        opacity: 0.8;
     }
 
     .delete-scene {

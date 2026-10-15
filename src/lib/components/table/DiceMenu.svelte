@@ -18,6 +18,14 @@
     const build = (faces: number) =>
         `${count > 1 ? count : ""}d${faces}${modifier ? (modifier > 0 ? `+${modifier}` : modifier) : ""}`;
 
+    export function toggle() {
+        open = !open;
+    }
+
+    export function close() {
+        open = false;
+    }
+
     function roll(f: string) {
         if (!f.trim()) return;
         client.act("roll.dice", { formula: f, label: reason, hidden });

@@ -2,6 +2,7 @@
 import type { Prisma, TableLog } from '@prisma/client';
 import { toStatBlock, type StatBlock } from '$lib/game/stats';
 import {
+	HIDDEN_NAME,
 	NO_EFFECTS,
 	type SceneEffects,
 	type Ambience,
@@ -25,7 +26,10 @@ export interface Viewer {
 }
 
 const include = {
-	scenes: { orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] },
+	scenes: {
+		orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+		include: { drawings: { orderBy: { id: 'asc' } } }
+	},
 	tokens: { orderBy: { id: 'asc' } }
 } satisfies Prisma.TableSessionInclude;
 
@@ -56,7 +60,11 @@ const isMine = (token: RawToken, viewer: Viewer) =>
 	viewer.playerId !== null && token.kind === 'player' && token.playerId === viewer.playerId;
 
 /** Ce que les joueurs voient d'un jeton : caché, sous le brouillard, ou visible. */
-export function visibleToPlayers(token: RawToken, scene: RawScene | undefined, viewer?: Viewer): boolean {
+export function visibleToPlayers(
+	token: RawToken,
+	scene: Pick<RawScene, 'id' | 'fogEnabled' | 'fog' | 'cols'> | undefined,
+	viewer?: Viewer
+): boolean {
 	if (viewer && isMine(token, viewer)) return true;
 	if (token.hidden || !scene || token.sceneId !== scene.id) return false;
 	// Les jetons des joueurs ne disparaissent jamais sous le brouillard.
@@ -83,13 +91,15 @@ function tokenView(token: RawToken, viewer: Viewer): TokenView {
 		sceneId: token.sceneId,
 		kind: token.kind as TokenKind,
 		playerId: token.playerId,
-		name: token.name,
+		// Nom masqué : les joueurs ne reçoivent jamais le vrai nom.
+		name: token.nameHidden && !viewer.isAdmin && !isMine(token, viewer) ? HIDDEN_NAME : token.name,
 		image: token.image,
 		side: token.side as Side,
 		x: token.x,
 		y: token.y,
 		size: token.size,
 		hidden: token.hidden,
+		nameHidden: token.nameHidden,
 		revealed: token.revealed,
 		mine: isMine(token, viewer),
 		pv: gauge(token.pv, stats.pv, exact),
@@ -112,7 +122,16 @@ function sceneView(scene: RawScene, viewer: Viewer): SceneView {
 		fog: numbers(scene.fog),
 		musicUrl: viewer.isAdmin ? scene.musicUrl : null,
 		musicName: viewer.isAdmin ? scene.musicName : null,
-		effects: { ...NO_EFFECTS, ...((scene.effects as Partial<SceneEffects> | null) ?? {}) }
+		effects: { ...NO_EFFECTS, ...((scene.effects as Partial<SceneEffects> | null) ?? {}) },
+		drawings: scene.drawings.map((d) => ({
+			id: d.id,
+			playerId: d.playerId,
+			author: d.author,
+			color: d.color,
+			width: d.width,
+			points: numbers(d.points),
+			erasable: viewer.isAdmin || (viewer.playerId !== null && d.playerId === viewer.playerId)
+		}))
 	};
 }
 

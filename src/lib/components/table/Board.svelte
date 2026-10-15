@@ -2,6 +2,10 @@
     /** Taille d'une case à zoom 1, en pixels. */
     export const CELL = 64;
     export type FogTool = "reveal" | "hide" | null;
+    /** Outil de dessin : crayon (couleur, épaisseur) ou gomme. */
+    export type DrawTool = { mode: "draw"; color: string; width: number } | { mode: "erase" } | null;
+    /** Taille maximale d'un jeton, en cases. */
+    export const MAX_TOKEN_SIZE = 6;
 </script>
 
 <script lang="ts">
@@ -19,8 +23,12 @@
         fogTool = null,
         fogBrush = 1,
         animations = true,
+        drawTool = null,
         onmove,
         onfog,
+        onresize,
+        ondraw,
+        onerase,
     }: {
         scene: SceneView;
         tokens: TokenView[];
@@ -34,8 +42,12 @@
         fogBrush?: number;
         /** Météo animée affichée (réglage propre à chaque spectateur). */
         animations?: boolean;
+        drawTool?: DrawTool;
         onmove?: (token: TokenView, x: number, y: number) => void;
         onfog?: (cells: number[], revealed: boolean) => void;
+        onresize?: (token: TokenView, size: number) => void;
+        ondraw?: (points: number[], color: string, width: number) => void;
+        onerase?: (id: number) => void;
     } = $props();
 
     let viewport: HTMLDivElement | undefined = $state();
@@ -79,11 +91,12 @@
         zoom = next;
     }
 
-    // Recadre à l'arrivée et à chaque changement de scène ou de dimensions.
+    // Recadre à l'arrivée et à chaque changement de scène ou de dimensions. Une page ouverte en
+    // arrière-plan n'a pas encore de taille : on attend qu'elle en ait une pour cadrer.
     let fittedFor = "";
     $effect(() => {
         const key = `${scene.id}:${scene.cols}x${scene.rows}`;
-        if (viewport && key !== fittedFor) {
+        if (viewport && viewWidth > 0 && viewHeight > 0 && key !== fittedFor) {
             fittedFor = key;
             fit();
         }
@@ -119,10 +132,19 @@
     type Gesture =
         | { kind: "pan"; startX: number; startY: number; panX: number; panY: number }
         | { kind: "token"; token: TokenView; startX: number; startY: number; moved: boolean }
-        | { kind: "fog"; revealed: boolean };
+        | { kind: "fog"; revealed: boolean }
+        | { kind: "resize"; token: TokenView }
+        | { kind: "draw" }
+        | { kind: "erase"; erased: Set<number> };
 
     let gesture: Gesture | null = null;
     let drag = $state<{ id: number; x: number; y: number } | null>(null);
+    /** Taille en cours pendant qu'on tire le coin d'un jeton. */
+    let resizing = $state<{ id: number; size: number } | null>(null);
+    /** Trait en cours, en coordonnées du plateau. */
+    let stroke = $state<number[]>([]);
+    /** Traits envoyés, affichés jusqu'à ce que le serveur les renvoie. */
+    let pending = $state<{ points: number[]; color: string; width: number }[]>([]);
 
     function boardPoint(e: PointerEvent) {
         const rect = viewport!.getBoundingClientRect();
@@ -168,9 +190,39 @@
         fogPreview = next;
     }
 
+    /** Gomme : efface les traits survolés pendant le geste. */
+    function eraseAt(e: PointerEvent) {
+        if (gesture?.kind !== "erase") return;
+        for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
+            const id = Number((el as HTMLElement).dataset?.drawing);
+            if (!id || gesture.erased.has(id)) continue;
+            const drawing = scene.drawings.find((d) => d.id === id);
+            if (!drawing?.erasable) continue;
+            gesture.erased.add(id);
+            onerase?.(id);
+        }
+    }
+
+    function addPoint(e: PointerEvent) {
+        const p = boardPoint(e);
+        const n = stroke.length;
+        // Un point tous les 3 px environ suffit et garde les traits légers.
+        if (n >= 2 && Math.hypot(p.x - stroke[n - 2], p.y - stroke[n - 1]) < 3 / zoom) return;
+        stroke = [...stroke, Math.round(p.x), Math.round(p.y)];
+    }
+
+    function onResizeDown(e: PointerEvent, token: TokenView) {
+        if (readonly || !isAdmin || e.button !== 0) return;
+        e.stopPropagation();
+        viewport!.setPointerCapture(e.pointerId);
+        gesture = { kind: "resize", token };
+        resizing = { id: token.id, size: token.size };
+    }
+
     function onTokenDown(e: PointerEvent, token: TokenView) {
         if (readonly || e.button !== 0) return;
         if (fogTool && isAdmin) return; // le pinceau passe à travers les jetons
+        if (drawTool) return; // le crayon et la gomme aussi
         e.stopPropagation();
         selectedId = token.id;
         if (!canDrag(token)) return;
@@ -180,6 +232,18 @@
 
     function onDown(e: PointerEvent) {
         if (readonly) return;
+        if (drawTool && e.button === 0) {
+            viewport!.setPointerCapture(e.pointerId);
+            if (drawTool.mode === "draw") {
+                gesture = { kind: "draw" };
+                stroke = [];
+                addPoint(e);
+            } else {
+                gesture = { kind: "erase", erased: new Set() };
+                eraseAt(e);
+            }
+            return;
+        }
         if (fogTool && isAdmin && e.button === 0) {
             viewport!.setPointerCapture(e.pointerId);
             gesture = { kind: "fog", revealed: fogTool === "reveal" };
@@ -198,6 +262,17 @@
             panY = gesture.panY + e.clientY - gesture.startY;
         } else if (gesture.kind === "fog") {
             paintFog(e);
+        } else if (gesture.kind === "draw") {
+            addPoint(e);
+        } else if (gesture.kind === "erase") {
+            eraseAt(e);
+        } else if (gesture.kind === "resize") {
+            // La taille suit le coin tiré : distance au coin haut-gauche du jeton, en cases.
+            const p = boardPoint(e);
+            const t = gesture.token;
+            const span = Math.max(p.x - t.x * CELL, p.y - t.y * CELL) / CELL;
+            const limit = Math.min(MAX_TOKEN_SIZE, scene.cols - t.x, scene.rows - t.y);
+            resizing = { id: t.id, size: Math.max(1, Math.min(limit, Math.round(span))) };
         } else {
             const distance = Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY);
             if (distance > 4) gesture.moved = true;
@@ -217,12 +292,24 @@
         if (g.kind === "pan") {
             // Un simple clic sur le plateau désélectionne.
             if (Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < 4) selectedId = null;
+        } else if (g.kind === "draw") {
+            if (stroke.length >= 4 && drawTool?.mode === "draw") {
+                ondraw?.(stroke, drawTool.color, drawTool.width);
+                // L'aperçu reste affiché le temps que le trait revienne du serveur.
+                const sent = { points: stroke, color: drawTool.color, width: drawTool.width };
+                pending = [...pending, sent];
+                setTimeout(() => (pending = pending.filter((p) => p !== sent)), 1500);
+            }
+            stroke = [];
+        } else if (g.kind === "resize") {
+            if (resizing && resizing.size !== g.token.size) onresize?.(g.token, resizing.size);
+            setTimeout(() => (resizing = null), 300);
         } else if (g.kind === "fog") {
             const cells = [...fogPreview.keys()];
             if (cells.length) onfog?.(cells, g.revealed);
             // On garde l'aperçu le temps que le serveur réponde, puis on l'efface.
             setTimeout(() => (fogPreview = new Map()), 400);
-        } else if (g.moved && drag) {
+        } else if (g.kind === "token" && g.moved && drag) {
             const size = g.token.size;
             const x = Math.max(0, Math.min(scene.cols - size, Math.round(drag.x / CELL)));
             const y = Math.max(0, Math.min(scene.rows - size, Math.round(drag.y / CELL)));
@@ -237,6 +324,14 @@
         zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX - rect.left, e.clientY - rect.top);
     }
 
+    const sizeOf = (token: TokenView) => (resizing?.id === token.id ? resizing.size : token.size);
+
+    const pointsOf = (points: number[]) => {
+        const pairs: string[] = [];
+        for (let i = 0; i + 1 < points.length; i += 2) pairs.push(`${points[i]},${points[i + 1]}`);
+        return pairs.join(" ");
+    };
+
     // Pendant un déplacement, le jeton suit le pointeur au pixel près.
     const position = (token: TokenView) =>
         drag?.id === token.id ? { x: drag.x, y: drag.y } : { x: token.x * CELL, y: token.y * CELL };
@@ -244,7 +339,8 @@
 
 <div
     class="viewport"
-    class:painting={fogTool && isAdmin}
+    class:painting={(fogTool && isAdmin) || drawTool?.mode === "draw"}
+    class:erasing={drawTool?.mode === "erase"}
     class:readonly
     bind:this={viewport}
     bind:clientWidth={viewWidth}
@@ -287,13 +383,43 @@
                 cell={CELL}
                 selected={selectedId === token.id}
                 active={turn === token.id}
+                size={sizeOf(token)}
                 dragging={drag?.id === token.id}
                 draggable={canDrag(token)}
+                resizable={isAdmin && !readonly && !drawTool && selectedId === token.id}
                 onpointerdown={(e) => onTokenDown(e, token)}
+                onresizedown={(e) => onResizeDown(e, token)}
             />
         {/each}
 
         <canvas class="fog" bind:this={canvas}></canvas>
+
+        <svg
+            class="drawings"
+            class:erasing={drawTool?.mode === "erase"}
+            viewBox="0 0 {width} {height}"
+            width={width}
+            height={height}
+            aria-hidden="true"
+        >
+            {#each scene.drawings as d (d.id)}
+                <polyline
+                    points={pointsOf(d.points)}
+                    stroke={d.color}
+                    stroke-width={d.width}
+                    class:erasable={d.erasable}
+                    data-drawing={d.id}
+                >
+                    <title>{d.author}</title>
+                </polyline>
+            {/each}
+            {#each pending as p, i (i)}
+                <polyline points={pointsOf(p.points)} stroke={p.color} stroke-width={p.width} />
+            {/each}
+            {#if stroke.length >= 2 && drawTool?.mode === "draw"}
+                <polyline points={pointsOf(stroke)} stroke={drawTool.color} stroke-width={drawTool.width} />
+            {/if}
+        </svg>
 
         {#if effects.overlay}
             {#if isVideo(effects.overlay.url)}
@@ -395,9 +521,37 @@
         object-fit: cover;
     }
 
+    .drawings {
+        position: absolute;
+        inset: 0;
+        z-index: 9;
+        overflow: visible;
+        pointer-events: none;
+    }
+
+    .drawings polyline {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /* Gomme : seuls les traits effaçables réagissent, avec une zone de prise plus large. */
+    .drawings.erasing polyline.erasable {
+        pointer-events: stroke;
+        cursor: pointer;
+    }
+
+    .drawings.erasing polyline.erasable:hover {
+        opacity: 0.4;
+    }
+
+    .viewport.erasing {
+        cursor: cell;
+    }
+
     .weather {
         position: absolute;
-        z-index: 8;
+        z-index: 10;
         overflow: hidden;
         pointer-events: none;
     }

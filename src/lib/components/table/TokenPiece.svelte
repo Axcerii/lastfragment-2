@@ -7,24 +7,32 @@
         x,
         y,
         cell,
+        size: cells = token.size,
         selected = false,
         active = false,
         dragging = false,
         draggable = false,
+        resizable = false,
         onpointerdown,
+        onresizedown,
     }: {
         token: TokenView;
         x: number;
         y: number;
         cell: number;
+        /** Taille affichée, en cases (aperçu pendant un redimensionnement). */
+        size?: number;
         selected?: boolean;
         active?: boolean;
         dragging?: boolean;
         draggable?: boolean;
+        /** Coin de redimensionnement visible (MJ, jeton sélectionné). */
+        resizable?: boolean;
         onpointerdown?: (e: PointerEvent) => void;
+        onresizedown?: (e: PointerEvent) => void;
     } = $props();
 
-    let size = $derived(token.size * cell);
+    let size = $derived(cells * cell);
     let hp = $derived(gaugeRatio(token.pv));
     let down = $derived(hp !== null && hp <= 0);
     let initials = $derived(
@@ -47,6 +55,7 @@
     class:hidden={token.hidden}
     class:down
     class:mine={token.mine}
+    class:masked={token.nameHidden}
     style="left: {x}px; top: {y}px; width: {size}px; height: {size}px;"
     {onpointerdown}
     title={token.name}
@@ -64,6 +73,10 @@
         </div>
     {/if}
     <span class="name">{token.name}</span>
+    {#if resizable}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <span class="resize" title="Tirer pour changer la taille ({cells}×{cells})" onpointerdown={onresizedown}></span>
+    {/if}
 </div>
 
 <style>
@@ -151,6 +164,27 @@
 
     .down .disc {
         filter: grayscale(1) brightness(0.6);
+    }
+
+    /* Nom caché aux joueurs : le MJ le voit barré d'un trait discret. */
+    .masked .name {
+        font-style: italic;
+        text-decoration: line-through;
+        text-decoration-color: var(--accent);
+    }
+
+    .resize {
+        position: absolute;
+        right: -6px;
+        bottom: -6px;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        background-color: var(--accent);
+        border: 2px solid var(--background);
+        cursor: nwse-resize;
+        touch-action: none;
+        z-index: 2;
     }
 
     .hp {

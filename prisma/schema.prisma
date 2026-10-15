@@ -430,40 +430,43 @@ model TableScene {
   sortOrder   Int     @default(0) @map("sort_order")
 
   // Relations
-  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  tokens  TableToken[]
+  session  TableSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tokens   TableToken[]
+  drawings TableDrawing[]
 
   @@index([sessionId])
   @@map("table_scenes")
 }
 
 model TableToken {
-  id        Int     @id @default(autoincrement())
-  sessionId Int     @map("session_id")
-  sceneId   Int?    @map("scene_id")
+  id         Int     @id @default(autoincrement())
+  sessionId  Int     @map("session_id")
+  sceneId    Int?    @map("scene_id")
   // "player", "character", "monster" ou "custom"
-  kind      String  @db.VarChar(20)
-  playerId  Int?    @map("player_id")
+  kind       String  @db.VarChar(20)
+  playerId   Int?    @map("player_id")
   // Personnage ou monstre d'origine
-  refId     Int?    @map("ref_id")
-  name      String  @db.VarChar(255)
-  image     String? @db.VarChar(255)
+  refId      Int?    @map("ref_id")
+  name       String  @db.VarChar(255)
+  image      String? @db.VarChar(255)
   // "ally", "enemy" ou "neutral"
-  side      String  @default("enemy") @db.VarChar(10)
-  x         Int     @default(0)
-  y         Int     @default(0)
-  size      Int     @default(1)
+  side       String  @default("enemy") @db.VarChar(10)
+  x          Int     @default(0)
+  y          Int     @default(0)
+  size       Int     @default(1)
   // Invisible des joueurs
-  hidden    Boolean @default(false)
+  hidden     Boolean @default(false)
+  // Nom remplacé par « ??? » pour les joueurs
+  nameHidden Boolean @default(false) @map("name_hidden")
   // Stats visibles des joueurs
-  revealed  Boolean @default(false)
+  revealed   Boolean @default(false)
   // Stats finales (base + armure + passifs) et part due à l'armure, clés de `statistics`
-  stats     Json
-  armor     Json
+  stats      Json
+  armor      Json
   // Jauges actuelles, en points bruts (le maximum est dans `stats`)
-  pv        Int     @default(0)
-  qdf       Int     @default(0)
-  endurance Int     @default(0)
+  pv         Int     @default(0)
+  qdf        Int     @default(0)
+  endurance  Int     @default(0)
 
   // Relations
   session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -506,4 +509,23 @@ model TableAsset {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("table_assets")
+}
+
+// Trait dessiné à main levée sur une scène, par un joueur ou le MJ
+model TableDrawing {
+  id        Int      @id @default(autoincrement())
+  sceneId   Int      @map("scene_id")
+  playerId  Int?     @map("player_id")
+  author    String   @db.VarChar(255)
+  color     String   @db.VarChar(9)
+  width     Int      @default(4)
+  // Coordonnées du plateau à plat : [x1, y1, x2, y2, …]
+  points    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  scene TableScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
+  @@map("table_drawings")
 }

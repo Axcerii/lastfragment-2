@@ -67,6 +67,7 @@
     {#if !readonly}
         <form onsubmit={send}>
             <input
+                id="table-chat"
                 bind:value={message}
                 maxlength="1000"
                 placeholder="Message, ou /r 2d6+3"
