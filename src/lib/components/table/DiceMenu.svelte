@@ -48,7 +48,7 @@
         aria-label="Lancer des dés"
         title="Lancer des dés"
     >
-        <Icon src="/table/Dice.svg" color="var(--secondary)" size="1.9rem" />
+        <Icon src="/table/Dice.svg" color="var(--chance)" size="1.9rem" />
     </button>
 
     {#if open}
@@ -80,7 +80,7 @@
                 }}
             >
                 <input bind:value={formula} placeholder="Formule libre : 2d6+d4+3" maxlength="60" aria-label="Formule" />
-                <button class="btn btn-small btn-accent" type="submit" disabled={!formula.trim()}>Lancer</button>
+                <button class="btn btn-small btn-chance" type="submit" disabled={!formula.trim()}>Lancer</button>
             </form>
 
             <input bind:value={reason} placeholder="Raison (facultatif)" maxlength="80" aria-label="Raison du jet" />
@@ -104,21 +104,22 @@
         width: 3rem;
         height: 3rem;
         border-radius: 50%;
-        border: 1px solid var(--secondary);
+        border: 1px solid var(--chance);
         background-color: rgba(20, 20, 20, 0.88);
         transition: var(--transition);
     }
 
     .trigger:hover,
     .trigger.open {
-        background-color: rgba(210, 182, 116, 0.2);
+        background-color: var(--chance-soft);
+        box-shadow: 0 0 0 3px var(--chance-glow);
         transform: rotate(-12deg);
     }
 
     .menu {
         position: absolute;
-        top: calc(100% + 0.5rem);
-        left: 0;
+        top: 0;
+        left: calc(100% + 0.5rem);
         z-index: 45;
         display: flex;
         flex-direction: column;
@@ -126,7 +127,7 @@
         width: 18rem;
         padding: 0.8rem;
         background-color: var(--surface);
-        border: 1px solid var(--secondary);
+        border: 1px solid var(--chance);
         border-radius: var(--radius);
         box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
         font-size: 0.85rem;
@@ -148,7 +149,7 @@
         flex-direction: row;
         align-items: center;
         gap: 0.35rem;
-        color: var(--secondary);
+        color: var(--chance);
     }
 
     input:not([type="checkbox"]) {
@@ -175,12 +176,13 @@
     }
 
     .face:hover {
-        border-color: var(--secondary);
-        background-color: rgba(210, 182, 116, 0.15);
+        border-color: var(--chance);
+        background-color: var(--chance-soft);
     }
 
     .face strong {
         font-size: 1rem;
+        color: var(--chance);
     }
 
     .face span {

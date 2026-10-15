@@ -227,6 +227,11 @@ h6 {
 	--border: rgba(207, 223, 196, 0.35);
 	--danger: #ca4444;
 	--muted: rgba(255, 255, 255, 0.6);
+
+	/* Tout ce qui touche aux dés et à la chance prend la couleur de Chronos. */
+	--chance: var(--Chronos);
+	--chance-soft: rgba(202, 68, 68, 0.18);
+	--chance-glow: rgba(202, 68, 68, 0.35);
 }
 
 body {
@@ -302,6 +307,15 @@ button {
 
 .btn-accent:hover:not(:disabled) {
 	background-color: var(--accent);
+}
+
+.btn-chance {
+	border-color: var(--chance);
+}
+
+.btn-chance:hover:not(:disabled) {
+	background-color: var(--chance);
+	color: var(--foreground);
 }
 
 .btn-danger {

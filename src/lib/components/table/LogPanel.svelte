@@ -133,14 +133,20 @@
         color: var(--muted);
     }
 
+    /* Tout ce qui sort d'un dé porte la couleur de la chance. */
     .kind-roll,
     .kind-stat,
-    .kind-opposed {
-        border-left-color: var(--primary);
+    .kind-opposed,
+    .kind-attack {
+        border-left-color: var(--chance);
     }
 
-    .kind-attack {
-        border-left-color: #bc8787;
+    .kind-roll .detail,
+    .kind-stat .detail,
+    .kind-opposed .detail,
+    .kind-attack .detail {
+        /* Chronos éclairci : lisible en petit sur fond sombre. */
+        color: #e58a8a;
     }
 
     .kind-alert {

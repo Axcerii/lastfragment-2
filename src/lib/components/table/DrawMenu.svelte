@@ -123,14 +123,14 @@
         width: 3rem;
         height: 3rem;
         border-radius: 50%;
-        border: 1px solid var(--accent);
+        border: 1px solid var(--Artrish);
         background-color: rgba(20, 20, 20, 0.88);
         transition: var(--transition);
     }
 
     .trigger svg {
         fill: none;
-        stroke: var(--accent);
+        stroke: var(--Artrish);
         stroke-width: 1.8;
         stroke-linejoin: round;
         stroke-linecap: round;
@@ -138,11 +138,11 @@
 
     .trigger:hover,
     .trigger.active {
-        background-color: rgba(229, 184, 204, 0.22);
+        background-color: rgba(255, 255, 255, 0.14);
     }
 
     .trigger.active {
-        box-shadow: 0 0 0 3px rgba(229, 184, 204, 0.35);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
     }
 
     .dot {
@@ -166,7 +166,7 @@
         width: 17rem;
         padding: 0.8rem;
         background-color: var(--surface);
-        border: 1px solid var(--accent);
+        border: 1px solid var(--Artrish);
         border-radius: var(--radius);
         box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
         font-size: 0.85rem;
@@ -204,8 +204,8 @@
     }
 
     .chip.on {
-        background-color: var(--accent);
-        border-color: var(--accent);
+        background-color: var(--Artrish);
+        border-color: var(--Artrish);
         color: var(--background);
     }
 
@@ -231,7 +231,7 @@
 
     .color.on {
         border-color: var(--foreground);
-        box-shadow: 0 0 0 2px var(--accent);
+        box-shadow: 0 0 0 2px var(--Artrish);
     }
 
     input[type="color"] {

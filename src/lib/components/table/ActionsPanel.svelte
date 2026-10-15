@@ -120,7 +120,7 @@
         </label>
 
         <section>
-            <h3>Jet de stat <span class="muted">d100</span></h3>
+            <h3>Jet de stat <span class="die">d100</span></h3>
             <div class="chips" role="group" aria-label="Statistique">
                 {#each ROLL_STATS as key (key)}
                     <button
@@ -163,7 +163,7 @@
                 </div>
             {/if}
             <button
-                class="btn btn-accent"
+                class="btn btn-chance"
                 disabled={opposed && targetId === null}
                 onclick={rollStat}
             >
@@ -172,7 +172,7 @@
         </section>
 
         <section>
-            <h3>Attaque <span class="muted">d20</span></h3>
+            <h3>Attaque <span class="die">d20</span></h3>
             <div class="chips" role="radiogroup" aria-label="Type d'attaque">
                 <button class="chip" class:on={kind === "force"} onclick={() => (kind = "force")}>
                     Force
@@ -209,7 +209,7 @@
                 </div>
             {/if}
             <p class="muted small">Coût : {cost} {costLabel}. Les dégâts sont appliqués aussitôt.</p>
-            <button class="btn btn-accent" disabled={targetId === null} onclick={attack}>
+            <button class="btn btn-chance" disabled={targetId === null} onclick={attack}>
                 {kind === "force" ? "Attaquer" : "Lancer le sort sur"}
                 {nameOf(targetId)}
             </button>
@@ -292,13 +292,18 @@
     }
 
     .chip:hover {
-        border-color: var(--accent);
+        border-color: var(--chance);
     }
 
     .chip.on {
-        background-color: var(--primary);
-        border-color: var(--primary);
-        color: var(--background);
+        background-color: var(--chance);
+        border-color: var(--chance);
+        color: var(--foreground);
+    }
+
+    .die {
+        color: var(--chance);
+        font-size: 0.85em;
     }
 
     .small {
@@ -306,6 +311,6 @@
     }
 
     .secret {
-        color: var(--secondary);
+        color: var(--chance);
     }
 </style>

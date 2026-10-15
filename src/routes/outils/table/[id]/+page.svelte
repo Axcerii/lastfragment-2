@@ -358,14 +358,16 @@
 
                 <div class="overlay top">
                     <div class="top-row">
-                        <DiceMenu bind:this={diceMenu} {client} {isAdmin} />
-                        <DrawMenu
-                            bind:this={drawMenu}
-                            {isAdmin}
-                            bind:tool={drawTool}
-                            onundo={undoDrawing}
-                            onclear={clearDrawings}
-                        />
+                        <div class="tools-column">
+                            <DiceMenu bind:this={diceMenu} {client} {isAdmin} />
+                            <DrawMenu
+                                bind:this={drawMenu}
+                                {isAdmin}
+                                bind:tool={drawTool}
+                                onundo={undoDrawing}
+                                onclear={clearDrawings}
+                            />
+                        </div>
                         <OrderStrip
                         order={view.session.order}
                         tokens={view.tokens}
@@ -578,9 +580,16 @@
 
     .top-row {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 0.6rem;
         max-width: 100%;
+    }
+
+    /* Dés au-dessus, stylo en dessous. */
+    .tools-column {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
     }
 
     .help kbd,
