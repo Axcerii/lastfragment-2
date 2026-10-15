@@ -8,6 +8,7 @@
         type AttackKind,
     } from "$lib/game/combat";
     import { COMBAT_STATS, SOCIAL_STATS, STATS, type StatKey } from "$lib/game/stats";
+    import DieShape from "$lib/components/ui/DieShape.svelte";
     import type { TableClient } from "$lib/table/client.svelte";
     import type { TokenView } from "$lib/table/types";
 
@@ -120,7 +121,7 @@
         </label>
 
         <section>
-            <h3>Jet de stat <span class="die">d100</span></h3>
+            <h3>Jet de stat <DieShape faces={100} size="1.6rem" /></h3>
             <div class="chips" role="group" aria-label="Statistique">
                 {#each ROLL_STATS as key (key)}
                     <button
@@ -172,7 +173,7 @@
         </section>
 
         <section>
-            <h3>Attaque <span class="die">d20</span></h3>
+            <h3>Attaque <DieShape faces={20} size="1.6rem" /></h3>
             <div class="chips" role="radiogroup" aria-label="Type d'attaque">
                 <button class="chip" class:on={kind === "force"} onclick={() => (kind = "force")}>
                     Force
@@ -301,9 +302,10 @@
         color: var(--foreground);
     }
 
-    .die {
-        color: var(--chance);
-        font-size: 0.85em;
+    h3 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .small {

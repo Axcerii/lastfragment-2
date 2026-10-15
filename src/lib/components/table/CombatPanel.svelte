@@ -51,7 +51,7 @@
 
     <section>
         <h3>Ordre de passage</h3>
-        <label class="check">
+        <label class="check players-check">
             <input
                 type="checkbox"
                 checked={session.orderVisible}

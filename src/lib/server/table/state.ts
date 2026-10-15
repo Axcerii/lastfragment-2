@@ -9,6 +9,7 @@ import {
 	type GaugeView,
 	type LogView,
 	type MusicState,
+	type RolledDie,
 	type SceneView,
 	type Side,
 	type TableView,
@@ -172,6 +173,10 @@ export interface LogData {
 	detail?: string;
 	/** Détail montré aux joueurs, s'il y en a un. */
 	publicDetail?: string;
+	/** Dés tirés, dessinés dans le journal. */
+	dice?: RolledDie[];
+	/** Modificateur ajouté aux dés libres. */
+	modifier?: number;
 	/** Variations de jauges appliquées, pour pouvoir les annuler. */
 	effects?: { tokenId: number; gauge: 'pv' | 'qdf' | 'endurance'; delta: number }[];
 }
@@ -189,6 +194,7 @@ export function logView(log: TableLog, viewer: Viewer): LogView {
 		hidden: log.hidden,
 		text: log.text,
 		detail: (viewer.isAdmin ? data.detail : data.publicDetail) ?? null,
+		dice: data.dice?.length ? data.dice : null,
 		undone: log.undone,
 		undoable: viewer.isAdmin && !log.undone && (data.effects?.length ?? 0) > 0,
 		createdAt: log.createdAt.toISOString()

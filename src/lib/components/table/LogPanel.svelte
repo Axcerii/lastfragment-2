@@ -1,6 +1,7 @@
 <script lang="ts">
     import { tick } from "svelte";
     import type { TableClient } from "$lib/table/client.svelte";
+    import DieShape from "$lib/components/ui/DieShape.svelte";
     import type { LogView } from "$lib/table/types";
 
     let {
@@ -51,6 +52,20 @@
                     {#if log.hidden}<span class="tag">MJ seul</span>{/if}
                     {#if log.undone}<span class="tag">annulé</span>{/if}
                 </div>
+                {#if log.dice}
+                    <div class="dice" aria-hidden="true">
+                        {#each log.dice as die, i (i)}
+                            {#if die.sign === -1}<span class="op">−</span>{:else if i > 0}<span class="op">+</span>{/if}
+                            <DieShape
+                                faces={die.faces}
+                                label={die.value}
+                                size="2rem"
+                                filled={die.value === die.faces}
+                                dim={die.value === 1}
+                            />
+                        {/each}
+                    </div>
+                {/if}
                 <p>{log.text}</p>
                 {#if log.detail}<p class="detail">{log.detail}</p>{/if}
                 {#if log.undoable && !readonly}
@@ -131,6 +146,19 @@
     .detail {
         font-size: 0.75rem;
         color: var(--muted);
+    }
+
+    .dice {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.2rem;
+        margin: 0.25rem 0;
+    }
+
+    .op {
+        color: var(--muted);
+        font-size: 0.8rem;
     }
 
     /* Tout ce qui sort d'un dé porte la couleur de la chance. */

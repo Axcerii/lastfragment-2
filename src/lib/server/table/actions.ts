@@ -594,7 +594,12 @@ const handlers: Record<string, Handler> = {
 		const reason = optionalText(body.label, 80);
 		await ctx.log('roll', `${reason ? `${reason} — ` : ''}${result.formula} : ${result.total}`, {
 			hidden: ctx.viewer.isAdmin && Boolean(body.hidden),
-			data: { detail, publicDetail: detail }
+			data: {
+				detail,
+				publicDetail: detail,
+				dice: result.rolls.map((r) => ({ faces: r.faces, value: r.value, sign: r.sign })),
+				modifier: result.modifier
+			}
 		});
 	},
 
@@ -614,6 +619,7 @@ const handlers: Record<string, Handler> = {
 			await ctx.log('stat', `Jet de ${s.label} de ${ctx.name(actor)} : ${roll} — ${OUTCOME_LABELS[outcome]}`, {
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden,
 				data: {
+					dice: [{ faces: 100, value: roll }],
 					detail: `${s.abbr} ${own}${bonus ? ` (bonus ${signed(bonus)})` : ''} · réussi dès ${100 - own}`,
 					publicDetail: actor.revealed ? `${s.abbr} ${own} · réussi dès ${100 - own}` : undefined
 				}
@@ -637,6 +643,7 @@ const handlers: Record<string, Handler> = {
 			{
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden || target.hidden,
 				data: {
+					dice: [{ faces: 100, value: roll }],
 					detail: `${s.abbr} ${own} contre ${t.abbr} ${other} · seuil ${threshold} · chance ${chance} %`,
 					publicDetail: target.revealed
 						? `${s.abbr} ${own} contre ${t.abbr} ${other} · seuil ${threshold} · chance ${chance} %`
@@ -685,6 +692,7 @@ const handlers: Record<string, Handler> = {
 			{
 				hidden,
 				data: {
+					dice: [{ faces: 20, value: roll }],
 					detail: `${STATS[attackStat].abbr} ${attack}${attackBonus ? ` ${signed(attackBonus)}` : ''} contre DEF ${defense}${
 						defenseBonus ? ` ${signed(defenseBonus)}` : ''
 					}${multiplier !== 1 ? ` · ×${multiplier}` : ''} · ${costText}`,

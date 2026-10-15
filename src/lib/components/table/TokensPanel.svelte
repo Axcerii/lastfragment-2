@@ -131,7 +131,7 @@
                         <span class="muted">· {SIDE_LABELS[token.side]}{token.hidden ? " · caché" : ""}</span>
                     </button>
                     <button
-                        class="btn btn-small"
+                        class="btn btn-small btn-players"
                         title={token.hidden ? "Montrer aux joueurs" : "Cacher aux joueurs"}
                         onclick={() => client.act("token.update", { id: token.id, hidden: !token.hidden })}
                     >

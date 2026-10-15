@@ -232,6 +232,10 @@ h6 {
 	--chance: var(--Chronos);
 	--chance-soft: rgba(202, 68, 68, 0.18);
 	--chance-glow: rgba(202, 68, 68, 0.35);
+
+	/* Ce qui agit sur ce que voient les joueurs prend la couleur de Guizamark. */
+	--players: var(--Guizamark);
+	--players-soft: rgba(207, 223, 196, 0.14);
 }
 
 body {
@@ -316,6 +320,23 @@ button {
 .btn-chance:hover:not(:disabled) {
 	background-color: var(--chance);
 	color: var(--foreground);
+}
+
+.btn-players {
+	border-color: var(--players);
+	color: var(--players);
+	background-color: var(--players-soft);
+}
+
+.btn-players:hover:not(:disabled) {
+	background-color: var(--players);
+	color: var(--background);
+}
+
+/* Case à cocher qui change ce que voient les joueurs. */
+.players-check {
+	color: var(--players);
+	accent-color: var(--players);
 }
 
 .btn-danger {

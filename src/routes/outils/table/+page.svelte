@@ -68,7 +68,7 @@
                         {#if isAdmin}
                             <form method="POST" action="?/toggle" use:enhance>
                                 <input type="hidden" name="id" value={session.id} />
-                                <button class="btn" type="submit">{session.open ? "Fermer" : "Ouvrir"}</button>
+                                <button class="btn btn-players" type="submit">{session.open ? "Fermer aux joueurs" : "Ouvrir aux joueurs"}</button>
                             </form>
                             <form
                                 method="POST"

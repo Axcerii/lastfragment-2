@@ -1,6 +1,7 @@
 <script lang="ts">
     // Lanceur de dés libres : bouton en haut à gauche du plateau, menu déroulant.
     import Icon from "$lib/components/ui/Icon.svelte";
+    import DieShape from "$lib/components/ui/DieShape.svelte";
     import type { TableClient } from "$lib/table/client.svelte";
 
     let { client, isAdmin }: { client: TableClient; isAdmin: boolean } = $props();
@@ -67,7 +68,7 @@
             <div class="faces">
                 {#each FACES as faces (faces)}
                     <button class="face" onclick={() => roll(build(faces))} title="Lancer {build(faces)}">
-                        <strong>d{faces}</strong>
+                        <DieShape {faces} size="2.4rem" />
                         <span>{build(faces)}</span>
                     </button>
                 {/each}
@@ -180,9 +181,16 @@
         background-color: var(--chance-soft);
     }
 
-    .face strong {
-        font-size: 1rem;
-        color: var(--chance);
+    .face {
+        gap: 0.15rem;
+    }
+
+    .face:hover :global(.die) {
+        transform: rotate(-10deg) scale(1.08);
+    }
+
+    .face :global(.die) {
+        transition: transform 0.2s ease-out;
     }
 
     .face span {

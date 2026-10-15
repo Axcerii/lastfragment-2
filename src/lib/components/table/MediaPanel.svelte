@@ -136,7 +136,7 @@
             <div class="now">
                 <span>Image montrée à tous</span>
                 <img class="thumb" src={session.showcase} alt="" />
-                <button class="btn btn-small" onclick={() => client.act("showcase.set", { url: null })}>
+                <button class="btn btn-small btn-players" onclick={() => client.act("showcase.set", { url: null })}>
                     Retirer l'image
                 </button>
             </div>
@@ -198,7 +198,7 @@
                                 Poser sur la scène
                             </button>
                         {:else if kind === "image"}
-                            <button class="btn btn-small" onclick={() => client.act("showcase.set", { url: asset.url })}>
+                            <button class="btn btn-small btn-players" onclick={() => client.act("showcase.set", { url: asset.url })}>
                                 Montrer à tous
                             </button>
                         {:else if kind === "musique"}

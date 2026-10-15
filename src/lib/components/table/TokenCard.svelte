@@ -148,15 +148,15 @@
                 <span class="muted small hint">Taille {token.size}×{token.size} : tire le coin rose du jeton.</span>
             </div>
             <div class="row">
-                <button class="btn btn-small" title="Raccourci : H" onclick={() => update({ hidden: !token.hidden })}>
+                <button class="btn btn-small btn-players" title="Raccourci : H" onclick={() => update({ hidden: !token.hidden })}>
                     {token.hidden ? "Montrer aux joueurs" : "Cacher aux joueurs"}
                 </button>
                 {#if token.kind !== "player"}
-                    <button class="btn btn-small" title="Raccourci : N" onclick={() => update({ nameHidden: !token.nameHidden })}>
+                    <button class="btn btn-small btn-players" title="Raccourci : N" onclick={() => update({ nameHidden: !token.nameHidden })}>
                         {token.nameHidden ? "Montrer le nom" : "Cacher le nom"}
                     </button>
                 {/if}
-                <button class="btn btn-small" title="Raccourci : S" onclick={() => update({ revealed: !token.revealed })}>
+                <button class="btn btn-small btn-players" title="Raccourci : S" onclick={() => update({ revealed: !token.revealed })}>
                     {token.revealed ? "Masquer les stats" : "Révéler les stats"}
                 </button>
                 <button class="btn btn-small" title="Raccourci : O" onclick={toggleOrder}>

@@ -178,6 +178,13 @@ export interface TableView {
 	serverNow: number;
 }
 
+export interface RolledDie {
+	faces: number;
+	value: number;
+	/** -1 pour un dé soustrait (d20-d4). */
+	sign?: 1 | -1;
+}
+
 export interface LogView {
 	id: number;
 	kind: string;
@@ -187,6 +194,8 @@ export interface LogView {
 	/** Détail chiffré du jet, adapté au spectateur. */
 	detail: string | null;
 	undone: boolean;
+	/** Dés tirés, pour les dessiner (faces et valeur obtenue). */
+	dice: RolledDie[] | null;
 	/** Le MJ peut annuler l'effet (dégâts et coût d'une attaque). */
 	undoable: boolean;
 	createdAt: string;

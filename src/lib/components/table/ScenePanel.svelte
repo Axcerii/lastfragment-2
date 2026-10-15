@@ -117,7 +117,7 @@
                         {#if s.id === activeId}<span class="live">montrée</span>{/if}
                     </button>
                     {#if s.id !== activeId}
-                        <button class="btn btn-small btn-accent" onclick={() => client.act("scene.activate", { id: s.id })}>
+                        <button class="btn btn-small btn-players" onclick={() => client.act("scene.activate", { id: s.id })}>
                             Montrer
                         </button>
                     {/if}

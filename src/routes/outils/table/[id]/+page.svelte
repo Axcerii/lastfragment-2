@@ -282,7 +282,7 @@
         </span>
 
         {#if isAdmin && view}
-            <label class="open">
+            <label class="open players-check">
                 <input
                     type="checkbox"
                     checked={view.session.open}
@@ -305,7 +305,7 @@
                 ✕
             </button>
             {#if preparing && scene}
-                <button class="btn btn-small btn-accent" onclick={() => client.act("scene.activate", { id: scene!.id })}>
+                <button class="btn btn-small btn-players" onclick={() => client.act("scene.activate", { id: scene!.id })}>
                     Montrer aux joueurs
                 </button>
             {/if}
@@ -689,11 +689,14 @@
         font-size: 15px;
     }
 
+    /* Le halo de focus (2 px + 2 px d'écart) dépasse des champs : le conteneur qui défile
+       garde une marge intérieure d'autant, compensée pour ne pas décaler la mise en page. */
     .tool-body {
         flex: 1;
         min-height: 0;
         overflow-y: auto;
-        padding-right: 0.25rem;
+        padding: 5px 0.6rem 5px 5px;
+        margin: -5px -0.35rem -5px -5px;
     }
 
     .journal {
