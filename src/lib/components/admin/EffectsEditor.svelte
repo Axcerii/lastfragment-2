@@ -12,6 +12,7 @@
         values = "",
         inactive = "",
         bareAs,
+        compact = false,
     }: {
         statsName: string;
         valuesName: string;
@@ -21,6 +22,8 @@
         values?: string | null;
         inactive?: string | null;
         bareAs: Effect["kind"];
+        /** Champs plus petits, pour une fenêtre étroite (table de jeu). */
+        compact?: boolean;
     } = $props();
 
     interface Row {
@@ -83,7 +86,7 @@
     <input type="hidden" name={inactiveName} value={serialized.inactive} />
 {/if}
 
-<div class="editor">
+<div class="editor" class:compact>
     {#each rows as row, i (i)}
         <div class="row">
             <select bind:value={row.stat} aria-label="Statistique">
@@ -185,5 +188,38 @@
 
     p {
         font-size: 0.85rem;
+    }
+
+    .compact {
+        gap: 0.4rem;
+    }
+
+    .compact .row {
+        gap: 0.35rem;
+        padding-bottom: 0.35rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .compact select,
+    .compact input {
+        height: 30px;
+        font-size: 15px;
+        padding: 0 0.4rem;
+    }
+
+    .compact .row > select {
+        width: 100%;
+    }
+
+    .compact .effect select {
+        width: 7.5rem;
+    }
+
+    .compact .effect input {
+        width: 4.5rem;
+    }
+
+    .compact p {
+        font-size: 0.75rem;
     }
 </style>

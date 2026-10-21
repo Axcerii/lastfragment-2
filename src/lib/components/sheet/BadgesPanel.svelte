@@ -1,9 +1,10 @@
 <script lang="ts">
     import { pairKey, parsePair } from "$lib/game/badges";
-    import { DRAGONS } from "$lib/game/labels";
+    import { DRAGONS, dragonText, dragonVars } from "$lib/game/labels";
     import type { SheetData } from "$lib/server/sheet";
 
     // Badges distribués par le MJ, et compétences obtenues en fusionnant deux badges.
+    // Chaque badge prend la couleur de son dragon, comme les barres de stats.
     let {
         badges,
         fusions,
@@ -27,15 +28,29 @@
     );
 </script>
 
+{#snippet stamp(dragon: string, labelled = false)}
+    <span
+        class="stamp"
+        style="{dragonVars(dragon)}; --icon: url('/dragons/tampons/{dragon}.svg')"
+        role={labelled ? "img" : undefined}
+        aria-label={labelled ? dragon : undefined}
+        title={labelled ? dragon : undefined}
+    ></span>
+{/snippet}
+
 <div class="badges">
     {#if counts.length === 0}
         <p class="muted">Aucun badge pour l'instant. C'est le MJ qui les distribue.</p>
     {:else}
         <ul class="tokens">
             {#each counts as { dragon, free, used } (dragon)}
-                <li class:spent={free === 0} title="{dragon} : {free} disponible(s), {used} utilisé(s)">
-                    <img src="/dragons/tampons/{dragon}.svg" alt="" />
-                    <span>{dragon}</span>
+                <li
+                    class:spent={free === 0}
+                    style={dragonVars(dragon)}
+                    title="{dragon} : {free} disponible(s), {used} utilisé(s)"
+                >
+                    {@render stamp(dragon)}
+                    <span class="dragon">{dragon}</span>
                     <span class="count">
                         {free} disponible{free > 1 ? "s" : ""}
                         {#if used}<span class="muted">· {used} utilisé{used > 1 ? "s" : ""}</span>{/if}
@@ -52,11 +67,14 @@
                 {@const skill = skillByPair.get(pairKey(fusion.badge1, fusion.badge2))}
                 <li>
                     <div class="pair">
-                        <img src="/dragons/tampons/{fusion.badge1}.svg" alt={fusion.badge1} title={fusion.badge1} />
-                        <img src="/dragons/tampons/{fusion.badge2}.svg" alt={fusion.badge2} title={fusion.badge2} />
+                        {@render stamp(fusion.badge1, true)}
+                        {@render stamp(fusion.badge2, true)}
                     </div>
                     <div>
-                        <p class="name">{skill?.name ?? `${fusion.badge1} + ${fusion.badge2}`}</p>
+                        <p
+                            class="name"
+                            style="--from: {dragonText(fusion.badge1)}; --to: {dragonText(fusion.badge2)}"
+                        >{skill?.name ?? `${fusion.badge1} + ${fusion.badge2}`}</p>
                         <p class:muted={!skill}>
                             {skill?.description ?? "Cette fusion n'a pas encore de compétence définie."}
                         </p>
@@ -87,25 +105,49 @@
         gap: 0.2rem;
         width: 8rem;
         padding: 0.5rem;
-        border: 1px solid var(--border);
+        border: 1px solid var(--c-text);
         border-radius: var(--radius);
+        background-color: color-mix(in srgb, var(--c) 12%, transparent);
         font-size: 0.85rem;
         text-align: center;
+        transition: var(--transition);
     }
 
-    .tokens li.spent img {
-        opacity: 0.3;
+    .tokens li.spent {
+        border-color: var(--border);
+        background-color: transparent;
+        opacity: 0.55;
     }
 
-    .tokens img {
-        width: 3.5rem;
-        height: 3.5rem;
-        filter: invert(90%) sepia(13%) saturate(311%) hue-rotate(52deg) brightness(101%)
-            contrast(81%);
+    .dragon {
+        color: var(--c-text);
+        font-family: var(--titleFont);
+        font-size: 1.05rem;
     }
 
     .count {
         font-variant-numeric: tabular-nums;
+    }
+
+    /* Tampon du dragon : pastille à sa couleur, logo à l'encre lisible dessus. */
+    .stamp {
+        position: relative;
+        display: block;
+        flex-shrink: 0;
+        width: 3.5rem;
+        height: 3.5rem;
+        border: 1px solid var(--foreground);
+        border-radius: 50%;
+        background-color: var(--c);
+    }
+
+    .stamp::after {
+        content: "";
+        position: absolute;
+        inset: 6%;
+        background-color: var(--ink);
+        mask: var(--icon) center / contain no-repeat;
+        -webkit-mask: var(--icon) center / contain no-repeat;
     }
 
     h3 {
@@ -130,19 +172,22 @@
         flex-shrink: 0;
     }
 
-    .pair img {
+    .pair .stamp {
         width: 3rem;
         height: 3rem;
-        filter: invert(78%) sepia(52%) saturate(214%) hue-rotate(293deg) brightness(95%)
-            contrast(88%);
     }
 
-    .pair img + img {
+    .pair .stamp + .stamp {
         margin-left: -0.75rem;
     }
 
     .name {
         font-family: var(--titleFont);
         font-size: 1.15rem;
+        width: fit-content;
+        background-image: linear-gradient(90deg, var(--from), var(--to));
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
     }
 </style>

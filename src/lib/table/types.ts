@@ -99,6 +99,17 @@ export interface Ambience {
 /** Jauge vue par quelqu'un : chiffres exacts, ou seulement une proportion. */
 export type GaugeView = { current: number; max: number } | { ratio: number };
 
+/** Passif du personnage d'un jeton, au format des colonnes de la table `passives`. */
+export interface PassiveView {
+	id: number;
+	name: string;
+	description: string | null;
+	active: boolean;
+	statistics: string;
+	maths: string;
+	inactiveMaths: string | null;
+}
+
 export interface TokenView {
 	id: number;
 	sceneId: number | null;
@@ -122,6 +133,8 @@ export interface TokenView {
 	/** Stats finales, envoyées seulement si le spectateur a le droit de les voir. */
 	stats: StatBlock | null;
 	armor: StatBlock | null;
+	/** Passifs du personnage, envoyés au MJ et au propriétaire du jeton seulement. */
+	passives: PassiveView[] | null;
 }
 
 export interface SceneView {

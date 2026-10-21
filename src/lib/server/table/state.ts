@@ -9,6 +9,7 @@ import {
 	type GaugeView,
 	type LogView,
 	type MusicState,
+	type PassiveView,
 	type RolledDie,
 	type SceneView,
 	type Side,
@@ -34,12 +35,60 @@ const include = {
 	tokens: { orderBy: { id: 'asc' } }
 } satisfies Prisma.TableSessionInclude;
 
-export type RawSession = Prisma.TableSessionGetPayload<{ include: typeof include }>;
+export type RawSession = Prisma.TableSessionGetPayload<{ include: typeof include }> & {
+	/** Personnage de chaque jeton qui en a un, et ses passifs. */
+	characters: Map<number, { id: number; passives: PassiveView[] }>;
+};
 export type RawToken = RawSession['tokens'][number];
 export type RawScene = RawSession['scenes'][number];
 
-export function loadRaw(sessionId: number): Promise<RawSession | null> {
-	return prisma.tableSession.findUnique({ where: { id: sessionId }, include });
+const passiveSelect = {
+	id: true,
+	name: true,
+	description: true,
+	active: true,
+	statistics: true,
+	maths: true,
+	inactiveMaths: true
+} satisfies Prisma.PassiveSelect;
+
+/** Personnage derrière un jeton : celui du joueur, ou le personnage d'origine. */
+export async function characterIdOf(token: Pick<RawToken, 'kind' | 'playerId' | 'refId'>) {
+	if (token.kind === 'character') return token.refId;
+	if (token.kind !== 'player' || !token.playerId) return null;
+	const player = await prisma.player.findUnique({ where: { id: token.playerId }, select: { characterId: true } });
+	return player?.characterId ?? null;
+}
+
+export async function loadRaw(sessionId: number): Promise<RawSession | null> {
+	const raw = await prisma.tableSession.findUnique({ where: { id: sessionId }, include });
+	if (!raw) return null;
+
+	const playerIds = raw.tokens.filter((t) => t.kind === 'player' && t.playerId).map((t) => t.playerId!);
+	const players = await prisma.player.findMany({
+		where: { id: { in: playerIds } },
+		select: { id: true, characterId: true }
+	});
+	const characterOfPlayer = new Map(players.map((p) => [p.id, p.characterId]));
+	const characterOf = (t: RawToken) =>
+		t.kind === 'character' ? t.refId : t.kind === 'player' && t.playerId ? characterOfPlayer.get(t.playerId) : null;
+
+	const ids = [...new Set(raw.tokens.map(characterOf).filter((id): id is number => typeof id === 'number'))];
+	const passives = await prisma.passive.findMany({
+		where: { characterId: { in: ids } },
+		select: { ...passiveSelect, characterId: true },
+		orderBy: [{ name: 'asc' }, { id: 'asc' }]
+	});
+	const characters = new Map<number, { id: number; passives: PassiveView[] }>();
+	for (const token of raw.tokens) {
+		const id = characterOf(token);
+		if (typeof id !== 'number') continue;
+		characters.set(token.id, {
+			id,
+			passives: passives.filter((p) => p.characterId === id).map(({ characterId: _, ...p }) => p)
+		});
+	}
+	return { ...raw, characters };
 }
 
 export const numbers = (value: Prisma.JsonValue | null | undefined): number[] =>
@@ -84,9 +133,11 @@ function gauge(current: number, max: number, exact: boolean): GaugeView {
 	return { ratio: max > 0 ? Math.max(0, Math.min(1, current / max)) : 0 };
 }
 
-function tokenView(token: RawToken, viewer: Viewer): TokenView {
+function tokenView(token: RawToken, viewer: Viewer, raw: RawSession): TokenView {
 	const stats = statsOf(token);
 	const exact = seesNumbers(token, viewer);
+	// Les passifs ne sont montrés qu'au MJ et au joueur à qui appartient le jeton.
+	const character = raw.characters.get(token.id);
 	return {
 		id: token.id,
 		sceneId: token.sceneId,
@@ -107,7 +158,8 @@ function tokenView(token: RawToken, viewer: Viewer): TokenView {
 		qdf: exact ? gauge(token.qdf, stats.qdf, true) : null,
 		endurance: exact ? gauge(token.endurance, stats.endurance, true) : null,
 		stats: exact ? stats : null,
-		armor: exact ? toStatBlock(token.armor as Partial<StatBlock>) : null
+		armor: exact ? toStatBlock(token.armor as Partial<StatBlock>) : null,
+		passives: character && (viewer.isAdmin || isMine(token, viewer)) ? character.passives : null
 	};
 }
 
@@ -160,7 +212,7 @@ export function buildView(raw: RawSession, viewer: Viewer): TableView {
 			ambiences: (raw.ambiences as unknown as Ambience[]) ?? []
 		},
 		scenes: (viewer.isAdmin ? raw.scenes : active ? [active] : []).map((s) => sceneView(s, viewer)),
-		tokens: tokens.map((t) => tokenView(t, viewer)),
+		tokens: tokens.map((t) => tokenView(t, viewer, raw)),
 		viewer: { playerId: viewer.playerId, isAdmin: viewer.isAdmin, spectator: viewer.spectator },
 		serverNow: Date.now()
 	};

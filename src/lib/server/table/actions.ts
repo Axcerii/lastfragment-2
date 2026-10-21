@@ -38,7 +38,15 @@ import {
 } from '$lib/table/types';
 import { prisma } from '../prisma';
 import { broadcast, pushEvent, pushLogs } from './hub';
-import { numbers, statsOf, visibleToPlayers, type LogData, type RawToken, type Viewer } from './state';
+import {
+	characterIdOf,
+	numbers,
+	statsOf,
+	visibleToPlayers,
+	type LogData,
+	type RawToken,
+	type Viewer
+} from './state';
 import { characterSource, freeCell, monsterSource, playerSource, sourceOf } from './tokens';
 
 type Body = Record<string, unknown>;
@@ -159,6 +167,39 @@ class Context {
 			error(403, 'Ce jeton ne t’appartient pas.');
 		}
 		return token;
+	}
+
+	/**
+	 * Personnage derrière un jeton dont on touche aux passifs : un joueur ne modifie que le sien,
+	 * le MJ celui de n'importe quel jeton joueur ou personnage.
+	 */
+	async characterOf(tokenId: unknown) {
+		const token = await this.actor(tokenId);
+		const characterId = await characterIdOf(token);
+		if (!characterId) error(400, 'Ce jeton n’a pas de fiche de personnage.');
+		return { token, characterId };
+	}
+
+	/** Recalcule les stats des jetons de la partie qui reposent sur ce personnage. */
+	async refreshCharacter(characterId: number) {
+		const players = await prisma.player.findMany({ where: { characterId }, select: { id: true } });
+		const tokens = await prisma.tableToken.findMany({
+			where: {
+				sessionId: this.sessionId,
+				OR: [
+					{ kind: 'character', refId: characterId },
+					{ kind: 'player', playerId: { in: players.map((p) => p.id) } }
+				]
+			}
+		});
+		for (const token of tokens) {
+			const source = await sourceOf(token.kind as never, token.refId, token.playerId).catch(() => null);
+			if (!source) continue;
+			await prisma.tableToken.update({
+				where: { id: token.id },
+				data: { stats: source.stats, armor: source.armor }
+			});
+		}
 	}
 
 	/** Cible d'un jet : pour un joueur, elle doit être visible sur la scène montrée. */
@@ -578,6 +619,48 @@ const handlers: Record<string, Handler> = {
 				data: { stats: source.stats, armor: source.armor, image: source.image ?? token.image }
 			});
 		}
+	}),
+
+	// ── Passifs ──
+	/** Active ou désactive un passif : le joueur pour son personnage, le MJ pour tous. */
+	'passive.toggle': async (ctx, body) => {
+		const { token, characterId } = await ctx.characterOf(body.tokenId);
+		const passive = await prisma.passive.findFirst({ where: { id: int(body.id), characterId } });
+		if (!passive) error(404, 'Passif introuvable.');
+		const active = Boolean(body.active);
+		await prisma.passive.update({ where: { id: passive.id }, data: { active } });
+		await ctx.refreshCharacter(characterId);
+		await ctx.log(
+			'system',
+			`${ctx.name(token)} ${active ? 'active' : 'désactive'} son passif ${passive.name || 'sans nom'}.`,
+			{ author: 'Table', hidden: token.hidden }
+		);
+	},
+
+	/** Crée (sans `id`) ou modifie un passif. Réservé au MJ. */
+	'passive.save': admin(async (ctx, body) => {
+		const { characterId } = await ctx.characterOf(body.tokenId);
+		const data = {
+			name: text(body.name) || 'Passif',
+			description: optionalText(body.description, 5000),
+			statistics: text(body.statistics),
+			maths: text(body.maths),
+			inactiveMaths: optionalText(body.inactiveMaths)
+		};
+		if (body.id === undefined || body.id === null || body.id === '') {
+			await prisma.passive.create({ data: { ...data, characterId, active: true } });
+		} else {
+			const { count } = await prisma.passive.updateMany({ where: { id: int(body.id), characterId }, data });
+			if (!count) error(404, 'Passif introuvable.');
+		}
+		await ctx.refreshCharacter(characterId);
+	}),
+
+	'passive.delete': admin(async (ctx, body) => {
+		const { characterId } = await ctx.characterOf(body.tokenId);
+		const { count } = await prisma.passive.deleteMany({ where: { id: int(body.id), characterId } });
+		if (!count) error(404, 'Passif introuvable.');
+		await ctx.refreshCharacter(characterId);
 	}),
 
 	// ── Jets ──

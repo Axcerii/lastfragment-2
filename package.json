@@ -11,7 +11,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run",
-		"seed:dev": "node prisma/seed-dev.mjs"
+		"seed:dev": "node prisma/seed-dev.mjs",
+		"seed:combat": "node prisma/seed-combat.mjs"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.7",

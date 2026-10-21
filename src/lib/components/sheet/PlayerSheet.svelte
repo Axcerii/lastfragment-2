@@ -51,7 +51,10 @@
     <aside class="toolbar" aria-label="Accès rapides">
         <p class="money">
             <span class="money-long">{money} Pièces</span>
-            <span class="money-short" aria-hidden="true">{money}ſ</span>
+            <!-- En mobile, le S long (ſ), symbole des sous médiévaux, remplace « Pièces ». -->
+            <span class="money-short" title="{money} pièces">
+                {money}<span class="long-s" aria-label="pièces">ſ</span>
+            </span>
         </p>
         <Checkbox
             type="checkbox"
@@ -176,6 +179,16 @@
 
     .money-short {
         display: none;
+    }
+
+    /* El Messiri dessine le ſ comme un f : EB Garamond italique lui garde sa longue descente. */
+    .long-s {
+        margin-left: 0.1em;
+        font-family: var(--titleFont);
+        font-style: italic;
+        font-size: 1.35em;
+        line-height: 0;
+        color: var(--secondary);
     }
 
     .combat {

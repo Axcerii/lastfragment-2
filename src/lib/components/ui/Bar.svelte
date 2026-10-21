@@ -41,11 +41,16 @@
     aria-valuemax={100}
     aria-valuetext={valueText}
 >
-    {#if end > main}
-        <span class="fill extra" class:loss class:full={end >= 100} style="width: {end}%"></span>
-    {/if}
     {#if main > 0}
         <span class="fill" class:full={main >= 100} style="width: {main}%"></span>
+    {/if}
+    {#if end > main}
+        <span
+            class="extra"
+            class:loss
+            class:full={end >= 100}
+            style="--from: {main}%; --span: {end - main}%"
+        ></span>
     {/if}
     {#if icon}
         <span class="icon" style="--icon: url('{encodeURI(icon)}')" aria-hidden="true"></span>
@@ -77,18 +82,42 @@
         border-right: none;
     }
 
-    /* Bonus : même couleur, hachurée, pour le distinguer de la valeur de base. */
+    /* Bonus et malus : un segment hachuré collé à la valeur de base. Le bonus s'arrondit à droite ;
+       le malus (la partie perdue) s'arrondit à gauche et mord sur la base, hachures inversées. */
     .extra {
+        --r: calc(var(--height) / 3);
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: var(--from);
+        width: var(--span);
+        box-sizing: border-box;
+        background-color: var(--color);
         background-image: repeating-linear-gradient(
             -45deg,
             rgba(0, 0, 0, 0.35) 0 4px,
             transparent 4px 8px
         );
+        border-radius: 0 var(--r) var(--r) 0;
+        transition: var(--transition);
     }
 
-    /* Malus : la partie perdue reste visible en rouge. */
+    .extra:not(.full) {
+        border-right: 1px solid var(--foreground);
+    }
+
     .extra.loss {
-        background-color: rgba(202, 68, 68, 0.55);
+        left: calc(var(--from) - var(--r));
+        width: calc(var(--span) + var(--r));
+        /* Opaque : il recouvre le bout de la base qu'il mord. */
+        background-color: color-mix(in srgb, #ca4444 55%, #131313);
+        background-image: repeating-linear-gradient(
+            45deg,
+            rgba(0, 0, 0, 0.45) 0 4px,
+            transparent 4px 8px
+        );
+        border-left: 1px solid var(--foreground);
+        border-radius: var(--r) 0 0 var(--r);
     }
 
     /* Le logo remplit sa case en largeur et déborde en hauteur : la barre le rogne (overflow: hidden). */

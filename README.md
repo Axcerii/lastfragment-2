@@ -14,6 +14,8 @@ npm run dev
 
 `npm run seed:dev` ajoute deux comptes de test (un MJ, un joueur avec une fiche complète) ; leurs identifiants sont en tête de `prisma/seed-dev.mjs`. `node prisma/seed-dev.mjs --clean` les retire.
 
+`npm run seed:combat` prépare de quoi tester les combats : quatre compétences pour chacune des 13 stats, trois joueurs aux profils opposés (tank, mage, éclaireur) équipés et avec passifs, des monstres, un PNJ, et une partie de table de jeu déjà en combat avec l'ordre de passage. Identifiants en tête de `prisma/seed-combat.mjs` ; `node prisma/seed-combat.mjs --clean` retire tout.
+
 ## Déployer avec Docker
 
 ```sh

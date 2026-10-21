@@ -77,6 +77,14 @@ describe('passifs', () => {
 		expect(passiveBonus([{ ...p, active: false }], base).strength).toBe(0);
 	});
 
+	it('ne se trompe pas d’arrondi sur les pourcentages ronds', () => {
+		const stats = { ...emptyStats(), perception: 40, strength: 50 };
+		const p = { active: true, statistics: 'PER,FOR', maths: 'x0.9,x1.1' };
+		const bonus = passiveBonus([p], stats);
+		expect(bonus.perception).toBe(-4);
+		expect(bonus.strength).toBe(5);
+	});
+
 	it('applique l’effet inactif s’il existe', () => {
 		const alcoolique = { active: false, statistics: 'FOR', maths: '1.05', inactiveMaths: '0.9' };
 		expect(passiveBonus([alcoolique], base).strength).toBe(-4);
@@ -88,7 +96,7 @@ describe('passifs', () => {
 			[{ statistics: 'FOR', values: '3' }],
 			[{ active: true, statistics: 'FOR', maths: '1.1' }]
 		);
-		expect(sheet.strength).toEqual({ base: 41, armor: 3, passive: 5, total: 49 });
+		expect(sheet.strength).toMatchObject({ base: 41, armor: 3, passive: 5, total: 49 });
 	});
 });
 

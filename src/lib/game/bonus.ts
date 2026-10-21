@@ -43,6 +43,24 @@ export function parseEffects(
 	return effects;
 }
 
+/** Effet lisible : « FOR +5 » pour une valeur fixe, « FOR +10 % » pour un multiplicateur. */
+export function describeEffect(effect: Effect): string {
+	const stat = STATS[effect.stat].abbr;
+	if (effect.kind === 'flat') return `${stat} ${effect.value > 0 ? '+' : ''}${effect.value}`;
+	const percent = Math.round((effect.value - 1) * 100);
+	return `${stat} ${percent > 0 ? '+' : ''}${percent} %`;
+}
+
+/** Effets en cours d'un passif : les siens s'il est actif, ses effets « désactivé » sinon. */
+export function passiveEffects(p: {
+	active: boolean;
+	statistics: string | null;
+	maths: string | null;
+	inactiveMaths?: string | null;
+}): Effect[] {
+	return parseEffects(p.statistics, p.active ? p.maths : p.inactiveMaths, 'mult');
+}
+
 /** Opération inverse de `parseEffects`, pour enregistrer depuis un formulaire. */
 export function serializeEffects(effects: Effect[]): { stats: string; values: string } {
 	return {
@@ -53,31 +71,62 @@ export function serializeEffects(effects: Effect[]): { stats: string; values: st
 	};
 }
 
-function applyEffects(target: StatBlock, effects: Effect[], base: StatBlock) {
+/** Une étape du calcul d'une stat, affichée au survol : d'où vient la valeur ajoutée. */
+export interface Step {
+	source: string;
+	/** Effet tel qu'écrit : « +5 », « ×1.1 ». */
+	effect: string;
+	amount: number;
+}
+
+export type Steps = Record<StatKey, Step[]>;
+
+const emptySteps = () => Object.fromEntries(STAT_KEYS.map((k) => [k, []])) as unknown as Steps;
+
+function applyEffects(
+	target: StatBlock,
+	effects: Effect[],
+	base: StatBlock,
+	source = '',
+	steps?: Steps
+) {
 	for (const e of effects) {
-		// Arrondi à l'entier supérieur, comme dans la V1.
-		target[e.stat] += e.kind === 'flat' ? e.value : Math.ceil((e.value - 1) * base[e.stat]);
+		// Arrondi à l'entier supérieur, comme dans la V1. Le produit est d'abord arrondi à 6 décimales :
+		// sans ça, (0.9 − 1) × 40 vaut −3,999… et donnerait −3 au lieu de −4 (et 1.1 × 50, +6 au lieu de +5).
+		const amount =
+			e.kind === 'flat' ? e.value : Math.ceil(Math.round((e.value - 1) * base[e.stat] * 1e6) / 1e6);
+		target[e.stat] += amount;
+		const effect = e.kind === 'flat' ? `${e.value >= 0 ? '+' : ''}${e.value}` : `×${e.value}`;
+		steps?.[e.stat].push({ source, effect, amount });
 	}
 }
 
 export interface ArmorPiece {
+	name?: string;
 	statistics: string | null;
 	values: string | null;
 }
 
 /** Somme des bonus des pièces d'armure équipées. */
-export function armorBonus(pieces: ArmorPiece[], base: StatBlock): StatBlock {
+export function armorBonus(pieces: ArmorPiece[], base: StatBlock, steps?: Steps): StatBlock {
 	const bonus = emptyStats();
 	for (const piece of pieces) {
-		applyEffects(bonus, parseEffects(piece.statistics, piece.values, 'flat'), base);
+		const effects = parseEffects(piece.statistics, piece.values, 'flat');
+		applyEffects(bonus, effects, base, piece.name ?? 'Armure', steps);
 	}
 	// Un personnage assez fort ou assez précis ignore la gêne de son armure.
-	if (base.strength >= 60 && bonus.vitesse < 0) bonus.vitesse = 0;
-	if (base.accuracy >= 50 && bonus.accuracy < 0) bonus.accuracy = 0;
+	const ignore = (stat: StatKey, source: string) => {
+		if (bonus[stat] >= 0) return;
+		steps?.[stat].push({ source, effect: 'gêne ignorée', amount: -bonus[stat] });
+		bonus[stat] = 0;
+	};
+	if (base.strength >= 60) ignore('vitesse', 'Force ≥ 60');
+	if (base.accuracy >= 50) ignore('accuracy', 'Précision ≥ 50');
 	return bonus;
 }
 
 export interface PassiveEffect {
+	name?: string;
 	active: boolean;
 	statistics: string | null;
 	maths: string | null;
@@ -85,11 +134,12 @@ export interface PassiveEffect {
 }
 
 /** Somme des effets des passifs : `maths` s'ils sont actifs, `inactiveMaths` sinon. */
-export function passiveBonus(passives: PassiveEffect[], base: StatBlock): StatBlock {
+export function passiveBonus(passives: PassiveEffect[], base: StatBlock, steps?: Steps): StatBlock {
 	const bonus = emptyStats();
 	for (const p of passives) {
 		const values = p.active ? p.maths : p.inactiveMaths;
-		applyEffects(bonus, parseEffects(p.statistics, values, 'mult'), base);
+		const source = `${p.name ?? 'Passif'}${p.active ? '' : ' (inactif)'}`;
+		applyEffects(bonus, parseEffects(p.statistics, values, 'mult'), base, source, steps);
 	}
 	return bonus;
 }
@@ -99,6 +149,9 @@ export interface StatLine {
 	armor: number;
 	passive: number;
 	total: number;
+	/** Détail de l'armure puis des passifs, dans l'ordre du calcul. */
+	armorSteps: Step[];
+	passiveSteps: Step[];
 }
 
 export type Sheet = Record<StatKey, StatLine>;
@@ -109,12 +162,21 @@ export function computeSheet(
 	pieces: ArmorPiece[] = [],
 	passives: PassiveEffect[] = []
 ): Sheet {
-	const armor = armorBonus(pieces, base);
-	const passive = passiveBonus(passives, base);
+	const armorSteps = emptySteps();
+	const passiveSteps = emptySteps();
+	const armor = armorBonus(pieces, base, armorSteps);
+	const passive = passiveBonus(passives, base, passiveSteps);
 	return Object.fromEntries(
 		STAT_KEYS.map((k) => [
 			k,
-			{ base: base[k], armor: armor[k], passive: passive[k], total: base[k] + armor[k] + passive[k] }
+			{
+				base: base[k],
+				armor: armor[k],
+				passive: passive[k],
+				total: base[k] + armor[k] + passive[k],
+				armorSteps: armorSteps[k],
+				passiveSteps: passiveSteps[k]
+			}
 		])
 	) as Sheet;
 }

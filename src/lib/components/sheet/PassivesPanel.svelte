@@ -1,8 +1,7 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
     import Toggle from "$lib/components/ui/Toggle.svelte";
-    import { parseEffects, type Effect } from "$lib/game/bonus";
-    import { STATS } from "$lib/game/stats";
+    import { describeEffect, passiveEffects } from "$lib/game/bonus";
     import type { SheetData } from "$lib/server/sheet";
 
     let {
@@ -10,17 +9,6 @@
         canEdit,
         compact = false,
     }: { passives: SheetData["passives"]; canEdit: boolean; compact?: boolean } = $props();
-
-    function describe(effect: Effect) {
-        const stat = STATS[effect.stat].abbr;
-        if (effect.kind === "flat") return `${stat} ${effect.value > 0 ? "+" : ""}${effect.value}`;
-        const percent = Math.round((effect.value - 1) * 100);
-        return `${stat} ${percent > 0 ? "+" : ""}${percent} %`;
-    }
-
-    // Effet en cours : celui du passif actif, ou son effet « désactivé » s'il en a un.
-    const effectsOf = (p: SheetData["passives"][number]) =>
-        parseEffects(p.statistics, p.active ? p.maths : p.inactiveMaths, "mult");
 </script>
 
 {#if passives.length === 0}
@@ -32,8 +20,8 @@
                 <div class="text">
                     <p class="name">
                         {passive.name || "Passif sans nom"}
-                        {#each effectsOf(passive) as effect}
-                            <span class="effect">{describe(effect)}</span>
+                        {#each passiveEffects(passive) as effect}
+                            <span class="effect">{describeEffect(effect)}</span>
                         {/each}
                     </p>
                     {#if passive.description && !compact}

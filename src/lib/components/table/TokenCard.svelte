@@ -4,6 +4,9 @@
     import type { TableClient } from "$lib/table/client.svelte";
     import { SIDES, SIDE_LABELS, type TokenView } from "$lib/table/types";
     import { GAUGE_INFO, gaugeRatio, type GaugeKey } from "./gauges";
+    import TokenPassives from "./TokenPassives.svelte";
+
+    // Fiche d'un jeton, affichée dans une fenêtre flottante qui porte son nom et le bouton de fermeture.
 
     let {
         token,
@@ -64,15 +67,11 @@
         {#if token.image}
             <img src={token.image} alt="" />
         {/if}
-        <div class="title">
-            <h3>{token.name}</h3>
-            <span class="muted">
-                {KIND_LABELS[token.kind]} · {SIDE_LABELS[token.side]}
-                {#if token.hidden}· <strong class="warn">caché</strong>{/if}
-                {#if token.nameHidden && isAdmin}· <strong class="warn">nom caché</strong>{/if}
-            </span>
-        </div>
-        <button class="btn btn-small" onclick={onclose} aria-label="Fermer la fiche">✕</button>
+        <span class="muted">
+            {KIND_LABELS[token.kind]} · {SIDE_LABELS[token.side]}
+            {#if token.hidden}· <strong class="warn">caché</strong>{/if}
+            {#if token.nameHidden && isAdmin}· <strong class="warn">nom caché</strong>{/if}
+        </span>
     </header>
 
     <div class="gauges">
@@ -134,6 +133,10 @@
         <p class="muted small">Statistiques inconnues.</p>
     {/if}
 
+    {#if token.passives}
+        <TokenPassives {token} {client} {isAdmin} />
+    {/if}
+
     {#if isAdmin}
         <div class="controls">
             <div class="row">
@@ -189,15 +192,17 @@
 </article>
 
 <style>
+    /* Le contenu défile dans la fenêtre quand elle est plus petite que la fiche. */
     .card {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        scrollbar-color: var(--border) transparent;
+        scrollbar-width: thin;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
-        padding: 1rem;
-        background-color: rgba(27, 27, 27, 0.95);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+        padding: 0.75rem;
         font-size: 0.85rem;
     }
 
@@ -208,20 +213,10 @@
     }
 
     header img {
-        width: 3rem;
-        height: 3rem;
+        width: 2.5rem;
+        height: 2.5rem;
         border-radius: 50%;
         object-fit: cover;
-    }
-
-    .title {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-
-    h3 {
-        font-size: 1.3rem;
     }
 
     .warn {
@@ -286,7 +281,7 @@
 
     .stats {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(3.2rem, 1fr));
         gap: 0.35rem;
     }
 

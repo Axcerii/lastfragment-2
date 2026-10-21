@@ -406,8 +406,14 @@
                     <button class="btn btn-small" onclick={() => board?.fit()}>Cadrer</button>
                 </div>
 
+                <!-- Fiche du jeton : fenêtre déplaçable et redimensionnable, taille gardée dans ce navigateur. -->
                 {#if selected}
-                    <div class="overlay card">
+                    <FloatingWindow
+                        title={selected.name}
+                        storageKey="lf-table-token"
+                        initial={{ x: 12, y: -12, width: 400, height: 480 }}
+                        onclose={() => (selectedId = null)}
+                    >
                         <TokenCard
                             token={selected}
                             {client}
@@ -415,7 +421,7 @@
                             inOrder={view.session.order.includes(selected.id)}
                             onclose={() => (selectedId = null)}
                         />
-                    </div>
+                    </FloatingWindow>
                 {/if}
 
                 {#if !narrow}
@@ -637,15 +643,6 @@
         background-color: rgba(210, 182, 116, 0.9);
         color: var(--background);
         font-size: 0.85rem;
-        pointer-events: auto;
-    }
-
-    .overlay.card {
-        left: 0.75rem;
-        bottom: 0.75rem;
-        width: min(26rem, calc(100% - 1.5rem));
-        max-height: calc(100% - 5rem);
-        overflow-y: auto;
         pointer-events: auto;
     }
 

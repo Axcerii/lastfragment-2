@@ -1,3 +1,9 @@
+<script lang="ts" module>
+    // La dernière fenêtre touchée passe devant les autres (sans dépasser les menus de la table).
+    let front = $state(0);
+    let count = 0;
+</script>
+
 <script lang="ts">
     // Fenêtre flottante : déplaçable par sa barre de titre, redimensionnable par ses bords
     // droit et bas et par son coin, réductible. Position et taille sont gardées dans ce navigateur.
@@ -10,12 +16,15 @@
         storageKey,
         initial,
         children,
+        onclose,
     }: {
         title: string;
         storageKey: string;
         /** Position de départ, par rapport au conteneur (valeurs négatives : depuis la droite / le bas). */
         initial: { x: number; y: number; width: number; height: number };
         children: Snippet;
+        /** Si présent, la barre de titre a un bouton de fermeture. */
+        onclose?: () => void;
     } = $props();
 
     const MIN_WIDTH = 260;
@@ -29,6 +38,10 @@
     let height = $state(0);
     let collapsed = $state(false);
     let ready = $state(false);
+    const id = ++count;
+    const raise = () => {
+        if (front !== id) front = id;
+    };
 
     const container = () => win?.offsetParent as HTMLElement | null;
 
@@ -149,7 +162,10 @@
     style:top="{y}px"
     style:width="{width}px"
     style:height={collapsed ? "auto" : `${height}px`}
+    style:z-index={front === id ? 36 : 35}
     aria-label={title}
+    onpointerdowncapture={raise}
+    onfocusin={raise}
 >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <header
@@ -164,6 +180,9 @@
         <button class="btn btn-small" onclick={toggle} aria-expanded={!collapsed} aria-label={collapsed ? "Déplier" : "Réduire"}>
             {collapsed ? "▴" : "▾"}
         </button>
+        {#if onclose}
+            <button class="btn btn-small" onclick={onclose} aria-label="Fermer">✕</button>
+        {/if}
     </header>
 
     <div class="body" hidden={collapsed}>
@@ -239,6 +258,10 @@
 
     h2 {
         flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         font-size: 1.05rem;
     }
 
@@ -300,5 +323,23 @@
     .handle:hover,
     .busy .handle {
         background-color: rgba(229, 184, 204, 0.18);
+    }
+
+    /* Au doigt, des poignées plus faciles à attraper. */
+    @media (pointer: coarse) {
+        .handle.right {
+            width: 16px;
+            bottom: 28px;
+        }
+
+        .handle.bottom {
+            height: 16px;
+            right: 28px;
+        }
+
+        .handle.corner {
+            width: 30px;
+            height: 30px;
+        }
     }
 </style>

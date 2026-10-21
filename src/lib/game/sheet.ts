@@ -19,7 +19,9 @@ interface Entry {
 
 /** Stats finales d'une fiche : base + pièces équipées + passifs. */
 export function sheetOf(base: StatBlock, inventory: Entry[], passives: PassiveEffect[]): Sheet {
-	const pieces = inventory.filter((e) => e.equipped && e.bonus).map((e) => e.bonus!);
+	const pieces = inventory
+		.filter((e) => e.equipped && e.bonus)
+		.map((e) => ({ ...e.bonus!, name: e.item.name }));
 	return computeSheet(base, pieces, passives);
 }
 

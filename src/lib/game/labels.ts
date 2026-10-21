@@ -19,6 +19,23 @@ export function isDragon(name: string | null | undefined): name is Dragon {
 	return (DRAGONS as readonly string[]).includes(name ?? '');
 }
 
+// Couleurs trop sombres pour porter un texte sombre.
+const DARK_DRAGONS = ['Shizari', 'Pestia', 'Chronos', 'Goliath', 'Drii'];
+
+/** Couleur d'un dragon éclaircie, lisible sur le fond sombre du site. */
+export function dragonText(dragon: string): string {
+	return dragon === 'Shizari' ? '#9a9a9a' : `color-mix(in srgb, var(--${dragon}) 75%, #fff)`;
+}
+
+/**
+ * Variables CSS d'un dragon : `--c` sa couleur, `--ink` le texte lisible posé dessus,
+ * `--c-text` sa couleur éclaircie, lisible sur le fond sombre du site.
+ */
+export function dragonVars(dragon: string): string {
+	const ink = DARK_DRAGONS.includes(dragon) ? 'var(--foreground)' : 'var(--background)';
+	return `--c: var(--${dragon}); --ink: ${ink}; --c-text: ${dragonText(dragon)}`;
+}
+
 export const RACE_LABELS: Record<string, string> = {
 	Humain: 'Humain',
 	Geant: 'Géant',
