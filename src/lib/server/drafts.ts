@@ -2,6 +2,7 @@ import { unlink } from 'fs/promises';
 import path from 'path';
 import { STAT_KEYS, type StatBlock } from '$lib/game/stats';
 import { prisma } from './prisma';
+import { RateLimiter } from './ratelimit';
 import { uploadDir } from './uploads';
 
 export const DRAFT_KINDS = { personnage: 'Personnage', monstre: 'Monstre' } as const;
@@ -51,18 +52,9 @@ async function removeDraftImage(image: string | null) {
 }
 
 // Limite simple contre les envois en rafale, par adresse IP, gardée en mémoire.
-const WINDOW_MS = 10 * 60 * 1000;
-const MAX_PER_WINDOW = 5;
-const recent = new Map<string, number[]>();
+const submissions = new RateLimiter(5, 10 * 60 * 1000);
 
 /** Vrai si cette adresse peut encore envoyer un brouillon maintenant (et compte l'envoi). */
 export function allowSubmission(address: string): boolean {
-	const now = Date.now();
-	const times = (recent.get(address) ?? []).filter((t) => now - t < WINDOW_MS);
-	if (times.length >= MAX_PER_WINDOW) {
-		recent.set(address, times);
-		return false;
-	}
-	recent.set(address, [...times, now]);
-	return true;
+	return submissions.take(address);
 }

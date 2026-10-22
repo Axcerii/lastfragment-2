@@ -975,8 +975,10 @@ const handlers: Record<string, Handler> = {
 
 export async function runAction(sessionId: number, viewer: Viewer, body: Body) {
 	if (viewer.spectator) error(403, 'La vue OBS est en lecture seule.');
-	const handler = handlers[String(body.type)];
-	if (!handler) error(400, 'Action inconnue.');
+	// Object.hasOwn : un type comme « constructor » ou « toString » ne doit pas atteindre Object.prototype.
+	const type = String(body.type);
+	if (!Object.hasOwn(handlers, type)) error(400, 'Action inconnue.');
+	const handler = handlers[type];
 
 	const ctx = new Context(sessionId, viewer);
 	const result = (await handler(ctx, body)) as { silent?: boolean } | undefined;

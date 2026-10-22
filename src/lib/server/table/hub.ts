@@ -30,6 +30,15 @@ export function join(sessionId: number, client: Client): () => void {
 	};
 }
 
+/** Nombre de flux ouverts par un compte, toutes parties confondues (onglets, appareils). */
+export function connectionsOf(playerId: number): number {
+	let count = 0;
+	for (const room of rooms.values()) {
+		for (const client of room) if (client.viewer.playerId === playerId) count++;
+	}
+	return count;
+}
+
 /** Joueurs actuellement connectés à une partie (hors MJ et vue OBS). */
 export function connectedPlayers(sessionId: number): string[] {
 	const names = new Set<string>();

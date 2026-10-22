@@ -1,13 +1,20 @@
+import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { join } from '$lib/server/table/hub';
+import { connectionsOf, join } from '$lib/server/table/hub';
 import { tableViewer } from '$lib/server/table/access';
 import { buildView, loadRaw, recentLogs } from '$lib/server/table/state';
 
 // Flux temps réel d'une partie (Server-Sent Events) : état complet à chaque changement,
 // lignes du journal au fil de l'eau.
+
+const MAX_STREAMS_PER_ACCOUNT = 12;
 export const GET: RequestHandler = async ({ params, locals, url, request }) => {
 	const sessionId = Number(params.id);
 	const viewer = await tableViewer(sessionId, locals.user, url.searchParams.get('key'));
+	// Chaque flux garde une connexion et de la mémoire : un compte ne peut pas en ouvrir à l'infini.
+	if (viewer.playerId !== null && connectionsOf(viewer.playerId) >= MAX_STREAMS_PER_ACCOUNT) {
+		error(429, 'Trop d’onglets ouverts sur la table de jeu.');
+	}
 	const encoder = new TextEncoder();
 	let cleanup = () => {};
 

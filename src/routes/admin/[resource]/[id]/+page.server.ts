@@ -7,6 +7,8 @@ import {
 	relationOptions,
 	saveRecord
 } from '$lib/server/admin/crud';
+import { startSession } from '$lib/server/auth';
+import { prisma } from '$lib/server/prisma';
 import type { Actions, PageServerLoad } from './$types';
 
 const NEW = 'nouveau';
@@ -35,17 +37,24 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	save: async ({ request, params }) => {
+	save: async ({ request, params, locals, cookies }) => {
 		const resource = getResource(params.resource);
 		const id = recordId(params.id);
+		const form = await request.formData();
 
 		let savedId: number;
 		try {
-			savedId = await saveRecord(resource, id, await request.formData());
+			savedId = await saveRecord(resource, id, form);
 		} catch (e) {
 			const message = describeError(e);
 			if (!message) throw e;
 			return fail(400, { error: message });
+		}
+
+		// Changer un mot de passe ferme les sessions du compte : le MJ qui change le sien reste connecté.
+		if (resource.model === 'player' && id === locals.user?.id && String(form.get('password') ?? '').trim()) {
+			const self = await prisma.player.findUnique({ where: { id }, select: { id: true, password: true } });
+			if (self) startSession(cookies, self);
 		}
 
 		// Après une création, on arrive sur la fiche d'édition du nouvel enregistrement.

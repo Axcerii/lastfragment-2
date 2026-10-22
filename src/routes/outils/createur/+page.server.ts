@@ -38,6 +38,10 @@ export const actions: Actions = {
 		let image: string | null = null;
 		const file = form.get('image');
 		if (file instanceof File && file.size > 0) {
+			// Un SVG peut contenir du script : on ne l'accepte pas d'un visiteur anonyme.
+			if (file.type === 'image/svg+xml') {
+				return fail(400, { ...keep, error: 'Les images SVG ne sont pas acceptées ici (jpg, png, webp, gif).' });
+			}
 			try {
 				image = await saveImage(file, DRAFT_IMAGE_FOLDER);
 			} catch (e) {

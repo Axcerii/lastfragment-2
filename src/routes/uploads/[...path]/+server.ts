@@ -1,6 +1,8 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
-import { readFile, stat } from 'fs/promises';
+import { createReadStream } from 'fs';
+import { stat } from 'fs/promises';
 import path from 'path';
+import { Readable } from 'stream';
 import { uploadDir } from '$lib/server/uploads';
 
 // Sert les fichiers envoyés après le build (portraits, icônes, médias de la table de jeu)
@@ -29,10 +31,14 @@ const HEADERS = {
 	// Les noms de fichiers sont uniques (horodatés) : le navigateur peut les garder longtemps.
 	'Cache-Control': 'public, max-age=31536000, immutable',
 	// Un SVG envoyé ne doit pas pouvoir exécuter de script s'il est ouvert directement.
-	'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
+	'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
 	'X-Content-Type-Options': 'nosniff',
 	'Accept-Ranges': 'bytes'
 };
+
+/** Lit le fichier au fil de l'envoi : une musique de 40 Mo ne passe jamais entière en mémoire. */
+const streamOf = (file: string, start?: number, end?: number) =>
+	Readable.toWeb(createReadStream(file, { start, end })) as ReadableStream;
 
 export const GET: RequestHandler = async ({ params, request }) => {
 	const root = uploadDir();
@@ -44,11 +50,12 @@ export const GET: RequestHandler = async ({ params, request }) => {
 
 	let size: number;
 	try {
-		size = (await stat(file)).size;
+		const info = await stat(file);
+		if (!info.isFile()) error(404, 'Fichier introuvable.');
+		size = info.size;
 	} catch {
 		error(404, 'Fichier introuvable.');
 	}
-	const content = await readFile(file);
 
 	// Les lecteurs audio demandent des morceaux du fichier (avance rapide, reprise en boucle).
 	const range = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get('range') ?? '');
@@ -58,7 +65,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		if (start >= size || start > end) {
 			return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
 		}
-		return new Response(new Uint8Array(content.subarray(start, end + 1)), {
+		return new Response(streamOf(file, start, end), {
 			status: 206,
 			headers: {
 				...HEADERS,
@@ -69,7 +76,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		});
 	}
 
-	return new Response(new Uint8Array(content), {
+	return new Response(streamOf(file), {
 		headers: { ...HEADERS, 'Content-Type': type, 'Content-Length': String(size) }
 	});
 };
