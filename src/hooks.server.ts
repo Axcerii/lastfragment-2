@@ -1,7 +1,18 @@
 import type { Handle } from '@sveltejs/kit';
 import { readSession, requireAdmin } from '$lib/server/auth';
 
+const UNSAFE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
 export const handle: Handle = async ({ event, resolve }) => {
+	// SvelteKit ne contrôle l'origine que des formulaires : on l'étend aux requêtes JSON
+	// (actions de la table de jeu, médiathèque) et au flux temps réel, qu'une autre origine ne
+	// doit jamais pouvoir ouvrir avec le cookie du joueur.
+	const origin = event.request.headers.get('origin');
+	const stream = event.request.headers.get('accept')?.includes('text/event-stream');
+	if (origin && origin !== event.url.origin && (UNSAFE_METHODS.includes(event.request.method) || stream)) {
+		return new Response('Requête d’une autre origine refusée.', { status: 403 });
+	}
+
 	event.locals.user = await readSession(event.cookies);
 
 	// Tout ce qui est sous /admin est réservé au MJ, pages comme actions.

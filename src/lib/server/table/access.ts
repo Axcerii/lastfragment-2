@@ -17,7 +17,10 @@ function sameSecret(given: string, expected: string): boolean {
  * ou la vue OBS munie de sa clé secrète.
  */
 export async function tableViewer(sessionId: number, user: User, key?: string | null): Promise<Viewer> {
-	if (!Number.isInteger(sessionId)) error(404, 'Partie introuvable.');
+	// Entier positif tenant dans une colonne INT : sinon Prisma lèverait une erreur 500.
+	if (!Number.isInteger(sessionId) || sessionId < 1 || sessionId > 2_147_483_647) {
+		error(404, 'Partie introuvable.');
+	}
 	const session = await prisma.tableSession.findUnique({
 		where: { id: sessionId },
 		select: { open: true, obsKey: true }

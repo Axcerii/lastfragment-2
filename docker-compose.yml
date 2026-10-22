@@ -7,36 +7,80 @@
 # Les valeurs viennent du fichier .env (voir .env.example).
 # Tout est préfixé « lastfragment2 » (conteneurs, réseau, volumes) pour ne rien partager
 # avec les autres projets Docker de la machine.
+#
+# En développement, docker-compose.dev.yml ouvre en plus la base sur 127.0.0.1 (voir COMPOSE_FILE
+# dans .env.example). En production, ce fichier seul : la base n'est joignable que par le site.
 name: lastfragment2
 
+# Options de durcissement communes au site et à sa migration.
+x-hardening: &hardening
+  # Système de fichiers en lecture seule : seuls /tmp (en mémoire) et le volume d'uploads s'écrivent.
+  read_only: true
+  tmpfs:
+    - /tmp
+  # Aucun privilège Linux : le site écoute sur le port 3000, il n'en a besoin d'aucun.
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+
 services:
+  # Tâche de démarrage : met la base au niveau du schéma, crée le compte MySQL du site et le compte
+  # MJ, puis s'arrête. Seul conteneur à connaître les comptes MySQL privilégiés.
+  migrate:
+    <<: *hardening
+    build: .
+    image: lastfragment2-app
+    command: migrate
+    restart: 'no'
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-lastfragment}:${MYSQL_PASSWORD:?MYSQL_PASSWORD manquant dans .env}@db:3306/${MYSQL_DATABASE:-lastfragment}
+      ROOT_DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD manquant dans .env}@db:3306/${MYSQL_DATABASE:-lastfragment}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-lastfragment}
+      MYSQL_APP_USER: ${MYSQL_APP_USER:-lastfragment_app}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?MYSQL_APP_PASSWORD manquant dans .env}
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
+    networks: [backend]
+
   app:
+    <<: *hardening
     build: .
     image: lastfragment2-app
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
-      # Seul le site est exposé. APP_PORT évite les conflits avec un autre projet.
-      - ${APP_PORT:-3010}:3000
+      # Seul le site est exposé, et uniquement à cette machine : le reverse proxy (Caddy) le
+      # publie en HTTPS. APP_PORT évite les conflits avec un autre projet.
+      - 127.0.0.1:${APP_PORT:-3010}:3000
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-lastfragment}:${MYSQL_PASSWORD:?MYSQL_PASSWORD manquant dans .env}@db:3306/${MYSQL_DATABASE:-lastfragment}
+      # Compte MySQL limité aux données (SELECT, INSERT, UPDATE, DELETE), créé par `migrate`.
+      DATABASE_URL: mysql://${MYSQL_APP_USER:-lastfragment_app}:${MYSQL_APP_PASSWORD:?MYSQL_APP_PASSWORD manquant dans .env}@db:3306/${MYSQL_DATABASE:-lastfragment}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
       # Adresse publique du site : SvelteKit refuse les formulaires venant d'une autre origine.
       ORIGIN: ${ORIGIN:-http://localhost:3010}
-      # Derrière un proxy (Nginx, Traefik, Cloudflare…), en-tête qui porte l'IP du visiteur,
+      # Derrière un proxy (Caddy, Nginx, Cloudflare…), en-tête qui porte l'IP du visiteur,
       # par ex. X-Forwarded-For. Sans lui, les limites de tentatives visent l'IP du proxy, donc tout le monde.
       ADDRESS_HEADER: ${ADDRESS_HEADER:-}
       XFF_DEPTH: ${XFF_DEPTH:-1}
       PUBLIC_LORE_URL: ${PUBLIC_LORE_URL:-}
-      ADMIN_LOGIN: ${ADMIN_LOGIN:-}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
       # Taille maximale d’une requête : images jusqu’à 8 Mo, musiques de la table de jeu jusqu’à 40 Mo.
       BODY_SIZE_LIMIT: 50M
     volumes:
       - uploads:/data/uploads
+    # Plafonds : une attaque (ou un bug) sur le site ne peut pas affamer les autres projets du serveur.
+    deploy:
+      resources:
+        limits:
+          cpus: '${APP_CPUS:-1.0}'
+          memory: ${APP_MEMORY:-768M}
+          pids: 200
+    networks: [backend, default]
 
   db:
     image: mysql:8.4
@@ -49,16 +93,25 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - db_data:/var/lib/mysql
-    # La base n'est joignable que depuis cette machine (127.0.0.1), pour un outil SQL ou le serveur de dev.
-    # Le port 3307 évite le conflit avec un MySQL local sur 3306. Retirer ces lignes pour la fermer complètement.
-    ports:
-      - '127.0.0.1:${DB_PORT:-3306}:3306'
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '${DB_CPUS:-1.0}'
+          memory: ${DB_MEMORY:-1G}
     healthcheck:
       test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" --silent']
       interval: 5s
       timeout: 5s
       retries: 20
       start_period: 20s
+    # Réseau interne uniquement : aucun port publié, pas d'accès à Internet.
+    networks: [backend]
+
+networks:
+  backend:
+    internal: true
 
 volumes:
   db_data:
