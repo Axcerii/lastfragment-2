@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+        stroke-width: 20px;
+      }
+    </style>
+  </defs>
+  <g id="Pestia">
+    <circle class="cls-1" cx="500" cy="500.5" r="422.7"/>
+    <g>
+      <circle class="cls-1" cx="444.3" cy="225.6" r="52.1"/>
+      <circle class="cls-1" cx="286" cy="380.6" r="27.3"/>
+      <circle class="cls-1" cx="562.2" cy="336.3" r="27.3"/>
+      <circle class="cls-1" cx="250.1" cy="580.8" r="52.1"/>
+      <circle class="cls-1" cx="401.1" cy="602" r="27.3"/>
+      <circle class="cls-1" cx="627.4" cy="620.2" r="27.3"/>
+      <circle class="cls-1" cx="793.7" cy="711.1" r="27.3"/>
+      <line class="cls-1" x1="396.8" y1="247" x2="298.9" y2="356.5"/>
+      <line class="cls-1" x1="280.4" y1="407.3" x2="255.3" y2="528.7"/>
+      <line class="cls-1" x1="300.7" y1="592.9" x2="373.7" y2="599.5"/>
+      <line class="cls-1" x1="428.4" y1="604.1" x2="600.1" y2="620.2"/>
+      <line class="cls-1" x1="488.5" y1="253.2" x2="544.7" y2="315.3"/>
+      <line class="cls-1" x1="576.2" y1="359.8" x2="619.4" y2="592.9"/>
+      <line class="cls-1" x1="649" y1="637" x2="767.8" y2="702.2"/>
+    </g>
+  </g>
+</svg>

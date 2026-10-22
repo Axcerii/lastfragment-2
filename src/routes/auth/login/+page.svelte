@@ -1,97 +1,160 @@
 <script lang="ts">
-	let login = '';
-	let password = '';
-	let message = '';
-	let loggedIn = false;
+	import { enhance } from "$app/forms";
+	import Cta from "$lib/components/Cta.svelte";
 
-	async function register() {
-		message = '⏳ Inscription...';
-		const res = await fetch('/auth/register', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ login, password })
-		});
+	let { form } = $props();
 
-		const data = await res.json();
-		message = data.message || data.error || 'Erreur inconnue';
-	}
-
-	async function loginf() {
-		message = '⏳ Connexion...';
-		const res = await fetch('/auth/login', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ login, password })
-		});
-
-		const data = await res.json();
-
-		if (res.ok) {
-			message = '✅ Connecté avec succès !';
-			loggedIn = true;
-		} else {
-			message = data.error || 'Erreur de connexion';
-		}
-	}
-
-	async function logout() {
-		await fetch('/api/logout', { method: 'POST' });
-		loggedIn = false;
-		message = '🚪 Déconnecté.';
-	}
-
-	async function checkProfile() {
-		const res = await fetch('/api/profile');
-		const data = await res.json();
-
-		if (res.ok) {
-			message = `👤 Profil : ${JSON.stringify(data.user)}`;
-		} else {
-			message = data.error || 'Erreur.';
-		}
-	}
+	let registering = $state(form?.mode === "register");
+	let login = $state(form?.login ?? "");
 </script>
 
-<h1>🔐 Test Auth JWT + BCrypt</h1>
+<svelte:head>
+	<title>{registering ? "Création de compte" : "Connexion"} : Last Fragment</title>
+</svelte:head>
 
-<form on:submit|preventDefault={register}>
-	<h2>Créer un compte</h2>
-	<input type="text" bind:value={login} placeholder="Nom d'utilisateur" required />
-	<input type="password" bind:value={password} placeholder="Mot de passe" required />
-	<button type="submit">S'inscrire</button>
-</form>
+{#if registering}
+	<div class="inscription">
+		<form method="POST" action="?/register" use:enhance>
+			<h2>Création de compte :</h2>
+			<div>
+				<label for="login">Nom d'utilisateur :</label>
+				<input
+					type="text"
+					bind:value={login}
+					placeholder="Serena"
+					required
+					id="login"
+					name="login"
+					autocomplete="username"
+				/>
+			</div>
+			<div>
+				<label for="password">Mot de passe :</label>
+				<input
+					type="password"
+					placeholder="****************"
+					required
+					id="password"
+					name="password"
+					autocomplete="new-password"
+				/>
+			</div>
+			<div>
+				<label for="password-confirm">Confirmer le mot de passe :</label>
+				<input
+					type="password"
+					placeholder="****************"
+					required
+					id="password-confirm"
+					name="passwordConfirm"
+					autocomplete="new-password"
+				/>
+			</div>
+			{#if form?.error}
+				<p class="message-error" role="alert">{form.error}</p>
+			{/if}
+			<Cta text="S'inscrire" />
+		</form>
+		<div class="separateur"></div>
+		<Cta
+			text="Page de connexion"
+			dragon="Yinva"
+			border="Artrish"
+			onClick={() => (registering = false)}
+		/>
 
-<hr />
+		<img src="/dragons/tampons/Artrish.svg" alt="" class="form-image" />
+	</div>
+{:else}
+	<div class="connexion">
+		<form method="POST" action="?/login" use:enhance>
+			<h2>Formulaire de connexion :</h2>
+			<div>
+				<label for="login">Nom d'utilisateur :</label>
+				<input
+					type="text"
+					bind:value={login}
+					placeholder="Lucii"
+					id="login"
+					name="login"
+					autocomplete="username"
+					required
+				/>
+			</div>
+			<div>
+				<label for="password">Mot de passe :</label>
+				<input
+					type="password"
+					placeholder="****************"
+					id="password"
+					name="password"
+					autocomplete="current-password"
+					required
+				/>
+			</div>
+			{#if form?.error}
+				<p class="message-error" role="alert">{form.error}</p>
+			{/if}
+			<Cta text="Se connecter" dragon="Yinva" border="Artrish" />
+		</form>
+		<div class="separateur"></div>
+		<Cta text="Créer un compte" onClick={() => (registering = true)} />
 
-<form on:submit|preventDefault={loginf}>
-	<h2>Connexion</h2>
-	<input type="text" bind:value={login} placeholder="Email" required />
-	<input type="password" bind:value={password} placeholder="Mot de passe" required />
-	<button type="submit">Se connecter</button>
-</form>
-
-{#if loggedIn}
-	<div style="margin-top:1rem;">
-		<button on:click={checkProfile}>👤 Voir le profil</button>
-		<button on:click={logout}>🚪 Se déconnecter</button>
+		<img src="/dragons/tampons/Yinva.svg" alt="" class="form-image" />
 	</div>
 {/if}
 
-<p style="margin-top:1rem; color: #555;">{message}</p>
-
 <style>
 	form {
-		margin: 1rem 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
-		max-width: 300px;
+		gap: 2rem;
+		width: 100%;
 	}
-	input, button {
-		padding: 0.5rem;
-		font-size: 1rem;
+
+	.inscription,
+	.connexion {
+		position: relative;
+		width: 50%;
+		max-width: 675px;
+		display: flex;
+		flex-direction: column;
+		margin: auto;
+		gap: 32px;
+
+		margin-top: 3rem;
 	}
-	button {
-		cursor: pointer;
+
+	.separateur {
+		width: 50%;
+		margin: auto;
+		background-color: var(--foreground);
+		height: 2px;
+	}
+
+	h2 {
+		font-size: 32px;
+	}
+
+	.form-image {
+		width: 120%;
+		position: absolute;
+		z-index: -1;
+		top: -20%;
+		left: 50%;
+		transform: translateX(-50%);
+		opacity: 0.3;
+	}
+
+	@media only screen and (max-width: 600px) {
+		.inscription,
+		.connexion {
+			width: 90%;
+		}
+
+		.form-image {
+			width: 100%;
+			top: 0;
+		}
 	}
 </style>

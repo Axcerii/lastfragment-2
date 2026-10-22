@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1 {
+        stroke-width: 20px;
+      }
+
+      .cls-2 {
+        stroke-width: 80px;
+      }
+
+      .cls-3 {
+        stroke-width: 10px;
+      }
+
+      .cls-4 {
+        stroke-width: 40px;
+      }
+    </style>
+  </defs>
+  <g id="Yinva">
+    <circle class="cls-1" cx="246.3" cy="367.7" r="52.3"/>
+    <circle class="cls-1" cx="753.7" cy="367.7" r="52.3"/>
+    <g>
+      <line class="cls-2" x1="293.7" y1="367.7" x2="706.1" y2="367.7"/>
+      <line class="cls-2" x1="500" y1="161.6" x2="500" y2="573.9"/>
+    </g>
+    <line class="cls-3" x1="246.3" y1="420" x2="246.3" y2="798.9"/>
+    <line class="cls-3" x1="753.7" y1="420" x2="753.7" y2="798.9"/>
+    <line class="cls-3" x1="500" y1="554.6" x2="500" y2="900.3"/>
+    <circle class="cls-4" cx="499.9" cy="500" r="400.3"/>
+  </g>
+</svg>

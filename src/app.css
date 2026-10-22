@@ -5,19 +5,87 @@
    License: none (public domain)
 */
 
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed, 
-figure, figcaption, footer, header, hgroup, 
-menu, nav, output, ruby, section, summary,
-time, mark, audio, video {
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+b,
+u,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+canvas,
+details,
+embed,
+figure,
+figcaption,
+footer,
+header,
+hgroup,
+menu,
+nav,
+output,
+ruby,
+section,
+summary,
+time,
+mark,
+audio,
+video {
 	margin: 0;
 	padding: 0;
 	border: 0;
@@ -25,58 +93,287 @@ time, mark, audio, video {
 	font: inherit;
 	vertical-align: baseline;
 }
+
 /* HTML5 display-role reset for older browsers */
-article, aside, details, figcaption, figure, 
-footer, header, hgroup, menu, nav, section {
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section {
 	display: block;
 }
+
 body {
 	line-height: 1;
 }
-ol, ul {
+
+ol,
+ul {
 	list-style: none;
 }
-blockquote, q {
+
+blockquote,
+q {
 	quotes: none;
 }
-blockquote:before, blockquote:after,
-q:before, q:after {
+
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
 	content: '';
 	content: none;
 }
+
 table {
 	border-collapse: collapse;
 	border-spacing: 0;
 }
 
 a {
-    color: inherit;
-    text-decoration: none;
+	color: inherit;
+	text-decoration: none;
 }
 
 /* Fin du reset */
 
-:root{
-    --foreground: #fff;
-    --background: #1b1b1b;
-    --accent: #E5B8CC;
-    --primary: #CFDFC4;
-    --secondary: #D2B674;
+:root {
+	--foreground: #fff;
+	--background: #1b1b1b;
+	--accent: #E5B8CC;
+	--primary: #CFDFC4;
+	--secondary: #D2B674;
 	--radius: 5px;
-	--titleFont: 'El Messiri', sans-serif;
-	--textFont: 'EB Garamond', serif;
+	--textFont: 'El Messiri', sans-serif;
+	--titleFont: 'EB Garamond', serif;
+
+	--Artrish: #fff;
+	--Yinva: #E5B8CC;
+	--Guizamark: #CFDFC4;
+	--Shizari: #1b1b1b;
+	--Pestia: #615DD3;
+	--Chronos: #CA4444;
+	--Aqua: #a6a6a6;
+	--Goliath: #84583C;
+	--Drii: #803084;
+	--Lada: #F3F09E;
+	--Pura: #D2B674;
+
+	--transition: 0.3s all ease-in-out;
 }
 
-html{
-    background-color: var(--background);
-    color: var(--foreground);
+html {
+	background-color: var(--background);
+	background-image: url("/layout/soft-neige1B1B1B.png");
+	color: var(--foreground);
 	font-family: var(--textFont);
+	font-size: 20px;
 }
 
-.primary-svg{
+.primary-svg {
 	filter: invert(90%) sepia(13%) saturate(311%) hue-rotate(52deg) brightness(101%) contrast(81%);
 }
 
-.accent-svg{
+.accent-svg {
 	filter: invert(78%) sepia(52%) saturate(214%) hue-rotate(293deg) brightness(95%) contrast(88%);
+}
+
+.secondary-svg {
+	filter: invert(76%) sepia(57%) saturate(281%) hue-rotate(2deg) brightness(88%) contrast(87%);
+}
+
+input {
+	background-color: var(--primary);
+	border: var(--foreground) 1px solid;
+	border-radius: var(--radius);
+	font-size: 20px;
+	width: 100%;
+	height: 48px;
+	font-family: var(--textFont);
+
+	box-sizing: border-box;
+	padding: 0 1rem;
+}
+
+input::placeholder {
+	color: rgba(0, 0, 0, 0.5);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--titleFont);
+}
+
+/* Raretés des objets, de Commun à Unique */
+:root {
+	--rarity-1: #b9b9b9;
+	--rarity-2: #cfdfc4;
+	--rarity-3: #7fa8e0;
+	--rarity-4: #d2b674;
+	--rarity-5: #e5b8cc;
+
+	--surface: #232323;
+	--surface-raised: #2c2c2c;
+	--border: rgba(207, 223, 196, 0.35);
+	--danger: #ca4444;
+	--muted: rgba(255, 255, 255, 0.6);
+
+	/* Tout ce qui touche aux dés et à la chance prend la couleur de Chronos. */
+	--chance: var(--Chronos);
+	--chance-soft: rgba(202, 68, 68, 0.18);
+	--chance-glow: rgba(202, 68, 68, 0.35);
+
+	/* Ce qui agit sur ce que voient les joueurs prend la couleur de Guizamark. */
+	--players: var(--Guizamark);
+	--players-soft: rgba(207, 223, 196, 0.14);
+}
+
+body {
+	line-height: 1.35;
+}
+
+textarea,
+select {
+	background-color: var(--primary);
+	border: var(--foreground) 1px solid;
+	border-radius: var(--radius);
+	font-size: 20px;
+	width: 100%;
+	font-family: var(--textFont);
+	box-sizing: border-box;
+	padding: 0.5rem 1rem;
+}
+
+select {
+	height: 48px;
+}
+
+textarea {
+	min-height: 10rem;
+	resize: vertical;
+	line-height: 1.35;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+	width: auto;
+	height: auto;
+}
+
+input[type='file'] {
+	height: auto;
+	padding: 0.5rem 1rem;
+}
+
+button {
+	font-family: var(--textFont);
+	cursor: pointer;
+}
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-height: 40px;
+	padding: 0 1rem;
+	border: 1px solid var(--primary);
+	border-radius: var(--radius);
+	background-color: transparent;
+	color: var(--foreground);
+	font-size: 18px;
+	transition: var(--transition);
+}
+
+.btn:hover:not(:disabled) {
+	background-color: var(--primary);
+	color: var(--background);
+}
+
+.btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.btn-accent {
+	border-color: var(--accent);
+}
+
+.btn-accent:hover:not(:disabled) {
+	background-color: var(--accent);
+}
+
+.btn-chance {
+	border-color: var(--chance);
+}
+
+.btn-chance:hover:not(:disabled) {
+	background-color: var(--chance);
+	color: var(--foreground);
+}
+
+.btn-players {
+	border-color: var(--players);
+	color: var(--players);
+	background-color: var(--players-soft);
+}
+
+.btn-players:hover:not(:disabled) {
+	background-color: var(--players);
+	color: var(--background);
+}
+
+/* Case à cocher qui change ce que voient les joueurs. */
+.players-check {
+	color: var(--players);
+	accent-color: var(--players);
+}
+
+.btn-danger {
+	border-color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+	background-color: var(--danger);
+	color: var(--foreground);
+}
+
+.btn-small {
+	min-height: 32px;
+	padding: 0 0.6rem;
+	font-size: 16px;
+}
+
+.panel {
+	background-color: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 1.25rem;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.message-error {
+	color: #ff9c9c;
+}
+
+.message-success {
+	color: var(--primary);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
 }

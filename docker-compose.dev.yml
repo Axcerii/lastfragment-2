@@ -1,0 +1,10 @@
+# Ajouts pour le développement local uniquement, jamais en production.
+# Activé par COMPOSE_FILE dans le .env (voir .env.example), ou à la main :
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+services:
+  db:
+    # La base devient joignable depuis cette machine (127.0.0.1), pour un outil SQL ou `npm run dev`.
+    # Le réseau par défaut est nécessaire : un réseau interne ne publie aucun port.
+    networks: [backend, default]
+    ports:
+      - '127.0.0.1:${DB_PORT:-3306}:3306'

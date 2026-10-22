@@ -1,7 +1,7 @@
-// src/routes/api/logout/+server.ts
-import { json, type RequestHandler } from '@sveltejs/kit';
+import { redirect, type RequestHandler } from '@sveltejs/kit';
+import { endSession } from '$lib/server/auth';
 
-export const POST: RequestHandler = async ({ cookies }) => {
-	cookies.delete('jwt', { path: '/' });
-	return json({ message: 'Logged out successfully' });
+export const POST: RequestHandler = ({ cookies }) => {
+	endSession(cookies);
+	redirect(303, '/accueil');
 };

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #1d1d1b;
+        stroke-miterlimit: 10;
+        stroke-width: 50px;
+      }
+    </style>
+  </defs>
+  <g id="Arme">
+    <polyline class="cls-1" points="243.91 654.09 85.05 812.96 162.99 890.9 321.85 732.03"/>
+    <rect class="cls-1" x="257.9" y="442" width="98.04" height="447.3" transform="translate(-380.79 411.99) rotate(-45)"/>
+    <polyline class="cls-1" points="422.49 711.89 872.27 349.59 864.91 111 864.91 111 626.16 103.48 263.38 552.78"/>
+    <line class="cls-1" x1="343.18" y1="632.57" x2="525.91" y2="449.84"/>
+  </g>
+</svg>

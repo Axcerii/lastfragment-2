@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-1, .cls-3 {
+        stroke: #1c1d1b;
+        stroke-miterlimit: 10;
+        stroke-width: 50px;
+      }
+
+      .cls-2 {
+        fill: #1c1d1b;
+      }
+
+      .cls-3 {
+        fill: #1b1b1b;
+      }
+    </style>
+  </defs>
+  <g id="Munition">
+    <g>
+      <line class="cls-1" x1="835.71" y1="704" x2="177.42" y2="704"/>
+      <polygon class="cls-2" points="810.9 619.23 957.69 703.99 810.9 788.76 810.9 619.23"/>
+    </g>
+    <polygon class="cls-3" points="114.3 652.56 224.32 652.56 271.83 704 166.46 704 114.3 652.56"/>
+    <polygon class="cls-3" points="271.83 704 161.81 704 114.3 755.44 219.68 755.44 271.83 704"/>
+    <g>
+      <line class="cls-1" x1="835.71" y1="500" x2="177.42" y2="500"/>
+      <polygon class="cls-2" points="810.9 415.23 957.69 499.99 810.9 584.76 810.9 415.23"/>
+    </g>
+    <polygon class="cls-3" points="114.3 448.56 224.32 448.56 271.83 500 166.46 500 114.3 448.56"/>
+    <polygon class="cls-3" points="271.83 500 161.81 500 114.3 551.44 219.68 551.44 271.83 500"/>
+    <g>
+      <line class="cls-1" x1="835.71" y1="296" x2="177.42" y2="296"/>
+      <polygon class="cls-2" points="810.9 211.23 957.69 295.99 810.9 380.76 810.9 211.23"/>
+    </g>
+    <polygon class="cls-3" points="114.3 244.56 224.32 244.56 271.83 296 166.46 296 114.3 244.56"/>
+    <polygon class="cls-3" points="271.83 296 161.81 296 114.3 347.44 219.68 347.44 271.83 296"/>
+  </g>
+</svg>

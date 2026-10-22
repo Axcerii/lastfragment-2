@@ -1,16 +1,20 @@
 <script lang="ts">
-    let { click } = $props();
-
-    let line = $state(false);
-
-    function toggleAnimation (){
-        click();
-        line = !line;
-    }
+    let { open = false, click }: { open?: boolean; click: () => void } = $props();
 </script>
 
+<button
+    aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+    aria-expanded={open}
+    onclick={click}
+    class:open
+>
+    <span class="line"></span>
+    <span class="line"></span>
+    <span class="line"></span>
+</button>
+
 <style>
-    button{
+    button {
         width: 67px;
         height: 67px;
         background-color: var(--background);
@@ -25,7 +29,11 @@
         transition: all ease-in-out 400ms;
     }
 
-    .line{
+    button.open {
+        border: var(--primary) 2px solid;
+    }
+
+    .line {
         width: 100%;
         height: 7px;
         background-color: var(--primary);
@@ -33,12 +41,21 @@
         margin: auto;
         transition: all ease-in-out 400ms;
     }
+
+    .open .line {
+        background-color: var(--accent);
+    }
+
+    .open .line:nth-child(1) {
+        transform: rotate(45deg);
+        margin-bottom: -25px;
+    }
+
+    .open .line:nth-child(2) {
+        transform: rotate(-45deg);
+    }
+
+    .open .line:nth-child(3) {
+        display: none;
+    }
 </style>
-
-<button aria-label="Ouvrir Menu" onclick={toggleAnimation} style="{line ? 'border: var(--primary) 2px solid' : ''}">
-    <div class="line" style="{line ? 'transform: rotate(45deg); margin-bottom: -25px; background-color: var(--accent)': ''}"></div>
-    <div class="line" style="{line ? 'transform: rotate(-45deg); background-color: var(--accent)': ''}"></div>
-    <div class="line" style="{line ? 'display: none': ''}"></div>
-</button>
-
-

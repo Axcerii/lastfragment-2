@@ -1,0 +1,20 @@
+# Rien de local ne doit entrer dans l'image : dépendances, builds, secrets, sauvegardes.
+node_modules
+.svelte-kit
+build
+generated
+backups
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.vscode
+.claude
+Dockerfile
+docker-compose*.yml
+# Données de test et import ponctuel : rien à faire dans l'image de production.
+prisma/seed-*.mjs
+prisma/import-v1.sql
+.dockerignore
+*.md

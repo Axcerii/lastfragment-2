@@ -1,0 +1,19 @@
+<svg id="Artrish" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+        stroke-width: 20px;
+      }
+    </style>
+  </defs>
+  <circle class="cls-1" cx="500" cy="500" r="188.8"/>
+  <circle class="cls-1" cx="500" cy="311.2" r="188.8"/>
+  <circle class="cls-1" cx="500" cy="688.8" r="188.8"/>
+  <circle class="cls-1" cx="663.7" cy="594.5" r="188.8"/>
+  <circle class="cls-1" cx="663.7" cy="405.7" r="188.8"/>
+  <circle class="cls-1" cx="336.5" cy="405.7" r="188.8"/>
+  <circle class="cls-1" cx="336.5" cy="594.5" r="188.8"/>
+</svg>

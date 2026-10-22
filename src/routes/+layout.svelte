@@ -1,15 +1,22 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
-	import '../app.css';
-	import Header from '$lib/components/layout/Header.svelte';
+	import "../app.css";
+	import { page } from "$app/state";
+	import Header from "$lib/components/layout/Header.svelte";
 
-	let { children } = $props();
+	let { children, data } = $props();
+
+	// L'accueil occupe tout l'écran et sert lui-même de menu ; la table de jeu et sa vue OBS aussi.
+	let bare = $derived(
+		page.route.id === "/accueil" || (page.route.id ?? "").startsWith("/outils/table/[id]")
+	);
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 </svelte:head>
 
-<Header />
+{#if !bare}
+	<Header user={data.user} />
+{/if}
 
 {@render children?.()}

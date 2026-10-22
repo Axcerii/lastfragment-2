@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1 {
+        stroke-width: 40px;
+      }
+
+      .cls-2 {
+        stroke-width: 10px;
+      }
+    </style>
+  </defs>
+  <g id="Chronos">
+    <polygon class="cls-1" points="500 109.4 280 246.1 720 753.9 500 890.6 280 753.9 720 246.1 500 109.4"/>
+    <line class="cls-1" x1="151.4" y1="100" x2="848.6" y2="100"/>
+    <line class="cls-1" x1="151.4" y1="900" x2="848.6" y2="900"/>
+    <line class="cls-2" x1="200" y1="100" x2="200" y2="900"/>
+    <line class="cls-2" x1="800" y1="100" x2="800" y2="900"/>
+    <line class="cls-2" x1="500" y1="507.1" x2="500" y2="883.4"/>
+  </g>
+</svg>

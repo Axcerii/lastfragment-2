@@ -12,8 +12,8 @@ datasource db {
 
 enum Race {
   Humain
-  Geant      @map("Géant")
-  Eternelle  @map("Éternelle")
+  Geant     @map("Géant")
+  Eternelle @map("Éternelle")
   Inconnu
   Dragon
   Ange
@@ -26,7 +26,7 @@ enum Country {
   Amari
   Mudan
   Edenia
-  Celeste   @map("Céleste")
+  Celeste  @map("Céleste")
   Saxifra
 }
 
@@ -72,221 +72,464 @@ enum SkillStatistic {
   PV
   QDF
   Endurance
-  Maitrise   @map("Maîtrise")
+  Maitrise     @map("Maîtrise")
   Force
-  Defense    @map("Défense")
+  Defense      @map("Défense")
   Vitesse
-  Precision  @map("Précision")
+  Precision    @map("Précision")
   Perception
-  Furtivite  @map("Furtivité")
+  Furtivite    @map("Furtivité")
   Charisme
-  Eloquence  @map("Éloquence")
+  Eloquence    @map("Éloquence")
   Intelligence
 }
 
 model Player {
-  id           BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
-  login        String  @unique @db.VarChar(255)
-  password     String  @db.VarChar(255)
-  role         BigInt  @db.BigInt
-  team         BigInt  @db.BigInt
-  characterId  BigInt? @map("character_id") @db.UnsignedBigInt
-  
+  id          Int    @id @default(autoincrement())
+  login       String @unique @db.VarChar(255)
+  password    String @db.VarChar(255)
+  role        Int    @db.Int
+  team        Int    @db.Int
+  characterId Int?   @map("character_id")
+  money       Int    @default(0) @db.Int
+
   // Relations
-  character    Character?        @relation(fields: [characterId], references: [id])
+  character     Character?     @relation(fields: [characterId], references: [id])
   itemsInPlayer ItemInPlayer[]
   badgesFusions BadgeFusion[]
-  
+  badges        PlayerBadge[]
+  drafts        Draft[]
+
   @@index([characterId], map: "players_character_id_index")
   @@map("players")
 }
 
 model Character {
-  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  visibility  Int      @db.SmallInt
-  name        String   @db.VarChar(255)
-  flux        String?  @db.VarChar(255)
-  dragon      String   @db.VarChar(255)
-  title       String?  @db.VarChar(255)
-  theme       String?  @db.VarChar(255)
+  id          Int     @id @default(autoincrement())
+  visibility  Int     @db.SmallInt
+  name        String  @db.VarChar(255)
+  flux        String? @db.VarChar(255)
+  job         String? @db.VarChar(255)
+  dragon      String  @db.VarChar(255)
+  title       String? @db.VarChar(255)
+  theme       String? @db.VarChar(255)
   race        Race
   country     Country
-  image       String   @db.VarChar(255)
-  description String   @db.Text
-  category    String   @db.VarChar(255)
-  current     Int      @db.SmallInt
-  
+  // Sans portrait, la silhouette par défaut est affichée
+  image       String? @db.VarChar(255)
+  description String  @db.Text
+  category    String  @db.VarChar(255)
+  current     Int     @db.SmallInt
+  dead        Boolean @default(false)
+  // Fiche « teaser » : visible dans la liste mais contenu masqué pour les joueurs
+  censored    Boolean @default(false)
+  quote       String? @db.VarChar(400)
+  // Armure choisie par le MJ (ids de `armors`, une par emplacement), sans passer par un inventaire
+  armorIds    Json?   @map("armor_ids")
+
   // Relations
-  players     Player[]
-  statistics  Statistic[]
-  passives    Passive[]
-  
+  players         Player[]
+  statistics      Statistic?
+  passives        Passive[]
+  characterSkills CharacterSkill[]
+
   @@map("characters")
 }
 
 model Monster {
-  id           BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
-  visibility   Int     @db.SmallInt
-  name         String  @db.VarChar(255)
-  dragon       String  @db.VarChar(255)
-  size         String  @db.VarChar(255)
-  weight       String  @db.VarChar(255)
-  dangerosity  BigInt  @db.BigInt
-  image        String  @db.VarChar(255)
-  effect       String  @db.Text
-  description  String  @db.Text
-  current      Int     @db.SmallInt
-  
+  id          Int    @id @default(autoincrement())
+  visibility  Int    @db.SmallInt
+  name        String @db.VarChar(255)
+  dragon      String @db.VarChar(255)
+  size        String @db.VarChar(255)
+  weight      String @db.VarChar(255)
+  dangerosity Int    @db.Int
+  image       String @db.VarChar(255)
+  effect      String @db.Text
+  description String @db.Text
+  current     Int    @db.SmallInt
+  // Armure choisie par le MJ (ids de `armors`, une par emplacement)
+  armorIds    Json?  @map("armor_ids")
+
+  // Relations
+  statistics Statistic?
+
   @@map("monsters")
 }
 
 model Statistic {
-  id          BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  characterId BigInt @map("character_id") @db.UnsignedBigInt
-  qdf         BigInt @db.BigInt
-  pv          BigInt @db.BigInt
-  endurance   BigInt @db.BigInt
-  strength    BigInt @db.BigInt
-  maitrise    BigInt @db.BigInt
-  defense     BigInt @db.BigInt
-  vitesse     BigInt @db.BigInt
-  accuracy    BigInt @db.BigInt
-  perception  BigInt @db.BigInt
-  furtivite   BigInt @db.BigInt
-  charisme    BigInt @db.BigInt
-  eloquence   BigInt @db.BigInt
-  intelligence BigInt @db.BigInt
-  
+  id           Int  @id @default(autoincrement())
+  characterId  Int? @unique @map("character_id")
+  monsterId    Int? @unique @map("monster_id")
+  qdf          Int  @db.Int
+  pv           Int  @db.Int
+  endurance    Int  @db.Int
+  strength     Int  @db.Int
+  maitrise     Int  @db.Int
+  defense      Int  @db.Int
+  vitesse      Int  @db.Int
+  accuracy     Int  @db.Int
+  perception   Int  @db.Int
+  furtivite    Int  @db.Int
+  charisme     Int  @db.Int
+  eloquence    Int  @db.Int
+  intelligence Int  @db.Int
+
   // Relations
-  character   Character @relation(fields: [characterId], references: [id])
-  
-  @@index([characterId], map: "statistics_character_id_index")
+  character Character? @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  monster   Monster?   @relation(fields: [monsterId], references: [id], onDelete: Cascade)
+
   @@map("statistics")
 }
 
 model Item {
-  id          BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  id          Int          @id @default(autoincrement())
+  name        String       @default("Objet") @db.VarChar(255)
   category    ItemCategory
-  rarity      BigInt       @db.BigInt
-  weight      BigInt       @db.BigInt
+  rarity      Int          @db.Int
+  weight      Int          @db.Int
   description String       @db.Text
-  
+  // Icône personnalisée ; à défaut, l'icône de la catégorie est utilisée
+  icon        String?      @db.VarChar(255)
+
   // Relations
   itemsInPlayer ItemInPlayer[]
   armors        Armor[]
-  
+
   @@map("items")
 }
 
 model ItemInPlayer {
-  id           BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  itemId       BigInt @map("item_id") @db.UnsignedBigInt
-  playerId     BigInt @map("player_id") @db.UnsignedBigInt
-  localisation String @db.VarChar(255)
-  
+  id           Int     @id @default(autoincrement())
+  itemId       Int     @map("item_id")
+  // null = objet du coffre commun
+  playerId     Int?    @map("player_id")
+  quantity     Int     @default(1) @db.Int
+  localisation String  @db.VarChar(255)
+  equipped     Boolean @default(false)
+
   // Relations
-  item         Item              @relation(fields: [itemId], references: [id])
-  player       Player            @relation(fields: [playerId], references: [id])
+  item          Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  player        Player?         @relation(fields: [playerId], references: [id], onDelete: Cascade)
   armorInPlayer ArmorInPlayer[]
-  foodsInBags  FoodInBag[]
-  
+  foodsInBags   FoodInBag[]
+
   @@map("items_in_player")
 }
 
 model Armor {
-  id         BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id         Int    @id @default(autoincrement())
   name       String @db.VarChar(255)
   statistics String @db.VarChar(255)
   values     String @db.VarChar(255)
-  itemId     BigInt @map("item_id") @db.UnsignedBigInt
-  
+  itemId     Int    @map("item_id")
+
   // Relations
-  item       Item            @relation(fields: [itemId], references: [id])
+  item          Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
   armorInPlayer ArmorInPlayer[]
-  
+
   @@map("armors")
 }
 
 model ArmorInPlayer {
-  id               BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  itemInPlayerId   BigInt @map("item_in_player_id") @db.UnsignedBigInt
-  armorId          BigInt @map("armor_id") @db.UnsignedBigInt
-  statistics       String @db.VarChar(255)
-  values           String @db.VarChar(255)
-  descriptionAdd   BigInt @map("description_add") @db.BigInt
-  notes            String @db.Text
-  
+  id             Int    @id @default(autoincrement())
+  itemInPlayerId Int    @map("item_in_player_id")
+  armorId        Int    @map("armor_id")
+  statistics     String @db.VarChar(255)
+  values         String @db.VarChar(255)
+  descriptionAdd String @map("description_add") @db.VarChar(255)
+  notes          String @db.Text
+
   // Relations
-  itemInPlayer     ItemInPlayer @relation(fields: [itemInPlayerId], references: [id])
-  armor            Armor        @relation(fields: [armorId], references: [id])
-  
+  itemInPlayer ItemInPlayer @relation(fields: [itemInPlayerId], references: [id], onDelete: Cascade)
+  armor        Armor        @relation(fields: [armorId], references: [id], onDelete: Cascade)
+
   @@map("armors_in_player")
 }
 
 model Food {
-  id     BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  id     Int      @id @default(autoincrement())
   name   String   @db.VarChar(255)
-  weight BigInt   @db.BigInt
+  weight Int      @db.Int
   type   FoodType
-  price  BigInt   @db.BigInt
-  
+  price  Int      @db.Int
+
   // Relations
   foodsInBags FoodInBag[]
-  
+
   @@map("foods")
 }
 
 model FoodInBag {
-  id             BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  itemInPlayerId BigInt @map("item_in_player_id") @db.UnsignedBigInt
-  foodId         BigInt @map("food_id") @db.UnsignedBigInt
-  
+  id             Int @id @default(autoincrement())
+  itemInPlayerId Int @map("item_in_player_id")
+  foodId         Int @map("food_id")
+  quantity       Int @default(1) @db.Int
+
   // Relations
-  itemInPlayer   ItemInPlayer @relation(fields: [itemInPlayerId], references: [id])
-  food           Food         @relation(fields: [foodId], references: [id])
-  
+  itemInPlayer ItemInPlayer @relation(fields: [itemInPlayerId], references: [id], onDelete: Cascade)
+  food         Food         @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
   @@map("foods_in_bags")
 }
 
 model Badge {
-  id          BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  id          Int    @id @default(autoincrement())
   badges      String @db.VarChar(255)
   name        String @db.VarChar(255)
   description String @db.Text
-  
+
   @@map("badges")
 }
 
+// Jeton de badge distribué par le MJ, consommé lors d'une fusion
+model PlayerBadge {
+  id       Int       @id @default(autoincrement())
+  playerId Int       @map("player_id")
+  badge    BadgeType
+  used     Boolean   @default(false)
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("player_badges")
+}
+
 model BadgeFusion {
-  id       BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  id       Int       @id @default(autoincrement())
   badge1   BadgeType @map("badge_1")
   badge2   BadgeType @map("badge_2")
-  playerId BigInt    @map("player_id") @db.UnsignedBigInt
-  
+  playerId Int       @map("player_id")
+
   // Relations
-  player   Player    @relation(fields: [playerId], references: [id])
-  
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
   @@map("badges_fusions")
 }
 
 model Skill {
-  id          BigInt         @id @default(autoincrement()) @db.UnsignedBigInt
-  statistics  SkillStatistic
-  name        String         @db.VarChar(255)
-  description String         @db.Text
-  level       BigInt         @db.BigInt
-  
+  id              Int              @id @default(autoincrement())
+  statistics      SkillStatistic
+  name            String           @db.VarChar(255)
+  description     String           @db.Text
+  level           Int              @db.Int
+  characterSkills CharacterSkill[]
+
   @@map("skills")
 }
 
-model Passive {
-  id          BigInt @id @default(autoincrement()) @db.UnsignedBigInt
-  characterId BigInt @map("character_id") @db.UnsignedBigInt
-  statistics  String @db.VarChar(255)
-  maths       String @db.VarChar(255)
-  
+model CharacterSkill {
+  id          Int @id @default(autoincrement())
+  characterId Int @map("character_id")
+  skillId     Int @map("skill_id")
+  level       Int @default(1) @db.Int
+
   // Relations
-  character   Character @relation(fields: [characterId], references: [id])
-  
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  skill     Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, skillId], map: "character_skills_character_skill_unique")
+  @@map("character_skills")
+}
+
+model Passive {
+  id            Int     @id @default(autoincrement())
+  characterId   Int     @map("character_id")
+  name          String  @default("") @db.VarChar(255)
+  description   String? @db.Text
+  active        Boolean @default(true)
+  statistics    String  @db.VarChar(255)
+  maths         String  @db.VarChar(255)
+  // Effet appliqué quand le passif est désactivé (même format que maths), optionnel
+  inactiveMaths String? @map("inactive_maths") @db.VarChar(255)
+
+  // Relations
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
   @@map("passives")
+}
+
+// Ligne unique (id = 1) : conteneurs d'inventaire accessibles aux joueurs
+model GameState {
+  id         Int     @id @default(1)
+  mainOpen   Boolean @default(true) @map("main_open")
+  bagOpen    Boolean @default(true) @map("bag_open")
+  chestOpen  Boolean @default(true) @map("chest_open")
+  horseOpen  Boolean @default(true) @map("horse_open")
+  commonOpen Boolean @default(true) @map("common_open")
+
+  @@map("game_state")
+}
+
+// Personnage ou monstre proposé depuis le créateur, en attente de validation par le MJ.
+// Validé, il est recopié dans `characters` ou `monsters` puis supprimé d'ici.
+model Draft {
+  id          Int      @id @default(autoincrement())
+  // "personnage" ou "monstre"
+  kind        String   @db.VarChar(20)
+  name        String   @db.VarChar(255)
+  description String   @db.Text
+  image       String?  @db.VarChar(255)
+  // Pseudo libre de l'auteur ; le compte est aussi gardé s'il était connecté
+  author      String?  @db.VarChar(100)
+  playerId    Int?     @map("player_id")
+  // Les 13 stats, mêmes clés que la table `statistics`
+  stats       Json
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  player Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@map("drafts")
+}
+
+// ─── Table de jeu (outil JDR en ligne) ───────────────────────────────────────
+
+// Une partie menée par le MJ. Les joueurs la rejoignent depuis Outils quand elle est ouverte.
+model TableSession {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  open         Boolean  @default(false)
+  // Scène montrée aux joueurs
+  sceneId      Int?     @map("scene_id")
+  // Clé secrète de la vue OBS, partagée par lien
+  obsKey       String   @map("obs_key") @db.VarChar(64)
+  combat       Boolean  @default(false)
+  // Ordre de passage (ids de jetons), affiché aux joueurs si `orderVisible`
+  order        Json
+  orderVisible Boolean  @default(false) @map("order_visible")
+  turn         Int?
+  // Image montrée en plein écran à tous les joueurs
+  showcase     String?  @db.VarChar(255)
+  // Piste en cours : { url, name, loop, playing, startedAt, offset }
+  music        Json?
+  // Ambiances superposées : [{ id, url, name, volume }]
+  ambiences    Json
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  scenes TableScene[]
+  tokens TableToken[]
+  logs   TableLog[]
+
+  @@map("table_sessions")
+}
+
+model TableScene {
+  id          Int     @id @default(autoincrement())
+  sessionId   Int     @map("session_id")
+  name        String  @db.VarChar(255)
+  background  String? @db.VarChar(255)
+  cols        Int     @default(24)
+  rows        Int     @default(16)
+  gridVisible Boolean @default(true) @map("grid_visible")
+  fogEnabled  Boolean @default(false) @map("fog_enabled")
+  // Indices des cases révélées (y * cols + x)
+  fog         Json
+  // Effets posés sur le fond : teinte, météo animée, calque (gif/webm) — voir SceneEffects
+  effects     Json?
+  // Musique lancée automatiquement quand la scène est montrée
+  musicUrl    String? @map("music_url") @db.VarChar(255)
+  musicName   String? @map("music_name") @db.VarChar(255)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  // Relations
+  session  TableSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tokens   TableToken[]
+  drawings TableDrawing[]
+
+  @@index([sessionId])
+  @@map("table_scenes")
+}
+
+model TableToken {
+  id         Int     @id @default(autoincrement())
+  sessionId  Int     @map("session_id")
+  sceneId    Int?    @map("scene_id")
+  // "player", "character", "monster" ou "custom"
+  kind       String  @db.VarChar(20)
+  playerId   Int?    @map("player_id")
+  // Personnage ou monstre d'origine
+  refId      Int?    @map("ref_id")
+  name       String  @db.VarChar(255)
+  image      String? @db.VarChar(255)
+  // "ally", "enemy" ou "neutral"
+  side       String  @default("enemy") @db.VarChar(10)
+  x          Int     @default(0)
+  y          Int     @default(0)
+  size       Int     @default(1)
+  // Invisible des joueurs
+  hidden     Boolean @default(false)
+  // Nom remplacé par « ??? » pour les joueurs
+  nameHidden Boolean @default(false) @map("name_hidden")
+  // Stats visibles des joueurs
+  revealed   Boolean @default(false)
+  // Stats finales (base + armure + passifs) et part due à l'armure, clés de `statistics`
+  stats      Json
+  armor      Json
+  // Jauges actuelles, en points bruts (le maximum est dans `stats`)
+  pv         Int     @default(0)
+  qdf        Int     @default(0)
+  endurance  Int     @default(0)
+
+  // Relations
+  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  scene   TableScene?  @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@map("table_tokens")
+}
+
+// Journal de la partie : jets, attaques, messages, événements
+model TableLog {
+  id        Int      @id @default(autoincrement())
+  sessionId Int      @map("session_id")
+  // "roll", "stat", "opposed", "attack", "chat", "system", "alert"
+  kind      String   @db.VarChar(20)
+  author    String   @db.VarChar(255)
+  playerId  Int?     @map("player_id")
+  // Visible du MJ seulement
+  hidden    Boolean  @default(false)
+  text      String   @db.Text
+  // Détail chiffré : `detail` pour le MJ, `publicDetail` pour les joueurs
+  data      Json?
+  undone    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, id])
+  @@map("table_logs")
+}
+
+// Bibliothèque de médias du MJ, partagée entre les parties
+model TableAsset {
+  id        Int      @id @default(autoincrement())
+  // "fond", "jeton", "image", "calque", "musique", "ambiance", "effet"
+  kind      String   @db.VarChar(20)
+  name      String   @db.VarChar(255)
+  url       String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("table_assets")
+}
+
+// Trait dessiné à main levée sur une scène, par un joueur ou le MJ
+model TableDrawing {
+  id        Int      @id @default(autoincrement())
+  sceneId   Int      @map("scene_id")
+  playerId  Int?     @map("player_id")
+  author    String   @db.VarChar(255)
+  color     String   @db.VarChar(9)
+  width     Int      @default(4)
+  // Coordonnées du plateau à plat : [x1, y1, x2, y2, …]
+  points    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  scene TableScene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
+  @@map("table_drawings")
 }
