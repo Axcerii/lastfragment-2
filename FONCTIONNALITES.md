@@ -54,7 +54,8 @@ Abandonné : marché, entraînement, état du monde, histoires, thèmes par joue
 - **S9 et S10 — faits** : déploiement Docker (`Dockerfile`, `docker-compose.yml`, `adapter-node`). Les images envoyées vont dans un volume et sont servies par `/uploads/…`. Voir le README.
 - **Lien « Histoires »** : l'accueil l'affiche si `PUBLIC_LORE_URL` est renseigné dans `.env`. Il manque l'adresse du site de lore.
 - **Migrations Prisma** : le schéma est appliqué avec `prisma db push`, comme avant. Le dossier `prisma/migrations` ne contient que la migration initiale et ne reflète plus la base.
-- **Données V1** : rien n'a été importé (annexe B).
+- **Données V1** : `prisma/import-v1.sql` reprend personnages, bestiaire, catalogue d'objets, compétences, badges et aliments ; images dans `static/uploads/personnages/v1` et `static/uploads/monsters/v1`. À exécuter une fois sur la prod (mode d'emploi en tête du fichier). Comptes, argent, inventaires et passifs des joueurs ne sont pas repris.
+- **Descendances multiples** : la colonne `dragon` vaut « Goliath-Pura » (un ou plusieurs dragons, comme en V1), « Aucun » ou « Inconnu ». Les fiches personnage, bestiaire et de jeu affichent un logo par dragon ; le back-office les choisit avec des tampons cliquables, dans l'ordre d'affichage. Lecture et écriture dans `src/lib/game/labels.ts` (`parseDragons`, `formatDescent`).
 
 ---
 

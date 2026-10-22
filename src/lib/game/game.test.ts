@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyStats, parseStatKey, statPower, totalPower } from './stats';
 import { armorBonus, computeSheet, parseEffects, passiveBonus, serializeEffects } from './bonus';
 import { carryCapacity, formatMoney, isBackpack, toContainer, totalWeight } from './inventory';
+import { formatDescent, isUnknownDescent, normalizeDescent, parseDragons } from './labels';
 
 describe('puissance', () => {
 	it('suit le coût par tranche', () => {
@@ -131,6 +132,31 @@ describe('inventaire', () => {
 		expect(formatMoney(950)).toBe('950');
 		expect(formatMoney(12600)).toBe('13k');
 		expect(formatMoney(12600, true)).toMatch(/^12.600$/);
+	});
+});
+
+describe('descendance', () => {
+	it('lit un ou plusieurs dragons, dans l’ordre et sans doublon', () => {
+		expect(parseDragons('Goliath')).toEqual(['Goliath']);
+		expect(parseDragons('Pestia-Drii')).toEqual(['Pestia', 'Drii']);
+		expect(parseDragons('aqua - Shizari-Yinva-Aqua')).toEqual(['Aqua', 'Shizari', 'Yinva']);
+		expect(parseDragons('Aucun')).toEqual([]);
+		expect(parseDragons(null)).toEqual([]);
+	});
+
+	it('distingue l’absence de descendance d’une descendance inconnue', () => {
+		expect(isUnknownDescent('Inconnu')).toBe(true);
+		expect(isUnknownDescent('Aucun')).toBe(false);
+		expect(formatDescent([])).toBe('Aucun');
+		expect(formatDescent([], true)).toBe('Inconnu');
+		expect(formatDescent(['Goliath', 'Pura'], true)).toBe('Goliath-Pura');
+	});
+
+	it('remet une saisie au format de la base', () => {
+		expect(normalizeDescent('Goliath-Lada-Pura')).toBe('Goliath-Lada-Pura');
+		expect(normalizeDescent(' drii, pestia ')).toBe('Drii-Pestia');
+		expect(normalizeDescent('inconnu')).toBe('Inconnu');
+		expect(normalizeDescent('')).toBe('Aucun');
 	});
 });
 

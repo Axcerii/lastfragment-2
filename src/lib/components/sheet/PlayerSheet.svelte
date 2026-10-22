@@ -13,7 +13,7 @@
     import Modal from "$lib/components/ui/Modal.svelte";
     import SectionTitle from "$lib/components/ui/SectionTitle.svelte";
     import { formatMoney } from "$lib/game/inventory";
-    import { COUNTRY_LABELS, RACE_LABELS, isDragon } from "$lib/game/labels";
+    import { COUNTRY_LABELS, RACE_LABELS, parseDragons } from "$lib/game/labels";
     import { containerLoads, sheetOf } from "$lib/game/sheet";
     import type { SheetData } from "$lib/server/sheet";
 
@@ -39,6 +39,7 @@
     } = $props();
 
     let character = $derived(data.character!);
+    let dragons = $derived(parseDragons(character.dragon));
     let sheet = $derived(sheetOf(data.stats, data.inventory, data.passives));
     let loads = $derived(containerLoads(data.stats, data.inventory));
     let money = $derived(formatMoney(data.player.money, isAdmin));
@@ -95,16 +96,20 @@
                         { label: "Métier", value: character.job },
                     ]}
                 />
-                {#if isDragon(character.dragon)}
+                {#if dragons.length > 0}
                     <div class="heritage">
                         <p class="heritage-label"><u>Héritages</u> :</p>
-                        <span
-                            class="dragon"
-                            role="img"
-                            aria-label="Héritage de {character.dragon}"
-                            title="Héritage de {character.dragon}"
-                            style="--icon: url('/dragons/normal/{character.dragon}.svg')"
-                        ></span>
+                        <div class="dragons" class:many={dragons.length > 1}>
+                            {#each dragons as dragon (dragon)}
+                                <span
+                                    class="dragon"
+                                    role="img"
+                                    aria-label="Héritage de {dragon}"
+                                    title="Héritage de {dragon}"
+                                    style="--icon: url('/dragons/normal/{dragon}.svg')"
+                                ></span>
+                            {/each}
+                        </div>
                     </div>
                 {/if}
             </div>
@@ -239,6 +244,14 @@
         font-size: 20px;
     }
 
+    /* Un logo par dragon hérité, empilés ; plus petits quand il y en a plusieurs. */
+    .dragons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
     .dragon {
         display: block;
         width: 87px;
@@ -246,6 +259,11 @@
         background-color: var(--primary);
         mask: var(--icon) center / contain no-repeat;
         -webkit-mask: var(--icon) center / contain no-repeat;
+    }
+
+    .many .dragon {
+        width: 64px;
+        height: 64px;
     }
 
     section {
@@ -300,8 +318,10 @@
             display: block;
         }
 
-        .dragon {
-            margin: 12px auto 0;
+        .dragons {
+            flex-direction: row;
+            justify-content: center;
+            margin-top: 12px;
         }
     }
 

@@ -3,7 +3,9 @@ import { prisma } from '$lib/server/prisma';
 import { tableViewer } from '$lib/server/table/access';
 import { broadcast, pushLogs } from '$lib/server/table/hub';
 import { ensurePlayerToken } from '$lib/server/table/tokens';
-import type { Asset, AssetKind } from '$lib/table/types';
+import { describeEffect, parseEffects } from '$lib/game/bonus';
+import { ARMOR_SLOTS, armorSlot } from '$lib/game/inventory';
+import type { ArmorOption, Asset, AssetKind } from '$lib/table/types';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {
@@ -26,7 +28,7 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 	}
 
 	// Le MJ a besoin de quoi ajouter des jetons, et de sa médiathèque.
-	const [players, characters, monsters, assets, session] = await Promise.all([
+	const [players, characters, monsters, assets, session, armors] = await Promise.all([
 		prisma.player.findMany({
 			where: { characterId: { not: null } },
 			select: { id: true, login: true, character: { select: { name: true } } },
@@ -35,7 +37,13 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 		prisma.character.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
 		prisma.monster.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
 		prisma.tableAsset.findMany({ orderBy: [{ kind: 'asc' }, { name: 'asc' }] }),
-		prisma.tableSession.findUnique({ where: { id: sessionId }, select: { obsKey: true } })
+		prisma.tableSession.findUnique({ where: { id: sessionId }, select: { obsKey: true } }),
+		// Toutes les armures du catalogue : le MJ en équipe librement personnages et monstres.
+		prisma.armor.findMany({
+			where: { item: { category: { in: [...ARMOR_SLOTS] } } },
+			select: { id: true, statistics: true, values: true, item: { select: { name: true, category: true } } },
+			orderBy: { item: { name: 'asc' } }
+		})
 	]);
 	return {
 		sessionId,
@@ -46,6 +54,14 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 				characters,
 				monsters
 			},
+			armors: armors.map(
+				(a): ArmorOption => ({
+					id: a.id,
+					name: a.item.name,
+					slot: armorSlot(a.item.category) ?? '',
+					bonus: parseEffects(a.statistics, a.values, 'flat').map(describeEffect).join(', ')
+				})
+			),
 			assets: assets.map(
 				(a): Asset => ({ id: a.id, kind: a.kind as AssetKind, name: a.name, url: a.url })
 			)

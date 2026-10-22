@@ -37,6 +37,8 @@ export type Field = Base &
 		/** Deux colonnes parallèles stats/valeurs (plus une colonne de valeurs « inactif » pour un passif). */
 		| { type: 'effects'; valuesField: string; inactiveField?: string; bareAs: 'flat' | 'mult' }
 		| { type: 'badgePair' }
+		/** Descendance : un ou plusieurs dragons (« Goliath-Pura »), ou « Aucun » / « Inconnu ». */
+		| { type: 'dragons' }
 		/** Champs virtuels : enregistrés dans une table liée après la sauvegarde. */
 		| { type: 'stats'; owner: 'characterId' | 'monsterId' }
 		| { type: 'armor' }

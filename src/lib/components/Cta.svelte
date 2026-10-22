@@ -1,5 +1,8 @@
 <script lang="ts">
+    import { dragonVars, isDarkDragon } from "$lib/game/labels";
+
     // Bouton principal au fond d'un dragon. Avec `href` c'est un lien ; sans `onClick`, il valide le formulaire parent.
+    // Le texte et le filigrane prennent l'encre lisible sur la couleur du dragon.
     let {
         dragon = "Artrish",
         border = "Yinva",
@@ -15,18 +18,22 @@
         href?: string;
         disabled?: boolean;
     } = $props();
+
+    let style = $derived(`${dragonVars(dragon)}; border-color: var(--${border});`);
+    let dark = $derived(isDarkDragon(dragon));
 </script>
 
 {#if href}
-    <a class="cta" {href} style="background-color: var(--{dragon}); border-color: var(--{border});">
+    <a class="cta" class:dark {href} {style}>
         <img src="/dragons/normal/{dragon}.svg" alt="" />
         {text}
     </a>
 {:else}
     <button
         class="cta"
+        class:dark
         type={onClick ? "button" : "submit"}
-        style="background-color: var(--{dragon}); border-color: var(--{border});"
+        {style}
         onclick={onClick}
         {disabled}
     >
@@ -44,6 +51,8 @@
         border-radius: var(--radius);
         height: 48px;
         border: 1px solid var(--Yinva);
+        background-color: var(--c);
+        color: var(--ink);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -71,5 +80,10 @@
         width: auto;
         top: 0;
         right: 20%;
+    }
+
+    /* Les logos sont tracés en noir : on les inverse sur les dragons sombres. */
+    .dark img {
+        filter: invert(1);
     }
 </style>

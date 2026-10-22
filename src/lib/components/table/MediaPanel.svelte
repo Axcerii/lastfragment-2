@@ -90,49 +90,10 @@
 </script>
 
 <div class="panel-body">
-    <section>
-        <h3>En cours</h3>
-        {#if session.music}
-            <div class="now">
-                <span>♪ <strong>{session.music.name}</strong> {session.music.playing ? "" : "(en pause)"}</span>
-                <div class="row">
-                    {#if session.music.playing}
-                        <button class="btn btn-small" onclick={() => client.act("music.pause")}>Pause</button>
-                    {:else}
-                        <button class="btn btn-small" onclick={() => client.act("music.resume")}>Reprendre</button>
-                    {/if}
-                    <button class="btn btn-small" onclick={() => client.act("music.stop")}>Arrêter</button>
-                    <label class="check">
-                        <input
-                            type="checkbox"
-                            checked={session.music.loop}
-                            onchange={(e) => client.act("music.loop", { loop: e.currentTarget.checked })}
-                        />
-                        En boucle
-                    </label>
-                </div>
-            </div>
-        {:else}
-            <p class="muted small">Aucune musique.</p>
-        {/if}
-
-        {#each session.ambiences as ambience (ambience.id)}
-            <div class="ambience">
-                <span>≈ {ambience.name}</span>
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={ambience.volume}
-                    aria-label="Volume de {ambience.name}"
-                    onchange={(e) => client.act("ambience.volume", { id: ambience.id, volume: Number(e.currentTarget.value) })}
-                />
-                <button class="btn btn-small" onclick={() => client.act("ambience.remove", { id: ambience.id })} aria-label="Retirer {ambience.name}">✕</button>
-            </div>
-        {/each}
-
-        {#if session.showcase}
+    <!-- Musique et ambiances en cours : sur le jeton de Balera, en haut de la table. -->
+    {#if session.showcase}
+        <section>
+            <h3>En cours</h3>
             <div class="now">
                 <span>Image montrée à tous</span>
                 <img class="thumb" src={session.showcase} alt="" />
@@ -140,8 +101,8 @@
                     Retirer l'image
                 </button>
             </div>
-        {/if}
-    </section>
+        </section>
+    {/if}
 
     <section>
         <h3>Médiathèque</h3>
@@ -270,27 +231,6 @@
         flex-wrap: wrap;
         align-items: center;
         gap: 0.35rem;
-    }
-
-    .check {
-        display: flex;
-        align-items: center;
-        gap: 0.3rem;
-        font-size: 0.85rem;
-    }
-
-    .ambience {
-        display: grid;
-        grid-template-columns: 1fr 7rem auto;
-        align-items: center;
-        gap: 0.4rem;
-    }
-
-    input[type="range"] {
-        height: auto;
-        padding: 0;
-        background: none;
-        border: none;
     }
 
     .thumb {

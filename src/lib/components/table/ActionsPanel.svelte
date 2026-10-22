@@ -80,7 +80,9 @@
     let multiplier = $state(1);
     let attackBonus = $state(0);
     let defenseBonus = $state(0);
-    let cost = $derived(attackCost(kind, power));
+    // Champ libre : vide ou hors bornes, on retombe sur ce que le serveur appliquera.
+    let safePower = $derived(Math.min(MAX_ATTACK_POWER, Math.max(1, Math.trunc(Number(power) || 1))));
+    let cost = $derived(attackCost(kind, safePower));
     let costLabel = $derived(STATS[ATTACK_COST_STAT[kind]].abbr);
 
     function attack() {
@@ -88,7 +90,7 @@
             attackerId: actorId,
             targetId,
             kind,
-            power,
+            power: safePower,
             multiplier,
             attackBonus,
             defenseBonus,
@@ -185,13 +187,7 @@
             <div class="grid2">
                 <label>
                     Puissance
-                    <select bind:value={power}>
-                        {#each Array.from({ length: MAX_ATTACK_POWER }, (_, i) => i + 1) as p (p)}
-                            <option value={p}>
-                                {p}{powerRollBonus(p) ? ` (+${powerRollBonus(p)} au jet)` : ""}
-                            </option>
-                        {/each}
-                    </select>
+                    <input type="number" min="1" max={MAX_ATTACK_POWER} step="1" bind:value={power} />
                 </label>
                 <label>
                     Cible
@@ -209,7 +205,10 @@
                     <label>Bonus déf. <input type="number" bind:value={defenseBonus} /></label>
                 </div>
             {/if}
-            <p class="muted small">Coût : {cost} {costLabel}. Les dégâts sont appliqués aussitôt.</p>
+            <p class="muted small">
+                {#if powerRollBonus(safePower)}+{powerRollBonus(safePower)} au jet · {/if}Coût : {cost}
+                {costLabel}. Les dégâts sont appliqués aussitôt.
+            </p>
             <button class="btn btn-chance" disabled={targetId === null} onclick={attack}>
                 {kind === "force" ? "Attaquer" : "Lancer le sort sur"}
                 {nameOf(targetId)}

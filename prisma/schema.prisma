@@ -124,6 +124,8 @@ model Character {
   // Fiche « teaser » : visible dans la liste mais contenu masqué pour les joueurs
   censored    Boolean @default(false)
   quote       String? @db.VarChar(400)
+  // Armure choisie par le MJ (ids de `armors`, une par emplacement), sans passer par un inventaire
+  armorIds    Json?   @map("armor_ids")
 
   // Relations
   players         Player[]
@@ -146,6 +148,8 @@ model Monster {
   effect      String @db.Text
   description String @db.Text
   current     Int    @db.SmallInt
+  // Armure choisie par le MJ (ids de `armors`, une par emplacement)
+  armorIds    Json?  @map("armor_ids")
 
   // Relations
   statistics Statistic?

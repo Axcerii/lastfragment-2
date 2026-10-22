@@ -44,15 +44,35 @@
         };
         window.addEventListener("pointerdown", unlock, { once: true });
         window.addEventListener("keydown", unlock, { once: true });
+
+        // La table ouverte dans un autre onglet suit les volumes réglés ici, et inversement.
+        const fromOtherTab = (e: StorageEvent) => {
+            if (e.key !== STORAGE || !e.newValue) return;
+            try {
+                volumes = { ...volumes, ...JSON.parse(e.newValue) };
+            } catch {
+                /* valeur illisible : on garde les volumes actuels */
+            }
+        };
+        window.addEventListener("storage", fromOtherTab);
         return () => {
             window.removeEventListener("pointerdown", unlock);
             window.removeEventListener("keydown", unlock);
+            window.removeEventListener("storage", fromOtherTab);
         };
     });
 
+    /** Arrête et vide un lecteur pour qu'aucune lecture en attente ne le relance. */
+    function release(audio: HTMLAudioElement) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+    }
+
     onDestroy(() => {
-        player?.pause();
-        for (const audio of ambiencePlayers.values()) audio.pause();
+        if (player) release(player);
+        player = null;
+        for (const audio of ambiencePlayers.values()) release(audio);
         ambiencePlayers.clear();
     });
 
@@ -85,8 +105,10 @@
         if (!unlocked) return;
 
         const position = (Date.now() + clockOffset - music.startedAt) / 1000;
+        const current = player;
         const seek = () => {
-            if (!player || !music) return;
+            // Lecteur remplacé ou détruit entre-temps : ne pas relancer une piste orpheline.
+            if (player !== current || !player || !music) return;
             const duration = player.duration;
             let at = position;
             if (Number.isFinite(duration) && duration > 0) {
@@ -105,7 +127,7 @@
         const wanted = new Map(ambiences.map((a) => [a.id, a]));
         for (const [id, audio] of ambiencePlayers) {
             if (!wanted.has(id)) {
-                audio.pause();
+                release(audio);
                 ambiencePlayers.delete(id);
             }
         }

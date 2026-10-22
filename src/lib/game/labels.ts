@@ -19,8 +19,41 @@ export function isDragon(name: string | null | undefined): name is Dragon {
 	return (DRAGONS as readonly string[]).includes(name ?? '');
 }
 
+/**
+ * Dragons d'une descendance, dans l'ordre où elle les cite. Comme en V1, une descendance peut en
+ * réunir plusieurs (« Goliath-Pura ») ; « Aucun » et « Inconnu » n'en contiennent aucun.
+ */
+export function parseDragons(descent: string | null | undefined): Dragon[] {
+	const found: Dragon[] = [];
+	for (const word of (descent ?? '').split(/[^A-Za-z]+/)) {
+		const dragon = DRAGONS.find((d) => d.toLowerCase() === word.toLowerCase());
+		if (dragon && !found.includes(dragon)) found.push(dragon);
+	}
+	return found;
+}
+
+/** Descendance inconnue, à distinguer de l'absence de descendance (« Aucun »). */
+export function isUnknownDescent(descent: string | null | undefined): boolean {
+	return parseDragons(descent).length === 0 && descent?.trim().toLowerCase() === 'inconnu';
+}
+
+/** Valeur de la colonne `dragon` : « Goliath-Pura », ou « Aucun » / « Inconnu » sans dragon. */
+export function formatDescent(dragons: readonly Dragon[], unknown = false): string {
+	if (dragons.length) return [...new Set(dragons)].join('-');
+	return unknown ? 'Inconnu' : 'Aucun';
+}
+
+/** Remet une descendance saisie au format de la base. */
+export function normalizeDescent(descent: string | null | undefined): string {
+	return formatDescent(parseDragons(descent), isUnknownDescent(descent));
+}
+
 // Couleurs trop sombres pour porter un texte sombre.
 const DARK_DRAGONS = ['Shizari', 'Pestia', 'Chronos', 'Goliath', 'Drii'];
+
+export function isDarkDragon(dragon: string): boolean {
+	return DARK_DRAGONS.includes(dragon);
+}
 
 /** Couleur d'un dragon éclaircie, lisible sur le fond sombre du site. */
 export function dragonText(dragon: string): string {
@@ -32,7 +65,7 @@ export function dragonText(dragon: string): string {
  * `--c-text` sa couleur éclaircie, lisible sur le fond sombre du site.
  */
 export function dragonVars(dragon: string): string {
-	const ink = DARK_DRAGONS.includes(dragon) ? 'var(--foreground)' : 'var(--background)';
+	const ink = isDarkDragon(dragon) ? 'var(--foreground)' : 'var(--background)';
 	return `--c: var(--${dragon}); --ink: ${ink}; --c-text: ${dragonText(dragon)}`;
 }
 

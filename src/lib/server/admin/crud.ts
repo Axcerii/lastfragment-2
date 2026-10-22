@@ -3,6 +3,7 @@ import { error } from '@sveltejs/kit';
 import { VIRTUAL_TYPES, type Field, type Option } from '$lib/admin/fields';
 import { pairKey } from '$lib/game/badges';
 import { parseEffects } from '$lib/game/bonus';
+import { normalizeDescent, parseDragons } from '$lib/game/labels';
 import { STATS, toStatBlock } from '$lib/game/stats';
 import { hashPassword } from '../auth';
 import { prisma } from '../prisma';
@@ -65,6 +66,8 @@ function cell(field: Field, record: Row): string | number | boolean | null {
 			return parseEffects(value, record[field.valuesField], field.bareAs)
 				.map((e) => `${STATS[e.stat].abbr} ${e.kind === 'mult' ? '×' : e.value > 0 ? '+' : ''}${e.value}`)
 				.join(' · ');
+		case 'dragons':
+			return parseDragons(value).join(' · ') || value || null;
 		default:
 			return value ?? null;
 	}
@@ -214,6 +217,9 @@ async function readColumns(resource: Resource, form: FormData, creating: boolean
 				data[field.name] = pairKey(a, b);
 				break;
 			}
+			case 'dragons':
+				data[field.name] = normalizeDescent(raw);
+				break;
 			default:
 				if (!raw && field.required) throw missing();
 				data[field.name] = raw || empty();

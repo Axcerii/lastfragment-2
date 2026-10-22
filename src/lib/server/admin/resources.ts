@@ -87,7 +87,7 @@ const resources: Resource[] = [
 			{ name: 'title', label: 'Titre', type: 'text', list: true },
 			{ name: 'country', label: 'Pays', type: 'select', options: option(Object.keys(COUNTRY_LABELS), COUNTRY_LABELS), required: true },
 			{ name: 'race', label: 'Race', type: 'select', options: option(Object.keys(RACE_LABELS), RACE_LABELS), required: true },
-			{ name: 'dragon', label: 'Dragon de descendance', type: 'select', options: dragons, required: true },
+			{ name: 'dragon', label: 'Descendance', type: 'dragons' },
 			{ name: 'flux', label: 'Flux', type: 'text' },
 			{ name: 'job', label: 'Métier', type: 'text' },
 			{ name: 'category', label: 'Tags', type: 'text', list: true, help: 'Séparés par des virgules : Promo, Soldats, Arènes' },
@@ -111,7 +111,7 @@ const resources: Resource[] = [
 		fields: [
 			{ name: 'image', label: 'Illustration', type: 'image', folder: 'monsters', required: true, list: true },
 			{ name: 'name', label: 'Nom', type: 'text', required: true, list: true },
-			{ name: 'dragon', label: 'Dragon de descendance', type: 'select', options: dragons, required: true, list: true },
+			{ name: 'dragon', label: 'Descendance', type: 'dragons', list: true },
 			{ name: 'size', label: 'Taille', type: 'text' },
 			{ name: 'weight', label: 'Poids', type: 'text' },
 			{ name: 'dangerosity', label: 'Niveau de danger', type: 'number', list: true, help: 'De 0 à 10.' },

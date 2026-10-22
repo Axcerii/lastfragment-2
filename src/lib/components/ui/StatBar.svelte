@@ -5,11 +5,20 @@
 
     // Ligne de stat de la maquette : nom, valeur, puis barre à la couleur du dragon de la stat.
     // Au survol (ou au focus), une infobulle détaille le calcul : base, armure, passifs.
+    // `editable` remplace le nombre par un champ lié à `value` (la base), sans infobulle.
     let {
         stat,
         line,
         compact = false,
-    }: { stat: StatKey; line: StatLine; compact?: boolean } = $props();
+        editable = false,
+        value = $bindable(),
+    }: {
+        stat: StatKey;
+        line: StatLine;
+        compact?: boolean;
+        editable?: boolean;
+        value?: number;
+    } = $props();
 
     let info = $derived(STATS[stat]);
     let modified = $derived(line.total !== line.base);
@@ -36,18 +45,29 @@
     const tipId = $props.id();
 </script>
 
-<div class="row" class:compact>
+<div class="row" class:compact class:editable>
     <span class="name">{compact ? info.abbr : (info.barLabel ?? info.label)}</span>
-    <button
-        type="button"
-        class="value"
-        class:up={modified && !loss}
-        class:down={loss}
-        aria-label="{info.label} : {line.total}"
-        aria-describedby={tipId}
-    >
-        {line.total}
-    </button>
+    {#if editable}
+        <input
+            type="number"
+            class="value-input"
+            name={stat}
+            min="0"
+            aria-label={info.label}
+            bind:value
+        />
+    {:else}
+        <button
+            type="button"
+            class="value"
+            class:up={modified && !loss}
+            class:down={loss}
+            aria-label="{info.label} : {line.total}"
+            aria-describedby={tipId}
+        >
+            {line.total}
+        </button>
+    {/if}
     <Bar
         label={info.label}
         valueText="{line.total}{modified ? ` (${detail})` : ''}"
@@ -59,46 +79,48 @@
         height={compact ? "16px" : "24px"}
     />
 
-    <div class="tip" id={tipId} role="tooltip">
-        <p class="tip-title">{info.label}</p>
-        <table>
-            <tbody>
-                <tr>
-                    <th scope="row">Base</th>
-                    <td></td>
-                    <td class="amount">{line.base}</td>
-                </tr>
-                {#each steps as step, i (i)}
+    {#if !editable}
+        <div class="tip" id={tipId} role="tooltip">
+            <p class="tip-title">{info.label}</p>
+            <table>
+                <tbody>
                     <tr>
-                        <th scope="row">
-                            {step.source}
-                            <span class="kind">{step.kind}</span>
-                        </th>
-                        <!-- Un bonus fixe se lit dans le montant ; on ne détaille que les pourcentages. -->
-                        <td class="effect">
-                            {#if step.effect.startsWith("×")}{step.effect}&nbsp;de {line.base}{/if}
-                        </td>
-                        <td class="amount" class:plus={step.amount > 0} class:minus={step.amount < 0}>
-                            {signed(step.amount)}
-                        </td>
+                        <th scope="row">Base</th>
+                        <td></td>
+                        <td class="amount">{line.base}</td>
                     </tr>
-                {/each}
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th scope="row">Total</th>
-                    <td></td>
-                    <td class="amount">{line.total}</td>
-                </tr>
-            </tfoot>
-        </table>
-        {#if steps.some((s) => s.effect.startsWith("×"))}
-            <p class="note">Les pourcentages sont arrondis à l'entier supérieur.</p>
-        {/if}
-        {#if info.scale > 1}
-            <p class="note">Barre : {line.total} ÷ {info.scale} = {Math.round((line.total / info.scale) * 10) / 10} / 100</p>
-        {/if}
-    </div>
+                    {#each steps as step, i (i)}
+                        <tr>
+                            <th scope="row">
+                                {step.source}
+                                <span class="kind">{step.kind}</span>
+                            </th>
+                            <!-- Un bonus fixe se lit dans le montant ; on ne détaille que les pourcentages. -->
+                            <td class="effect">
+                                {#if step.effect.startsWith("×")}{step.effect}&nbsp;de {line.base}{/if}
+                            </td>
+                            <td class="amount" class:plus={step.amount > 0} class:minus={step.amount < 0}>
+                                {signed(step.amount)}
+                            </td>
+                        </tr>
+                    {/each}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row">Total</th>
+                        <td></td>
+                        <td class="amount">{line.total}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {#if steps.some((s) => s.effect.startsWith("×"))}
+                <p class="note">Les pourcentages sont arrondis à l'entier supérieur.</p>
+            {/if}
+            {#if info.scale > 1}
+                <p class="note">Barre : {line.total} ÷ {info.scale} = {Math.round((line.total / info.scale) * 10) / 10} / 100</p>
+            {/if}
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -139,6 +161,40 @@
         outline: 1px dashed var(--primary);
         outline-offset: 3px;
         border-radius: var(--radius);
+    }
+
+    /* Champ discret : on lit la valeur comme à l'affichage, le cadre signale qu'on peut la changer. */
+    .row.editable {
+        grid-template-columns: 111px 72px 1fr;
+        cursor: auto;
+    }
+
+    /* El Messiri réserve une grande descente : sans le décalage du haut, les chiffres montent. */
+    .value-input {
+        height: 34px;
+        line-height: 1;
+        padding: 4px 0.25rem 0;
+        background-color: transparent;
+        color: inherit;
+        border: 1px solid var(--border);
+        font-size: inherit;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        appearance: textfield;
+        -moz-appearance: textfield;
+        transition: var(--transition);
+    }
+
+    .value-input::-webkit-inner-spin-button,
+    .value-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .value-input:hover,
+    .value-input:focus {
+        border-color: var(--accent);
+        outline: none;
     }
 
     .value.up {
@@ -250,6 +306,10 @@
             grid-template-columns: 100px 48px 1fr;
             gap: 0.6rem;
             font-size: 18px;
+        }
+
+        .row.editable {
+            grid-template-columns: 100px 64px 1fr;
         }
 
         .tip {

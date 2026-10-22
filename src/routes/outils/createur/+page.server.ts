@@ -19,7 +19,8 @@ export const actions: Actions = {
 
 		const kind = String(form.get('kind'));
 		const name = String(form.get('name') ?? '').trim();
-		const author = String(form.get('author') ?? '').trim();
+		// Un joueur connecté signe de son pseudo ; le champ n'est proposé qu'aux visiteurs.
+		const author = locals.user?.login ?? String(form.get('author') ?? '').trim();
 		const description = String(form.get('description') ?? '').trim();
 		const keep = { kind, name, author, description };
 

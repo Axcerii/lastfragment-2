@@ -3,7 +3,7 @@
     import Checkbox from "$lib/components/Checkbox.svelte";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import { rememberedFilters } from "$lib/filters.svelte";
-    import { countryIcon, isDragon, splitTags } from "$lib/game/labels";
+    import { countryIcon, parseDragons, splitTags } from "$lib/game/labels";
 
     let { data } = $props();
 
@@ -35,6 +35,12 @@
         data.monsters.filter((m) => matches([m.name, m.dragon], m.current)),
     );
 
+    // Emblème d'un monstre : le premier dragon de sa descendance.
+    function dragonEmblem(descent: string) {
+        const [first] = parseDragons(descent);
+        return first ? `/dragons/normal/${first}.svg` : "/pays/Inconnu.svg";
+    }
+
     let showMonsters = $derived(filters.view === "bestiaire");
     let count = $derived(showMonsters ? monsters.length : characters.length);
 </script>
@@ -52,14 +58,14 @@
             name="vue"
             value="personnages"
             bind:group={filters.view}
-            icon="/personnages/Personnages.svg"
+            icon="/dragons/tampons/Artrish.svg"
         />
         <Checkbox
             label="Bestiaire"
             name="vue"
             value="bestiaire"
             bind:group={filters.view}
-            icon="/personnages/Bestiaire.svg"
+            icon="/dragons/tampons/Yinva.svg"
         />
         <Checkbox
             label="Arc actuel uniquement"
@@ -85,9 +91,7 @@
                     href="/bestiaire/{monster.id}"
                     nom={monster.name}
                     image={monster.image}
-                    emblem={isDragon(monster.dragon)
-                        ? `/dragons/normal/${monster.dragon}.svg`
-                        : "/pays/Inconnu.svg"}
+                    emblem={dragonEmblem(monster.dragon)}
                     tags={[`Danger ${monster.dangerosity}`]}
                     description={monster.description}
                     flags={monster.visibility ? [] : ["Caché"]}

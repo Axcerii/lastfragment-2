@@ -38,6 +38,8 @@ const include = {
 export type RawSession = Prisma.TableSessionGetPayload<{ include: typeof include }> & {
 	/** Personnage de chaque jeton qui en a un, et ses passifs. */
 	characters: Map<number, { id: number; passives: PassiveView[] }>;
+	/** Armure choisie par le MJ, par id de jeton (personnages et monstres). */
+	armors: Map<number, number[]>;
 };
 export type RawToken = RawSession['tokens'][number];
 export type RawScene = RawSession['scenes'][number];
@@ -88,7 +90,21 @@ export async function loadRaw(sessionId: number): Promise<RawSession | null> {
 			passives: passives.filter((p) => p.characterId === id).map(({ characterId: _, ...p }) => p)
 		});
 	}
-	return { ...raw, characters };
+
+	const refs = (kind: string) => [
+		...new Set(raw.tokens.filter((t) => t.kind === kind && t.refId).map((t) => t.refId!))
+	];
+	const [characterArmors, monsterArmors] = await Promise.all([
+		prisma.character.findMany({ where: { id: { in: refs('character') } }, select: { id: true, armorIds: true } }),
+		prisma.monster.findMany({ where: { id: { in: refs('monster') } }, select: { id: true, armorIds: true } })
+	]);
+	const armors = new Map<number, number[]>();
+	for (const token of raw.tokens) {
+		const list = token.kind === 'character' ? characterArmors : token.kind === 'monster' ? monsterArmors : null;
+		const sheet = list?.find((s) => s.id === token.refId);
+		if (sheet) armors.set(token.id, numbers(sheet.armorIds));
+	}
+	return { ...raw, characters, armors };
 }
 
 export const numbers = (value: Prisma.JsonValue | null | undefined): number[] =>
@@ -159,7 +175,8 @@ function tokenView(token: RawToken, viewer: Viewer, raw: RawSession): TokenView 
 		endurance: exact ? gauge(token.endurance, stats.endurance, true) : null,
 		stats: exact ? stats : null,
 		armor: exact ? toStatBlock(token.armor as Partial<StatBlock>) : null,
-		passives: character && (viewer.isAdmin || isMine(token, viewer)) ? character.passives : null
+		passives: character && (viewer.isAdmin || isMine(token, viewer)) ? character.passives : null,
+		armorIds: viewer.isAdmin ? (raw.armors.get(token.id) ?? null) : null
 	};
 }
 

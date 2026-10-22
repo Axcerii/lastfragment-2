@@ -3,7 +3,7 @@
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import CensorScreen from "$lib/components/personnages/CensorScreen.svelte";
     import CharacterPlusCountry from "$lib/components/personnages/CharacterPlusCountry.svelte";
-    import { COUNTRY_LABELS, RACE_LABELS, isDragon, splitTags } from "$lib/game/labels";
+    import { COUNTRY_LABELS, RACE_LABELS, parseDragons, splitTags } from "$lib/game/labels";
 
     let { data, form } = $props();
 
@@ -11,6 +11,7 @@
     // Pour un joueur, une fiche censurée arrive déjà vidée de son contenu.
     let censored = $derived(character.censored && !data.user?.isAdmin);
     let tags = $derived(splitTags(character.category));
+    let dragons = $derived(parseDragons(character.dragon));
 </script>
 
 <svelte:head>
@@ -46,13 +47,15 @@
                 <p class="status">Décédé</p>
             {/if}
         </div>
-        {#if isDragon(character.dragon) && !censored}
-            <div class="dragons" title="Descendance de {character.dragon}">
-                <img
-                    src="/dragons/normal/{character.dragon}.svg"
-                    alt="Descendance de {character.dragon}"
-                    class="primary-svg"
-                />
+        {#if dragons.length > 0 && !censored}
+            <div class="dragons" class:many={dragons.length > 1} title="Descendance de {dragons.join(', ')}">
+                {#each dragons as dragon (dragon)}
+                    <img
+                        src="/dragons/normal/{dragon}.svg"
+                        alt="Descendance de {dragon}"
+                        class="primary-svg"
+                    />
+                {/each}
             </div>
         {/if}
     </div>
@@ -117,9 +120,17 @@
         font-size: 1.2rem;
     }
 
+    /* Un logo par dragon de la descendance, empilés ; plus petits quand il y en a plusieurs. */
     .dragons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
         width: 5rem;
         z-index: -1;
+    }
+
+    .dragons.many {
+        width: 4rem;
     }
 
     .dragons img {
@@ -157,6 +168,14 @@
         .secondaire {
             width: 100%;
             margin-top: 2rem;
+        }
+        .dragons,
+        .dragons.many {
+            flex-direction: row;
+            width: auto;
+        }
+        .dragons img {
+            width: 4rem;
         }
         .description {
             width: 90%;

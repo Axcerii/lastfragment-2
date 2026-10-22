@@ -1,11 +1,12 @@
 <script lang="ts">
     import MjPanel from "$lib/components/game/MjPanel.svelte";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
-    import { isDragon } from "$lib/game/labels";
+    import { parseDragons } from "$lib/game/labels";
 
     let { data, form } = $props();
 
     let monster = $derived(data.monster);
+    let dragons = $derived(parseDragons(monster.dragon));
 
     const MAX_DANGER = 10;
 </script>
@@ -56,13 +57,15 @@
                 <p>{monster.effect}</p>
             </div>
         </div>
-        {#if isDragon(monster.dragon)}
-            <div class="dragons" title="Descendance de {monster.dragon}">
-                <img
-                    src="/dragons/normal/{monster.dragon}.svg"
-                    alt="Descendance de {monster.dragon}"
-                    class="primary-svg"
-                />
+        {#if dragons.length > 0}
+            <div class="dragons" class:many={dragons.length > 1} title="Descendance de {dragons.join(', ')}">
+                {#each dragons as dragon (dragon)}
+                    <img
+                        src="/dragons/normal/{dragon}.svg"
+                        alt="Descendance de {dragon}"
+                        class="primary-svg"
+                    />
+                {/each}
             </div>
         {/if}
     </div>
@@ -177,9 +180,17 @@
         white-space: pre-line;
     }
 
+    /* Un logo par dragon de la descendance, empilés ; plus petits quand il y en a plusieurs. */
     .dragons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
         width: 5rem;
         flex-shrink: 0;
+    }
+
+    .dragons.many {
+        width: 4rem;
     }
 
     .dragons img {
@@ -202,6 +213,16 @@
         .portrait {
             max-width: 100%;
             width: 100%;
+        }
+
+        .dragons,
+        .dragons.many {
+            flex-direction: row;
+            width: auto;
+        }
+
+        .dragons img {
+            width: 4rem;
         }
 
         .description {

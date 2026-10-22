@@ -47,7 +47,15 @@ import {
 	type RawToken,
 	type Viewer
 } from './state';
-import { characterSource, freeCell, monsterSource, playerSource, sourceOf } from './tokens';
+import {
+	characterSource,
+	freeCell,
+	monsterSource,
+	numberedName,
+	playerSource,
+	setSheetArmor,
+	sourceOf
+} from './tokens';
 
 type Body = Record<string, unknown>;
 
@@ -500,6 +508,7 @@ const handlers: Record<string, Handler> = {
 		const token = await prisma.tableToken.create({
 			data: {
 				...data,
+				name: await numberedName(ctx.sessionId, data.name),
 				sessionId: ctx.sessionId,
 				sceneId: scene.id,
 				...cell,
@@ -544,6 +553,7 @@ const handlers: Record<string, Handler> = {
 		const created = await prisma.tableToken.create({
 			data: {
 				...copy,
+				name: await numberedName(token.sessionId, token.name),
 				stats: copy.stats as Prisma.InputJsonValue,
 				armor: copy.armor as Prisma.InputJsonValue,
 				x: scene ? Math.min(scene.cols - token.size, token.x + token.size) : token.x,
@@ -619,6 +629,22 @@ const handlers: Record<string, Handler> = {
 				data: { stats: source.stats, armor: source.armor, image: source.image ?? token.image }
 			});
 		}
+	}),
+
+	/** Armure d'un personnage ou d'un monstre, choisie librement par le MJ : tous ses jetons suivent. */
+	'token.armor': admin(async (ctx, body) => {
+		const token = await ctx.token(body.id);
+		if ((token.kind !== 'character' && token.kind !== 'monster') || !token.refId) {
+			error(400, 'Seuls les personnages et les monstres ont une armure choisie par le MJ.');
+		}
+		const armorIds = Array.isArray(body.armorIds) ? body.armorIds.map((id) => int(id)).filter((id) => id > 0) : [];
+		await setSheetArmor(token.kind, token.refId, armorIds);
+		const source = await sourceOf(token.kind, token.refId, null);
+		if (!source) return;
+		await prisma.tableToken.updateMany({
+			where: { sessionId: ctx.sessionId, kind: token.kind, refId: token.refId },
+			data: { stats: source.stats, armor: source.armor }
+		});
 	}),
 
 	// ── Passifs ──

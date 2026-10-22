@@ -17,7 +17,7 @@ export const ATTACK_STAT: Record<AttackKind, StatKey> = { force: 'strength', mai
 /** Jauge dépensée par l'attaquant : END pour la Force, QDF pour la Maîtrise. */
 export const ATTACK_COST_STAT: Record<AttackKind, 'endurance' | 'qdf'> = { force: 'endurance', maitrise: 'qdf' };
 
-export const MAX_ATTACK_POWER = 5;
+export const MAX_ATTACK_POWER = 30;
 
 /** Bonus ajouté au d20 selon la puissance de l'attaque : 1 → 0, 2 → +5, n → +10 × (n − 2). */
 export function powerRollBonus(power: number): number {

@@ -135,6 +135,17 @@ export interface TokenView {
 	armor: StatBlock | null;
 	/** Passifs du personnage, envoyés au MJ et au propriétaire du jeton seulement. */
 	passives: PassiveView[] | null;
+	/** Armure d'un personnage ou d'un monstre (ids de `armors`), envoyée au MJ seulement. */
+	armorIds: number[] | null;
+}
+
+/** Pièce d'armure du catalogue, proposée au MJ. */
+export interface ArmorOption {
+	id: number;
+	name: string;
+	slot: string;
+	/** Bonus lisible, par exemple « DEF +10, VIT -5 ». */
+	bonus: string;
 }
 
 export interface SceneView {

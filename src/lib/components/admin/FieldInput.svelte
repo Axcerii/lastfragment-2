@@ -1,4 +1,5 @@
 <script lang="ts">
+    import DragonPicker from "./DragonPicker.svelte";
     import EffectsEditor from "./EffectsEditor.svelte";
     import StatsEditor from "$lib/components/game/StatsEditor.svelte";
     import Toggle from "$lib/components/ui/Toggle.svelte";
@@ -24,7 +25,7 @@
     let pair = $derived(field.type === "badgePair" ? parsePair(value ?? "") : null);
 </script>
 
-<div class="field" class:wide={["textarea", "effects", "stats", "armor", "armorOverride"].includes(field.type)}>
+<div class="field" class:wide={["textarea", "effects", "stats", "armor", "armorOverride", "dragons"].includes(field.type)}>
     {#if field.type === "flag" || field.type === "boolean"}
         <Toggle name={field.name} label={field.label} checked={Boolean(value)} />
     {:else}
@@ -97,6 +98,8 @@
                     </select>
                 {/each}
             </div>
+        {:else if field.type === "dragons"}
+            <DragonPicker name={field.name} {value} />
         {:else if field.type === "stats"}
             <StatsEditor stats={value ?? emptyStats()} />
         {:else if field.type === "armor"}

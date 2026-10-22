@@ -14,7 +14,12 @@
 
     // Bloc complet des stats, d'après la maquette du profil : consommables sur toute la largeur,
     // puis combat et hors-combat côte à côte. `compact` sert à la vue de combat.
-    let { sheet, compact = false }: { sheet: Sheet; compact?: boolean } = $props();
+    // Avec `values` (les stats de base), chaque nombre devient un champ qui les modifie.
+    let {
+        sheet,
+        compact = false,
+        values = $bindable(),
+    }: { sheet: Sheet; compact?: boolean; values?: StatBlock } = $props();
 
     let base = $derived(
         Object.fromEntries(STAT_KEYS.map((k) => [k, sheet[k].base])) as StatBlock,
@@ -36,7 +41,11 @@
             <SectionTitle level={3}>{title}</SectionTitle>
         {/if}
         {#each stats as stat (stat)}
-            <StatBar {stat} line={sheet[stat]} {compact} />
+            {#if values}
+                <StatBar {stat} line={sheet[stat]} {compact} editable bind:value={values[stat]} />
+            {:else}
+                <StatBar {stat} line={sheet[stat]} {compact} />
+            {/if}
         {/each}
     </section>
 {/snippet}

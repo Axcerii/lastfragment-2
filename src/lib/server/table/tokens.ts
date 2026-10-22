@@ -1,12 +1,16 @@
 // Création des jetons à partir des fiches : stats finales d'un joueur, d'un personnage ou d'un monstre.
 import { error } from '@sveltejs/kit';
-import { computeSheet, type Sheet } from '$lib/game/bonus';
+import type { Prisma } from '@prisma/client';
+import { computeSheet, type ArmorPiece, type Sheet } from '$lib/game/bonus';
+import { armorSlot } from '$lib/game/inventory';
 import { portrait } from '$lib/game/labels';
 import { sheetOf } from '$lib/game/sheet';
 import { STAT_KEYS, emptyStats, toStatBlock, type StatBlock } from '$lib/game/stats';
+import { baseName, instanceName } from '$lib/table/naming';
 import type { TokenKind } from '$lib/table/types';
 import { prisma } from '../prisma';
 import { loadSheet } from '../sheet';
+import { numbers } from './state';
 
 export interface TokenSource {
 	name: string;
@@ -40,16 +44,28 @@ export async function playerSource(playerId: number): Promise<TokenSource> {
 	};
 }
 
+/** Pièces d'armure choisies par le MJ pour un personnage ou un monstre. */
+async function armorPieces(armorIds: Prisma.JsonValue | null): Promise<ArmorPiece[]> {
+	const ids = numbers(armorIds);
+	if (!ids.length) return [];
+	const armors = await prisma.armor.findMany({
+		where: { id: { in: ids } },
+		select: { statistics: true, values: true, item: { select: { name: true } } }
+	});
+	return armors.map((a) => ({ name: a.item.name, statistics: a.statistics, values: a.values }));
+}
+
 export async function characterSource(id: number): Promise<TokenSource> {
 	const character = await prisma.character.findUnique({
 		where: { id },
 		include: { statistics: true, passives: true }
 	});
 	if (!character) error(404, 'Personnage introuvable.');
+	const pieces = await armorPieces(character.armorIds);
 	return {
 		name: character.name,
 		image: portrait(character.image),
-		...split(computeSheet(toStatBlock(character.statistics), [], character.passives)),
+		...split(computeSheet(toStatBlock(character.statistics), pieces, character.passives)),
 		playerId: null,
 		refId: id
 	};
@@ -58,14 +74,34 @@ export async function characterSource(id: number): Promise<TokenSource> {
 export async function monsterSource(id: number): Promise<TokenSource> {
 	const monster = await prisma.monster.findUnique({ where: { id }, include: { statistics: true } });
 	if (!monster) error(404, 'Monstre introuvable.');
+	const pieces = await armorPieces(monster.armorIds);
 	return {
 		name: monster.name,
 		image: monster.image || null,
-		stats: toStatBlock(monster.statistics),
-		armor: emptyStats(),
+		...split(computeSheet(toStatBlock(monster.statistics), pieces)),
 		playerId: null,
 		refId: id
 	};
+}
+
+/**
+ * Change l'armure d'un personnage ou d'un monstre, n'importe quelle pièce du catalogue,
+ * sans regarder d'inventaire. Une seule pièce par emplacement : la dernière demandée l'emporte.
+ */
+export async function setSheetArmor(kind: 'character' | 'monster', id: number, armorIds: number[]) {
+	const armors = await prisma.armor.findMany({
+		where: { id: { in: armorIds } },
+		select: { id: true, item: { select: { category: true } } }
+	});
+	const bySlot = new Map<string, number>();
+	for (const armorId of armorIds) {
+		const armor = armors.find((a) => a.id === armorId);
+		const slot = armor && armorSlot(armor.item.category);
+		if (slot) bySlot.set(slot, armorId);
+	}
+	const data = { armorIds: [...bySlot.values()] };
+	if (kind === 'character') await prisma.character.update({ where: { id }, data });
+	else await prisma.monster.update({ where: { id }, data });
 }
 
 /** Relit la fiche d'origine d'un jeton (après un changement d'armure, de passif…). */
@@ -74,6 +110,26 @@ export async function sourceOf(kind: TokenKind, refId: number | null, playerId: 
 	if (kind === 'character' && refId) return characterSource(refId);
 	if (kind === 'monster' && refId) return monsterSource(refId);
 	return null;
+}
+
+/**
+ * Nom d'un nouveau jeton (hors joueurs) : numéroté s'il y en a déjà un du même nom dans la partie,
+ * auquel cas le premier passe à « [1] ».
+ */
+export async function numberedName(sessionId: number, name: string): Promise<string> {
+	const base = baseName(name);
+	const siblings = await prisma.tableToken.findMany({
+		where: { sessionId, kind: { not: 'player' }, name: { startsWith: base } },
+		select: { id: true, name: true }
+	});
+	const next = instanceName(base, siblings.map((t) => t.name));
+	if (next.renameFirst) {
+		await prisma.tableToken.updateMany({
+			where: { sessionId, kind: { not: 'player' }, name: base },
+			data: { name: `${base} [1]` }
+		});
+	}
+	return next.name;
 }
 
 /** Première case libre de la scène, en partant du coin haut-gauche. */

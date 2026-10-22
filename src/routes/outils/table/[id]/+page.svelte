@@ -12,7 +12,7 @@
     import CombatPanel from "$lib/components/table/CombatPanel.svelte";
     import MediaPanel from "$lib/components/table/MediaPanel.svelte";
     import AudioEngine from "$lib/components/table/AudioEngine.svelte";
-    import VolumeControl from "$lib/components/table/VolumeControl.svelte";
+    import SoundToken from "$lib/components/table/SoundToken.svelte";
     import OrderStrip from "$lib/components/table/OrderStrip.svelte";
     import Showcase from "$lib/components/table/Showcase.svelte";
     import DiceMenu from "$lib/components/table/DiceMenu.svelte";
@@ -325,7 +325,9 @@
         <button class="btn btn-small help" onclick={() => (helpOpen = true)} title="Raccourcis clavier (? ou Ctrl + /)" aria-label="Raccourcis clavier">
             ⌨ <kbd>?</kbd>
         </button>
-        <VolumeControl bind:volumes {unlocked} />
+        {#if view}
+            <SoundToken bind:volumes {unlocked} {client} session={view.session} {isAdmin} {assets} />
+        {/if}
     </header>
 
     {#if client.status === "closed"}
@@ -419,6 +421,7 @@
                             {client}
                             {isAdmin}
                             inOrder={view.session.order.includes(selected.id)}
+                            armors={data.admin?.armors}
                             onclose={() => (selectedId = null)}
                         />
                     </FloatingWindow>

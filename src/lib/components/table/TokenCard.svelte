@@ -2,8 +2,9 @@
     import { STATS, STAT_KEYS, COMBAT_STATS, SOCIAL_STATS, type StatKey } from "$lib/game/stats";
     import { statForRoll } from "$lib/game/combat";
     import type { TableClient } from "$lib/table/client.svelte";
-    import { SIDES, SIDE_LABELS, type TokenView } from "$lib/table/types";
+    import { SIDES, SIDE_LABELS, type ArmorOption, type TokenView } from "$lib/table/types";
     import { GAUGE_INFO, gaugeRatio, type GaugeKey } from "./gauges";
+    import TokenArmor from "./TokenArmor.svelte";
     import TokenPassives from "./TokenPassives.svelte";
 
     // Fiche d'un jeton, affichée dans une fenêtre flottante qui porte son nom et le bouton de fermeture.
@@ -13,12 +14,15 @@
         client,
         isAdmin,
         inOrder,
+        armors = [],
         onclose,
     }: {
         token: TokenView;
         client: TableClient;
         isAdmin: boolean;
         inOrder: boolean;
+        /** Catalogue des armures, fourni au MJ. */
+        armors?: ArmorOption[];
         onclose: () => void;
     } = $props();
 
@@ -135,6 +139,10 @@
 
     {#if token.passives}
         <TokenPassives {token} {client} {isAdmin} />
+    {/if}
+
+    {#if isAdmin && token.armorIds}
+        <TokenArmor {token} {client} {armors} />
     {/if}
 
     {#if isAdmin}
