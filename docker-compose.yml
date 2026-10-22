@@ -36,8 +36,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-lastfragment}:${MYSQL_PASSWORD:?MYSQL_PASSWORD manquant dans .env}@db:3306/${MYSQL_DATABASE:-lastfragment}
-      ROOT_DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD manquant dans .env}@db:3306/${MYSQL_DATABASE:-lastfragment}
+      DATABASE_URL: mysql://${MYSQL_USER:-lastfragment}:${MYSQL_PASSWORD:?MYSQL_PASSWORD manquant dans .env}@lastfragment2-db:3306/${MYSQL_DATABASE:-lastfragment}
+      ROOT_DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD manquant dans .env}@lastfragment2-db:3306/${MYSQL_DATABASE:-lastfragment}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-lastfragment}
       MYSQL_APP_USER: ${MYSQL_APP_USER:-lastfragment_app}
       MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD:?MYSQL_APP_PASSWORD manquant dans .env}
@@ -60,7 +60,7 @@ services:
       - 127.0.0.1:${APP_PORT:-3010}:3000
     environment:
       # Compte MySQL limité aux données (SELECT, INSERT, UPDATE, DELETE), créé par `migrate`.
-      DATABASE_URL: mysql://${MYSQL_APP_USER:-lastfragment_app}:${MYSQL_APP_PASSWORD:?MYSQL_APP_PASSWORD manquant dans .env}@db:3306/${MYSQL_DATABASE:-lastfragment}
+      DATABASE_URL: mysql://${MYSQL_APP_USER:-lastfragment_app}:${MYSQL_APP_PASSWORD:?MYSQL_APP_PASSWORD manquant dans .env}@lastfragment2-db:3306/${MYSQL_DATABASE:-lastfragment}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
       # Adresse publique du site : SvelteKit refuse les formulaires venant d'une autre origine.
       ORIGIN: ${ORIGIN:-http://localhost:3010}
@@ -107,7 +107,11 @@ services:
       retries: 20
       start_period: 20s
     # Réseau interne uniquement : aucun port publié, pas d'accès à Internet.
-    networks: [backend]
+    networks:
+      backend:
+        # Nom unique : le site rejoint aussi le réseau du reverse proxy, où le simple nom « db »
+        # peut désigner la base d'un autre projet.
+        aliases: [lastfragment2-db]
 
 networks:
   backend:
