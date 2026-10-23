@@ -412,10 +412,14 @@
 
     .kinds {
         display: flex;
+        flex-wrap: wrap;
         gap: 1rem;
     }
 
     .kinds label {
+        flex: 1 1 0;
+        min-width: 0;
+        justify-content: center;
         flex-direction: row;
         align-items: center;
         gap: 0.75rem;
@@ -488,6 +492,27 @@
     @media (max-width: 600px) {
         .fields {
             grid-template-columns: 1fr;
+        }
+
+        .kinds {
+            gap: 0.5rem;
+        }
+
+        .kinds label {
+            gap: 0.5rem;
+            padding: 0.5rem;
+        }
+
+        .kinds img {
+            width: 2rem;
+            height: 2rem;
+        }
+    }
+
+    /* Trop étroit pour deux boutons côte à côte : ils s'empilent. */
+    @media (max-width: 380px) {
+        .kinds {
+            flex-direction: column;
         }
     }
 </style>

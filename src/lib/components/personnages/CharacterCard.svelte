@@ -327,9 +327,16 @@
             display: none;
         }
 
+        /* Le portrait part du bas de la carte : sa tranche basse disparaît sous la bordure. */
+        .character-wrapper {
+            display: flex;
+            align-items: flex-end;
+        }
+
         .character {
+            display: block;
             width: 30%;
-            margin: auto auto 0 auto;
+            margin: 0 0 -1px 0;
 
             -webkit-filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0));
             filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0));
