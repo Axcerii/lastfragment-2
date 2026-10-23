@@ -327,16 +327,15 @@
             display: none;
         }
 
-        /* Le portrait part du bas de la carte : sa tranche basse disparaît sous la bordure. */
-        .character-wrapper {
-            display: flex;
-            align-items: flex-end;
-        }
-
+        /* Le portrait remplit toute la hauteur de la carte, cadré sur le haut (le visage) :
+           l'excédent est rogné en bas, si bien qu'aucune tranche d'image ne reste visible. */
         .character {
             display: block;
             width: 30%;
-            margin: 0 0 -1px 0;
+            height: 100%;
+            margin: 0;
+            object-fit: cover;
+            object-position: top center;
 
             -webkit-filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0));
             filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0));
