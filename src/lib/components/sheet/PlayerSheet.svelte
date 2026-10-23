@@ -331,7 +331,12 @@
             padding: 35px 35px 3rem;
         }
 
+        /* Grille plutôt que rangée : un gros montant rétrécit sa colonne au lieu de faire
+           passer l'armure et le sac à la ligne. */
         .toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center;
             gap: 1rem;
             margin-bottom: 3rem;
             padding-right: 80px;
@@ -340,6 +345,9 @@
 
         .money {
             font-size: 18px;
+            text-align: left;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .money-long {
@@ -350,18 +358,26 @@
             display: inline;
         }
 
-        .toolbar {
-            flex-wrap: wrap;
-        }
-
         /* La vue de combat n'est pas dans la maquette mobile : elle passe sous la rangée. */
         .combat {
-            flex-basis: 100%;
+            grid-column: 1 / -1;
             margin: 0;
         }
 
         main {
             gap: 35px;
+        }
+    }
+
+    /* Très petits écrans : marges et espacements resserrés pour garder l'argent lisible. */
+    @media (max-width: 380px) {
+        .profil {
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .toolbar {
+            gap: 0.5rem;
         }
     }
 </style>

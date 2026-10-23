@@ -101,8 +101,9 @@ export function totalWeight(entries: Weighted[]): number {
 	return entries.reduce((sum, e) => sum + stackWeight(e), 0);
 }
 
-/** Argent affiché aux joueurs : arrondi au millier au-delà de 1 000. */
+/** Argent affiché aux joueurs : arrondi au millier au-delà de 1 000, au million au-delà. */
 export function formatMoney(amount: number, exact = false): string {
 	if (exact || Math.abs(amount) <= 1000) return amount.toLocaleString('fr-FR');
-	return `${Math.round(amount / 1000)}k`;
+	if (Math.abs(amount) < 999_500) return `${Math.round(amount / 1000)}k`;
+	return `${(amount / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}M`;
 }

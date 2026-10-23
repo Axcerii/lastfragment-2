@@ -132,6 +132,9 @@ describe('inventaire', () => {
 		expect(formatMoney(950)).toBe('950');
 		expect(formatMoney(12600)).toBe('13k');
 		expect(formatMoney(12600, true)).toMatch(/^12.600$/);
+		expect(formatMoney(999_400)).toBe('999k');
+		expect(formatMoney(999_600)).toBe('1M');
+		expect(formatMoney(123_456_789)).toBe('123,5M');
 	});
 });
 
