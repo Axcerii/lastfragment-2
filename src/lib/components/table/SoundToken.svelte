@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { TableClient } from "$lib/table/client.svelte";
     import type { Asset, TableView } from "$lib/table/types";
+    import MediaPicker from "./MediaPicker.svelte";
 
     // Balera, la chanteuse du lore, tient le son de la table : chacun y règle ses volumes,
     // et le MJ y gère la musique et les ambiances en cours.
@@ -33,16 +34,32 @@
     // Volumes gardés de 0 à 1, réglés de 0 à 100 par pas de 1.
     const percent = (value: number) => Math.round(value * 100);
 
-    let musics = $derived(assets.filter((a) => a.kind === "musique"));
-    let ambiences = $derived(assets.filter((a) => a.kind === "ambiance"));
-    let effects = $derived(assets.filter((a) => a.kind === "effet"));
-
-    function launch(e: Event, play: (asset: Asset) => void) {
-        const select = e.currentTarget as HTMLSelectElement;
-        const asset = assets.find((a) => a.id === Number(select.value));
-        if (asset) play(asset);
-        select.value = "";
-    }
+    // Fenêtres de recherche dans la médiathèque, une par type de son.
+    const LAUNCHERS = [
+        {
+            kind: "musique",
+            label: "♪ Musique…",
+            title: "Jouer une musique",
+            stay: false,
+            play: (a: Asset) => client.act("music.play", { url: a.url, name: a.name, loop: true }),
+        },
+        {
+            kind: "ambiance",
+            label: "≈ Ambiance…",
+            title: "Ajouter une ambiance",
+            stay: false,
+            play: (a: Asset) => client.act("ambience.add", { url: a.url, name: a.name }),
+        },
+        {
+            kind: "effet",
+            label: "✦ Effet…",
+            title: "Jouer un effet",
+            stay: true,
+            play: (a: Asset) => client.act("sfx.play", { url: a.url }),
+        },
+    ] as const;
+    let picking = $state({ musique: false, ambiance: false, effet: false });
+    const count = (kind: Asset["kind"]) => assets.filter((a) => a.kind === kind).length;
 
     // Un clic en dehors referme la fenêtre.
     function outside(e: PointerEvent) {
@@ -139,18 +156,25 @@
 
                 <section>
                     <h4>Lancer</h4>
-                    <select aria-label="Jouer une musique" onchange={(e) => launch(e, (a) => client.act("music.play", { url: a.url, name: a.name, loop: true }))} disabled={!musics.length}>
-                        <option value="">♪ Musique…</option>
-                        {#each musics as asset (asset.id)}<option value={asset.id}>{asset.name}</option>{/each}
-                    </select>
-                    <select aria-label="Ajouter une ambiance" onchange={(e) => launch(e, (a) => client.act("ambience.add", { url: a.url, name: a.name }))} disabled={!ambiences.length}>
-                        <option value="">≈ Ambiance…</option>
-                        {#each ambiences as asset (asset.id)}<option value={asset.id}>{asset.name}</option>{/each}
-                    </select>
-                    <select aria-label="Jouer un effet" onchange={(e) => launch(e, (a) => client.act("sfx.play", { url: a.url }))} disabled={!effects.length}>
-                        <option value="">✦ Effet…</option>
-                        {#each effects as asset (asset.id)}<option value={asset.id}>{asset.name}</option>{/each}
-                    </select>
+                    {#each LAUNCHERS as launcher (launcher.kind)}
+                        <button
+                            class="btn btn-small launch"
+                            disabled={!count(launcher.kind)}
+                            onclick={() => (picking[launcher.kind] = true)}
+                            aria-label={launcher.title}
+                        >
+                            {launcher.label}
+                            <span class="muted">{count(launcher.kind)}</span>
+                        </button>
+                        <MediaPicker
+                            bind:open={picking[launcher.kind]}
+                            title={launcher.title}
+                            kind={launcher.kind}
+                            {assets}
+                            stay={launcher.stay}
+                            onpick={(asset) => asset && launcher.play(asset)}
+                        />
+                    {/each}
                     <p class="muted small">Pour envoyer de nouveaux sons : onglet Médias.</p>
                 </section>
             {/if}
@@ -317,10 +341,10 @@
         border: none;
     }
 
-    select {
-        height: 30px;
+    .launch {
+        justify-content: space-between;
+        min-height: 30px;
         font-size: 15px;
-        padding: 0 0.4rem;
     }
 
     .small {

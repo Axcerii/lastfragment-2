@@ -11,6 +11,7 @@
         type SceneView,
     } from "$lib/table/types";
     import type { FogTool } from "./Board.svelte";
+    import MediaField from "./MediaField.svelte";
 
     let {
         client,
@@ -33,9 +34,8 @@
     } = $props();
 
     let scene = $derived(scenes.find((s) => s.id === viewId) ?? null);
-    let backgrounds = $derived(assets.filter((a) => a.kind === "fond"));
-    let musics = $derived(assets.filter((a) => a.kind === "musique"));
-    let overlays = $derived(assets.filter((a) => a.kind === "calque"));
+    let hasBackgrounds = $derived(assets.some((a) => a.kind === "fond"));
+    let hasOverlays = $derived(assets.some((a) => a.kind === "calque"));
 
     const update = (fields: Record<string, unknown>) =>
         scene && client.act("scene.update", { id: scene.id, ...fields });
@@ -99,11 +99,6 @@
 
     const setOverlay = (patch: Partial<NonNullable<SceneEffects["overlay"]>>) =>
         effects?.overlay && setEffects({ overlay: { ...effects.overlay, ...patch } });
-
-    function setMusic(url: string) {
-        const asset = musics.find((m) => m.url === url);
-        update({ musicUrl: url || null, musicName: asset?.name ?? null });
-    }
 </script>
 
 <div class="panel-body">
@@ -137,16 +132,15 @@
                 Nom
                 <input value={scene.name} maxlength="255" onchange={(e) => update({ name: e.currentTarget.value })} />
             </label>
-            <label>
-                Fond
-                <select value={scene.background ?? ""} onchange={(e) => update({ background: e.currentTarget.value || null })}>
-                    <option value="">Aucun</option>
-                    {#each backgrounds as asset (asset.id)}
-                        <option value={asset.url}>{asset.name}</option>
-                    {/each}
-                </select>
-            </label>
-            {#if backgrounds.length === 0}
+            <MediaField
+                label="Fond"
+                kind="fond"
+                {assets}
+                value={scene.background}
+                none="Aucun"
+                onchange={(asset) => update({ background: asset?.url ?? null })}
+            />
+            {#if !hasBackgrounds}
                 <p class="muted small">Envoie des fonds (cartes, décors) dans l'onglet Médias.</p>
             {/if}
             <label>
@@ -173,15 +167,14 @@
             <p class="muted small">
                 Le brouillard et les jetons sont replacés à proportion quand la taille change.
             </p>
-            <label>
-                Musique jouée à l'ouverture
-                <select value={scene.musicUrl ?? ""} onchange={(e) => setMusic(e.currentTarget.value)}>
-                    <option value="">Aucune (garder la musique en cours)</option>
-                    {#each musics as asset (asset.id)}
-                        <option value={asset.url}>{asset.name}</option>
-                    {/each}
-                </select>
-            </label>
+            <MediaField
+                label="Musique jouée à l'ouverture"
+                kind="musique"
+                {assets}
+                value={scene.musicUrl}
+                none="Aucune (garder la musique en cours)"
+                onchange={(asset) => update({ musicUrl: asset?.url ?? null, musicName: asset?.name ?? null })}
+            />
         </section>
 
         <section>
@@ -284,24 +277,21 @@
                 {/if}
 
                 <span class="sub">Calque <span class="muted">(gif, webp animé ou vidéo webm)</span></span>
-                <select
-                    value={effects.overlay?.url ?? ""}
-                    aria-label="Calque"
-                    onchange={(e) => {
-                        const url = e.currentTarget.value;
+                <MediaField
+                    label="Calque"
+                    bare
+                    kind="calque"
+                    {assets}
+                    value={effects.overlay?.url ?? null}
+                    none="Aucun"
+                    onchange={(asset) =>
                         setEffects({
-                            overlay: url
-                                ? { url, opacity: effects?.overlay?.opacity ?? 0.8, blend: effects?.overlay?.blend ?? "screen" }
+                            overlay: asset
+                                ? { url: asset.url, opacity: effects?.overlay?.opacity ?? 0.8, blend: effects?.overlay?.blend ?? "screen" }
                                 : null,
-                        });
-                    }}
-                >
-                    <option value="">Aucun</option>
-                    {#each overlays as asset (asset.id)}
-                        <option value={asset.url}>{asset.name}</option>
-                    {/each}
-                </select>
-                {#if overlays.length === 0}
+                        })}
+                />
+                {#if !hasOverlays}
                     <p class="muted small">Envoie des calques dans l'onglet Médias → Calques.</p>
                 {/if}
                 {#if effects.overlay}

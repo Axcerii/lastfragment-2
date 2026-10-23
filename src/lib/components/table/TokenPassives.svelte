@@ -215,6 +215,11 @@
         font-size: 0.8rem;
     }
 
+    /* Largeur fixe : « Actif » / « Inactif » ne fait pas bouger la ligne. */
+    .actions :global(label) {
+        min-width: 6.2rem;
+    }
+
     .edit {
         display: flex;
         flex-direction: column;
