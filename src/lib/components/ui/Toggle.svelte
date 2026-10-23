@@ -34,7 +34,10 @@
 </label>
 
 <style>
+    /* La case cachée se place dans le label : ailleurs, le focus au clic pouvait faire défiler
+       un conteneur parent (la fiche d'un jeton sautait d'un bloc). */
     label {
+        position: relative;
         display: inline-flex;
         align-items: center;
         gap: 0.6rem;
@@ -48,6 +51,8 @@
 
     input {
         position: absolute;
+        inset: 0;
+        margin: 0;
         opacity: 0;
         pointer-events: none;
     }

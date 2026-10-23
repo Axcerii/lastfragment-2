@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { TableClient } from "$lib/table/client.svelte";
     import { SIDE_LABELS, type Asset, type SceneView, type TokenView } from "$lib/table/types";
+    import MediaField from "./MediaField.svelte";
 
     type Option = { id: number; name: string };
 
@@ -48,7 +49,7 @@
     let filtered = $derived(
         options.filter((o) => o.name.toLowerCase().includes(filter.trim().toLowerCase())),
     );
-    let tokenImages = $derived(assets.filter((a) => a.kind === "jeton"));
+    let hasTokenImages = $derived(assets.some((a) => a.kind === "jeton"));
 
     $effect(() => {
         if (source !== "custom" && !filtered.some((o) => o.id === refId)) refId = filtered[0]?.id ?? null;
@@ -84,16 +85,15 @@
 
         {#if source === "custom"}
             <label>Nom <input bind:value={name} maxlength="255" placeholder="Garde, coffre, piège…" /></label>
-            <label>
-                Image
-                <select bind:value={image}>
-                    <option value="">Aucune (initiales)</option>
-                    {#each tokenImages as asset (asset.id)}
-                        <option value={asset.url}>{asset.name}</option>
-                    {/each}
-                </select>
-            </label>
-            {#if tokenImages.length === 0}
+            <MediaField
+                label="Image"
+                kind="jeton"
+                {assets}
+                value={image || null}
+                none="Aucune (initiales)"
+                onchange={(asset) => (image = asset?.url ?? "")}
+            />
+            {#if !hasTokenImages}
                 <p class="muted small">Envoie des images de jetons dans l'onglet Médias.</p>
             {/if}
         {:else}

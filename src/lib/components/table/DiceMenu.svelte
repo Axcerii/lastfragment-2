@@ -3,8 +3,18 @@
     import Icon from "$lib/components/ui/Icon.svelte";
     import DieShape from "$lib/components/ui/DieShape.svelte";
     import type { TableClient } from "$lib/table/client.svelte";
+    import type { DiceResult } from "$lib/table/types";
 
-    let { client, isAdmin }: { client: TableClient; isAdmin: boolean } = $props();
+    let {
+        client,
+        isAdmin,
+        onresult,
+    }: {
+        client: TableClient;
+        isAdmin: boolean;
+        /** Résultat du jet, affiché au lanceur en haut du plateau. */
+        onresult?: (result: DiceResult) => void;
+    } = $props();
 
     const FACES = [4, 6, 8, 10, 12, 20, 100];
 
@@ -27,9 +37,10 @@
         open = false;
     }
 
-    function roll(f: string) {
+    async function roll(f: string) {
         if (!f.trim()) return;
-        client.act("roll.dice", { formula: f, label: reason, hidden });
+        const result = await client.act<DiceResult>("roll.dice", { formula: f, label: reason, hidden });
+        if (result) onresult?.(result);
     }
 
     // Un clic en dehors du menu le referme.

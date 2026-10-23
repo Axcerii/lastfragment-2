@@ -12,6 +12,7 @@
         isVideo,
         NO_EFFECTS,
     } from "$lib/table/types";
+    import { matches } from "./MediaPicker.svelte";
 
     let {
         client,
@@ -32,9 +33,17 @@
     let uploading = $state(false);
     let input: HTMLInputElement | undefined = $state();
     let copied = $state(false);
+    let query = $state("");
 
     let session = $derived(view.session);
-    let list = $derived(assets.filter((a) => a.kind === kind));
+    let all = $derived(assets.filter((a) => a.kind === kind));
+    let list = $derived(all.filter((a) => matches(a.name, query)));
+
+    // Changer de type de média repart d'une recherche vide.
+    $effect(() => {
+        void kind;
+        query = "";
+    });
     let isAudio = $derived(AUDIO_KINDS.includes(kind));
 
     async function upload() {
@@ -128,6 +137,13 @@
                   : "jpg, png, webp, gif, svg · 8 Mo maximum"}
         </p>
 
+        {#if all.length}
+            <div class="search">
+                <input type="search" bind:value={query} placeholder="Rechercher dans les {ASSET_LABELS[kind].toLowerCase()}…" aria-label="Rechercher un média" />
+                <span class="muted small">{list.length} / {all.length}</span>
+            </div>
+        {/if}
+
         <ul class:grid={!isAudio}>
             {#each list as asset (asset.id)}
                 <li>
@@ -179,7 +195,7 @@
                     </div>
                 </li>
             {:else}
-                <li class="muted small">Rien pour l'instant.</li>
+                <li class="muted small">{all.length ? "Aucun résultat." : "Rien pour l'instant."}</li>
             {/each}
         </ul>
     </section>
@@ -249,6 +265,24 @@
     .upload input {
         font-size: 14px;
         height: auto;
+    }
+
+    .search {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .search input {
+        flex: 1;
+        height: 34px;
+        font-size: 15px;
+        padding: 0 0.5rem;
+    }
+
+    .search span {
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
     }
 
     ul {

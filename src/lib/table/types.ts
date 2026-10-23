@@ -209,6 +209,16 @@ export interface RolledDie {
 	sign?: 1 | -1;
 }
 
+/** Réponse d'un jet de dés libres, montrée au lanceur en haut du plateau. */
+export interface DiceResult {
+	formula: string;
+	total: number;
+	/** Détail des dés et du modificateur, quand il y en a plusieurs. */
+	detail: string | null;
+	dice: RolledDie[];
+	reason: string | null;
+}
+
 export interface LogView {
 	id: number;
 	kind: string;

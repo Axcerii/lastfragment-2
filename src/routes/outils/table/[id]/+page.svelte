@@ -16,9 +16,10 @@
     import OrderStrip from "$lib/components/table/OrderStrip.svelte";
     import Showcase from "$lib/components/table/Showcase.svelte";
     import DiceMenu from "$lib/components/table/DiceMenu.svelte";
+    import RollToast from "$lib/components/table/RollToast.svelte";
     import FloatingWindow from "$lib/components/ui/FloatingWindow.svelte";
     import { TableClient } from "$lib/table/client.svelte";
-    import type { TokenView } from "$lib/table/types";
+    import type { DiceResult, TokenView } from "$lib/table/types";
 
     let { data } = $props();
 
@@ -54,6 +55,7 @@
     let drawTool = $state<DrawTool>(null);
     let board: Board | undefined = $state();
     let diceMenu: DiceMenu | undefined = $state();
+    let lastRoll = $state<(DiceResult & { at: number }) | null>(null);
     let drawMenu: DrawMenu | undefined = $state();
     let journal: FloatingWindow | undefined = $state();
     let helpOpen = $state(false);
@@ -369,7 +371,12 @@
                 <div class="overlay top">
                     <div class="top-row">
                         <div class="tools-column">
-                            <DiceMenu bind:this={diceMenu} {client} {isAdmin} />
+                            <DiceMenu
+                                bind:this={diceMenu}
+                                {client}
+                                {isAdmin}
+                                onresult={(result) => (lastRoll = { ...result, at: Date.now() })}
+                            />
                             <DrawMenu
                                 bind:this={drawMenu}
                                 {isAdmin}
@@ -437,6 +444,8 @@
                         <LogPanel {client} {isAdmin} />
                     </FloatingWindow>
                 {/if}
+
+                <RollToast bind:roll={lastRoll} />
 
                 {#if client.notice}
                     <div class="notice" role="status">{client.notice}</div>

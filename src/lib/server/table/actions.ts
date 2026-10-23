@@ -701,15 +701,13 @@ const handlers: Record<string, Handler> = {
 					}`
 				: undefined;
 		const reason = optionalText(body.label, 80);
+		const dice = result.rolls.map((r) => ({ faces: r.faces, value: r.value, sign: r.sign }));
 		await ctx.log('roll', `${reason ? `${reason} — ` : ''}${result.formula} : ${result.total}`, {
 			hidden: ctx.viewer.isAdmin && Boolean(body.hidden),
-			data: {
-				detail,
-				publicDetail: detail,
-				dice: result.rolls.map((r) => ({ faces: r.faces, value: r.value, sign: r.sign })),
-				modifier: result.modifier
-			}
+			data: { detail, publicDetail: detail, dice, modifier: result.modifier }
 		});
+		// Le lanceur affiche aussi le résultat en haut du plateau.
+		return { formula: result.formula, total: result.total, detail: detail ?? null, dice, reason };
 	},
 
 	/** Jet de stat au d100, seul ou opposé à la stat d'une cible. */
@@ -729,8 +727,8 @@ const handlers: Record<string, Handler> = {
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden,
 				data: {
 					dice: [{ faces: 100, value: roll }],
-					detail: `${s.abbr} ${own}${bonus ? ` (bonus ${signed(bonus)})` : ''} · réussi dès ${100 - own}`,
-					publicDetail: actor.revealed ? `${s.abbr} ${own} · réussi dès ${100 - own}` : undefined
+					// Pas de détail public : les stats, même celles des joueurs, sont lues par le MJ seul.
+					detail: `${s.abbr} ${own}${bonus ? ` (bonus ${signed(bonus)})` : ''} · réussi dès ${100 - own}`
 				}
 			});
 			return { roll, outcome };
@@ -754,9 +752,7 @@ const handlers: Record<string, Handler> = {
 				data: {
 					dice: [{ faces: 100, value: roll }],
 					detail: `${s.abbr} ${own} contre ${t.abbr} ${other} · seuil ${threshold} · chance ${chance} %`,
-					publicDetail: target.revealed
-						? `${s.abbr} ${own} contre ${t.abbr} ${other} · seuil ${threshold} · chance ${chance} %`
-						: `Chance estimée : ${chance} %`
+					publicDetail: `Chance estimée : ${chance} %`
 				}
 			}
 		);
@@ -805,9 +801,7 @@ const handlers: Record<string, Handler> = {
 					detail: `${STATS[attackStat].abbr} ${attack}${attackBonus ? ` ${signed(attackBonus)}` : ''} contre DEF ${defense}${
 						defenseBonus ? ` ${signed(defenseBonus)}` : ''
 					}${multiplier !== 1 ? ` · ×${multiplier}` : ''} · ${costText}`,
-					publicDetail: target.revealed
-						? `${STATS[attackStat].abbr} ${attack} contre DEF ${defense} · ${costText}`
-						: costText,
+					publicDetail: costText,
 					effects
 				}
 			}

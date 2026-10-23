@@ -254,6 +254,27 @@ export function canSeeLog(log: TableLog, viewer: Viewer): boolean {
 	return viewer.isAdmin || !log.hidden;
 }
 
+/**
+ * Détail montré aux joueurs. Les stats n'y figurent jamais ; les journaux écrits avant cette règle
+ * pouvaient en contenir (« FOR 45 contre DEF 30 · −2 END ») et sont réduits ici.
+ */
+function publicDetail(log: TableLog, data: LogData): string | null {
+	const detail = data.publicDetail;
+	if (!detail) return null;
+	switch (log.kind) {
+		case 'stat':
+			return null;
+		case 'opposed': {
+			const chance = /(\d+) %$/.exec(detail);
+			return chance ? `Chance estimée : ${chance[1]} %` : null;
+		}
+		case 'attack':
+			return detail.split(' · ').at(-1) ?? null;
+		default:
+			return detail;
+	}
+}
+
 export function logView(log: TableLog, viewer: Viewer): LogView {
 	const data = (log.data ?? {}) as LogData;
 	return {
@@ -262,7 +283,7 @@ export function logView(log: TableLog, viewer: Viewer): LogView {
 		author: log.author,
 		hidden: log.hidden,
 		text: log.text,
-		detail: (viewer.isAdmin ? data.detail : data.publicDetail) ?? null,
+		detail: viewer.isAdmin ? (data.detail ?? null) : publicDetail(log, data),
 		dice: data.dice?.length ? data.dice : null,
 		undone: log.undone,
 		undoable: viewer.isAdmin && !log.undone && (data.effects?.length ?? 0) > 0,

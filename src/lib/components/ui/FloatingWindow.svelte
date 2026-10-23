@@ -211,7 +211,10 @@
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
+        /* « clip » et non « hidden » : un focus dans le contenu ne peut pas faire défiler la fenêtre
+           elle-même (barre de titre comprise). */
         overflow: hidden;
+        overflow: clip;
         visibility: hidden;
         background-color: rgba(27, 27, 27, 0.94);
         border: 1px solid var(--border);
