@@ -17,7 +17,12 @@
             <h1>{data.resource.label}</h1>
             <p class="muted">{data.resource.description}</p>
         </div>
-        <a class="btn btn-accent" href="{base}/nouveau">Ajouter</a>
+        <div class="header-actions">
+            {#if data.resource.slug === "personnages"}
+                <a class="btn" href="/admin/edition-personnages">Édition rapide</a>
+            {/if}
+            <a class="btn btn-accent" href="{base}/nouveau">Ajouter</a>
+        </div>
     </header>
 
     <!-- La clé repart d'un tableau neuf (recherche, tri) quand on change de ressource. -->
@@ -49,6 +54,11 @@
         align-items: flex-end;
         gap: 1rem;
         margin-bottom: 1.5rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 0.5rem;
     }
 
     .back {
