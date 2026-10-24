@@ -12,7 +12,10 @@ import {
 	OUTCOME_LABELS,
 	attackCost,
 	attackDamage,
+	effectiveDefense,
 	gaugeAlerts,
+	isDieValue,
+	manualDice,
 	opposedOutcome,
 	opposedThreshold,
 	parseDice,
@@ -26,6 +29,7 @@ import {
 	type Gauge
 } from '$lib/game/combat';
 import { STATS, STAT_KEYS, emptyStats, type StatBlock, type StatKey } from '$lib/game/stats';
+import { attackModifiers, describeWeaponBonus, noModifiers } from '$lib/game/weapons';
 import {
 	BLENDS,
 	HIDDEN_NAME,
@@ -48,6 +52,7 @@ import {
 	type Viewer
 } from './state';
 import {
+	attackWeapon,
 	characterSource,
 	freeCell,
 	monsterSource,
@@ -77,6 +82,20 @@ function text(value: unknown, max = 255): string {
 }
 
 const optionalText = (value: unknown, max = 255) => (value ? text(value, max) || null : null);
+
+/**
+ * Résultat d'un dé saisi à la main (vrais dés), ou `null` pour laisser la table le tirer.
+ * Une valeur impossible est refusée plutôt que ramenée dans les bornes.
+ */
+function manualRoll(value: unknown, faces: number): number | null {
+	if (value === undefined || value === null || value === '') return null;
+	const n = Number(value);
+	if (!isDieValue(n, faces)) error(400, `Résultat du d${faces} invalide : entre 1 et ${faces}.`);
+	return n;
+}
+
+/** Mention ajoutée au journal pour un jet saisi à la main. */
+const MANUAL_NOTE = 'saisi à la main';
 
 function statKey(value: unknown): StatKey {
 	if (!STAT_KEYS.includes(value as StatKey)) error(400, 'Statistique inconnue.');
@@ -693,7 +712,17 @@ const handlers: Record<string, Handler> = {
 	'roll.dice': async (ctx, body) => {
 		const formula = parseDice(text(body.formula, 60));
 		if (!formula) error(400, 'Formule de dés invalide (exemples : d20, 2d6+3, d100).');
-		const result = rollDice(formula);
+		// Vrais dés : une valeur par dé, dans l'ordre de la formule.
+		const manual = Array.isArray(body.manual);
+		let result = rollDice(formula);
+		if (manual) {
+			const typed = manualDice(formula, (body.manual as unknown[]).map(Number));
+			if (!typed) {
+				const faces = formula.dice.map((t) => `${t.count > 1 ? `${t.count} × ` : ''}d${t.faces}`).join(', ');
+				error(400, `Saisis une valeur par dé, dans l'ordre, entre 1 et son nombre de faces : ${faces}.`);
+			}
+			result = typed;
+		}
 		const detail =
 			result.rolls.length > 1 || result.modifier
 				? `${result.rolls.map((r) => `${r.sign < 0 ? '−' : ''}${r.value}`).join(' + ')}${
@@ -702,12 +731,13 @@ const handlers: Record<string, Handler> = {
 				: undefined;
 		const reason = optionalText(body.label, 80);
 		const dice = result.rolls.map((r) => ({ faces: r.faces, value: r.value, sign: r.sign }));
-		await ctx.log('roll', `${reason ? `${reason} — ` : ''}${result.formula} : ${result.total}`, {
+		const note = manual ? ` (${MANUAL_NOTE})` : '';
+		await ctx.log('roll', `${reason ? `${reason} — ` : ''}${result.formula} : ${result.total}${note}`, {
 			hidden: ctx.viewer.isAdmin && Boolean(body.hidden),
-			data: { detail, publicDetail: detail, dice, modifier: result.modifier }
+			data: { detail, publicDetail: detail, dice, modifier: result.modifier, manual }
 		});
 		// Le lanceur affiche aussi le résultat en haut du plateau.
-		return { formula: result.formula, total: result.total, detail: detail ?? null, dice, reason };
+		return { formula: result.formula, total: result.total, detail: detail ?? null, dice, reason, manual };
 	},
 
 	/** Jet de stat au d100, seul ou opposé à la stat d'une cible. */
@@ -718,14 +748,18 @@ const handlers: Record<string, Handler> = {
 		const bonus = isAdmin ? int(body.bonus ?? 0, -100, 100) : 0;
 		// Comme dans le simulateur V1, l'armure ne compte pas dans les jets opposés.
 		const own = statForRoll(stat, statsOf(actor)[stat] - (actor.armor as StatBlock)[stat]) + bonus;
-		const roll = rollDie(100);
+		const typed = manualRoll(body.manual, 100);
+		const roll = typed ?? rollDie(100);
+		const manual = typed !== null;
+		const note = manual ? ` (${MANUAL_NOTE})` : '';
 		const s = STATS[stat];
 
 		if (!body.targetId) {
 			const outcome = soloOutcome(roll, own);
-			await ctx.log('stat', `Jet de ${s.label} de ${ctx.name(actor)} : ${roll} — ${OUTCOME_LABELS[outcome]}`, {
+			await ctx.log('stat', `Jet de ${s.label} de ${ctx.name(actor)} : ${roll}${note} — ${OUTCOME_LABELS[outcome]}`, {
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden,
 				data: {
+					manual,
 					dice: [{ faces: 100, value: roll }],
 					// Pas de détail public : les stats, même celles des joueurs, sont lues par le MJ seul.
 					detail: `${s.abbr} ${own}${bonus ? ` (bonus ${signed(bonus)})` : ''} · réussi dès ${100 - own}`
@@ -746,10 +780,11 @@ const handlers: Record<string, Handler> = {
 
 		await ctx.log(
 			'opposed',
-			`${s.label} de ${ctx.name(actor)} contre ${t.label} de ${ctx.name(target)} : ${roll} — ${OUTCOME_LABELS[outcome]}`,
+			`${s.label} de ${ctx.name(actor)} contre ${t.label} de ${ctx.name(target)} : ${roll}${note} — ${OUTCOME_LABELS[outcome]}`,
 			{
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden || target.hidden,
 				data: {
+					manual,
 					dice: [{ faces: 100, value: roll }],
 					detail: `${s.abbr} ${own} contre ${t.abbr} ${other} · seuil ${threshold} · chance ${chance} %`,
 					publicDetail: `Chance estimée : ${chance} %`
@@ -759,7 +794,10 @@ const handlers: Record<string, Handler> = {
 		return { roll, outcome };
 	},
 
-	/** Attaque Force ou Maîtrise : d20, dégâts à la cible, coût à l'attaquant, appliqués aussitôt. */
+	/**
+	 * Attaque Force ou Maîtrise : d20, dégâts à la cible, coût à l'attaquant, appliqués aussitôt.
+	 * Un joueur frappe avec une de ses armes équipées (`weaponId`) ou sans arme.
+	 */
 	attack: async (ctx, body) => {
 		const attacker = await ctx.actor(body.attackerId);
 		const target = await ctx.target(body.targetId);
@@ -771,10 +809,33 @@ const handlers: Record<string, Handler> = {
 		const defenseBonus = isAdmin ? int(body.defenseBonus ?? 0, -100, 100) : 0;
 
 		const attackStat = ATTACK_STAT[kind];
-		const attack = statsOf(attacker)[attackStat];
+		// Arme choisie : ses bonus propres s'appliquent ; les bonus de stats des armes tenues
+		// mais pas utilisées ne comptent pas pour cette attaque.
+		const weaponId = body.weaponId === undefined || body.weaponId === null ? null : int(body.weaponId);
+		const armed =
+			attacker.kind === 'player' && attacker.playerId
+				? await attackWeapon(attacker.playerId, weaponId, attackStat)
+				: null;
+		if (weaponId !== null && !armed) error(400, 'Seul un joueur attaque avec une arme de son inventaire.');
+		const weapon = armed?.weapon ?? null;
+		const modifiers = weapon ? attackModifiers(weapon.bonuses) : noModifiers();
+
+		const attack = statsOf(attacker)[attackStat] - (armed?.unused ?? 0);
 		const defense = statsOf(target).defense;
-		const roll = rollDie(20);
-		const damage = attackDamage({ kind, power, attack, defense, roll, multiplier, attackBonus, defenseBonus });
+		const typed = manualRoll(body.manual, 20);
+		const roll = typed ?? rollDie(20);
+		const manual = typed !== null;
+		const damage = attackDamage({
+			kind,
+			power,
+			attack,
+			defense,
+			roll,
+			multiplier,
+			attackBonus,
+			defenseBonus,
+			ignoreDefense: modifiers.ignoreDefense
+		});
 		const costStat = ATTACK_COST_STAT[kind];
 		const cost = attackCost(kind, power);
 
@@ -788,19 +849,28 @@ const handlers: Record<string, Handler> = {
 		effects.push({ tokenId: victim.id, gauge: 'pv', delta: damageDelta });
 
 		const verb = kind === 'force' ? 'attaque' : 'lance un sort sur';
+		// « sans arme » seulement pour un joueur qui en tient une : sinon, rien à préciser.
+		const withText = weapon ? ` avec ${weapon.name}` : armed?.holding ? ' sans arme' : '';
 		const bonusRoll = powerRollBonus(power);
-		const rollText = `jet de ${roll}${bonusRoll ? ` (+${bonusRoll})` : ''}`;
+		const rollText = `jet de ${roll}${bonusRoll ? ` (+${bonusRoll})` : ''}${manual ? ` (${MANUAL_NOTE})` : ''}`;
 		const costText = `−${cost} ${STATS[costStat].abbr}`;
+		const finalDefense = effectiveDefense({ defense, defenseBonus, ignoreDefense: modifiers.ignoreDefense });
+		const weaponText = weapon?.bonuses.length
+			? ` · ${weapon.name} : ${weapon.bonuses.map((b) => describeWeaponBonus(b, true)).join(', ')}`
+			: '';
 		const log = await ctx.log(
 			'attack',
-			`${ctx.name(attacker)} ${verb} ${ctx.name(target)} (puissance ${power}) : ${rollText} → ${damage} dégâts`,
+			`${ctx.name(attacker)} ${verb} ${ctx.name(target)}${withText} (puissance ${power}) : ${rollText} → ${damage} dégâts`,
 			{
 				hidden,
 				data: {
+					manual,
 					dice: [{ faces: 20, value: roll }],
-					detail: `${STATS[attackStat].abbr} ${attack}${attackBonus ? ` ${signed(attackBonus)}` : ''} contre DEF ${defense}${
-						defenseBonus ? ` ${signed(defenseBonus)}` : ''
-					}${multiplier !== 1 ? ` · ×${multiplier}` : ''} · ${costText}`,
+					detail: `${STATS[attackStat].abbr} ${attack}${attackBonus ? ` ${signed(attackBonus)}` : ''}${
+						armed?.unused ? ` (${signed(-armed.unused)} : bonus d'arme non utilisé)` : ''
+					} contre DEF ${defense}${defenseBonus ? ` ${signed(defenseBonus)}` : ''}${
+						modifiers.ignoreDefense ? ` − ${modifiers.ignoreDefense} ignorés = ${finalDefense}` : ''
+					}${weaponText}${multiplier !== 1 ? ` · ×${multiplier}` : ''} · ${costText}`,
 					publicDetail: costText,
 					effects
 				}
@@ -808,7 +878,7 @@ const handlers: Record<string, Handler> = {
 		);
 		// L'attaque passe avant ses alertes dans le journal.
 		ctx.logs = [log, ...ctx.logs.filter((l) => l.id !== log.id)];
-		return { roll, damage };
+		return { roll, damage, manual };
 	},
 
 	// ── Dessin ──

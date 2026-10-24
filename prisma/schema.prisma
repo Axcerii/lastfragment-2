@@ -193,6 +193,9 @@ model Item {
   description String       @db.Text
   // Icône personnalisée ; à défaut, l'icône de la catégorie est utilisée
   icon        String?      @db.VarChar(255)
+  // Bonus propres d'une arme, codes séparés par des virgules (« ignore-defense:5 ») — voir game/weapons.ts.
+  // Ses bonus de stats, eux, passent par `armors` comme pour une armure.
+  weaponBonus String?      @map("weapon_bonus") @db.VarChar(255)
 
   // Relations
   itemsInPlayer ItemInPlayer[]
@@ -209,6 +212,8 @@ model ItemInPlayer {
   quantity     Int     @default(1) @db.Int
   localisation String  @db.VarChar(255)
   equipped     Boolean @default(false)
+  // Arme équipée : "gauche", "droite" ou "deux" (deux mains). Null pour tout le reste.
+  hand         String? @db.VarChar(10)
 
   // Relations
   item          Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)

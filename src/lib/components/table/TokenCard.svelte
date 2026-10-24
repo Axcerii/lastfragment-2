@@ -126,7 +126,7 @@
             <dl class="stats">
                 {#each [...COMBAT_STATS, ...SOCIAL_STATS] as key (key)}
                     {@const armor = token.armor?.[key] ?? 0}
-                    <div title={armor ? `dont armure ${armor > 0 ? "+" : ""}${armor}` : STATS[key].label}>
+                    <div title={armor ? `dont équipement ${armor > 0 ? "+" : ""}${armor}` : STATS[key].label}>
                         <dt>{STATS[key].abbr}</dt>
                         <dd>{statForRoll(key, token.stats[key])}</dd>
                     </div>

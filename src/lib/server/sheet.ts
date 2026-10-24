@@ -8,6 +8,7 @@ import {
 } from '$lib/game/inventory';
 import { portrait } from '$lib/game/labels';
 import { toStatBlock } from '$lib/game/stats';
+import { handsTaken, isWeapon, parseWeaponBonuses, toHand } from '$lib/game/weapons';
 import { requireUser } from './auth';
 import { prisma } from './prisma';
 
@@ -31,6 +32,10 @@ function toEntry(raw: RawEntry) {
 		container: toContainer(raw.localisation),
 		equipped: raw.equipped,
 		slot: armorSlot(raw.item.category),
+		weapon: isWeapon(raw.item.category),
+		// Arme équipée sans main enregistrée (cochée « équipé » depuis le back-office) : main droite.
+		hand: raw.equipped && isWeapon(raw.item.category) ? (toHand(raw.hand) ?? 'droite') : null,
+		weaponBonuses: parseWeaponBonuses(raw.item.weaponBonus),
 		bonus: armor ? { statistics: armor.statistics, values: armor.values } : null,
 		note: custom?.descriptionAdd || null,
 		item: {
@@ -174,7 +179,7 @@ export function sheetActions(target: (event: RequestEvent) => number) {
 			if (!count) return fail(404, { error: 'Passif introuvable.' });
 		},
 
-		/** Équipe ou retire une pièce d'armure portée. */
+		/** Équipe ou retire une pièce d'armure portée, ou une arme (avec la main qui la tient). */
 		equip: async (event: RequestEvent) => {
 			const { playerId, form } = await context(event);
 			const equip = form.get('equip') === 'on';
@@ -182,21 +187,42 @@ export function sheetActions(target: (event: RequestEvent) => number) {
 				where: { id: Number(form.get('id')), playerId },
 				include: { item: true }
 			});
+			const weapon = entry && isWeapon(entry.item.category);
 			const slot = entry && armorSlot(entry.item.category);
+			const hand = toHand(form.get('hand'));
 
-			if (!entry || !slot) return fail(400, { error: 'Cet objet ne s’équipe pas.' });
+			if (!entry || (!slot && !weapon)) return fail(400, { error: 'Cet objet ne s’équipe pas.' });
 			if (equip && toContainer(entry.localisation) !== 'main') {
-				return fail(400, { error: 'Il faut avoir l’armure en main pour l’équiper.' });
+				return fail(400, { error: `Il faut avoir ${weapon ? 'l’arme' : 'l’armure'} en main pour l’équiper.` });
 			}
+			if (equip && weapon && !hand) return fail(400, { error: 'Choisis la main qui tient l’arme.' });
 
 			await prisma.$transaction([
 				// Une seule pièce par emplacement : celle qui occupait la place est retirée.
+				// Pour une arme, les mains qu'elle prend : une arme à deux mains libère les deux.
 				prisma.itemInPlayer.updateMany({
-					where: { playerId, equipped: true, item: { category: entry.item.category } },
-					data: { equipped: false }
+					where: weapon
+						? {
+								playerId,
+								equipped: true,
+								item: { category: entry.item.category },
+								// Sans main enregistrée, une arme équipée compte comme tenue en main droite.
+								OR: [
+									{ hand: { in: equip ? handsTaken(hand!) : [] } },
+									...(equip && handsTaken(hand!).includes('droite') ? [{ hand: null }] : [])
+								]
+							}
+						: { playerId, equipped: true, item: { category: entry.item.category } },
+					data: { equipped: false, hand: null }
 				}),
-				prisma.itemInPlayer.update({ where: { id: entry.id }, data: { equipped: equip } })
+				prisma.itemInPlayer.update({
+					where: { id: entry.id },
+					data: { equipped: equip, hand: equip && weapon ? hand : null }
+				})
 			]);
+			// Les jetons de ce joueur sur la table de jeu suivent son équipement.
+			const { refreshPlayerTokens } = await import('./table/tokens');
+			await refreshPlayerTokens(playerId);
 		},
 
 		/** Déplace des objets d'un conteneur à un autre (coffre commun compris). */
@@ -223,7 +249,7 @@ export function sheetActions(target: (event: RequestEvent) => number) {
 			const owner = from === 'commun' ? null : playerId;
 			const entries = await prisma.itemInPlayer.findMany({
 				where: { id: { in: ids }, playerId: owner },
-				select: { id: true, localisation: true }
+				select: { id: true, localisation: true, equipped: true }
 			});
 			const movable = entries.filter((e) => owner === null || toContainer(e.localisation) === from);
 			if (movable.length !== ids.length) {
@@ -236,10 +262,16 @@ export function sheetActions(target: (event: RequestEvent) => number) {
 					localisation: to,
 					// Un objet déposé dans le coffre commun n'appartient plus à personne.
 					playerId: to === 'commun' ? null : playerId,
-					// Une armure qui change de conteneur n'est plus portée.
-					equipped: false
+					// Une armure ou une arme qui change de conteneur n'est plus portée.
+					equipped: false,
+					hand: null
 				}
 			});
+			// Ce qui était porté ne l'est plus : les jetons de la table suivent.
+			if (movable.some((e) => e.equipped)) {
+				const { refreshPlayerTokens } = await import('./table/tokens');
+				await refreshPlayerTokens(playerId);
+			}
 		}
 	};
 }

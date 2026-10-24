@@ -5,10 +5,11 @@
     import Modal from "$lib/components/ui/Modal.svelte";
     import Tabs from "$lib/components/ui/Tabs.svelte";
     import { CONTAINER_KEYS, CONTAINERS, type ContainerKey } from "$lib/game/inventory";
+    import { HANDS, HAND_LABELS } from "$lib/game/weapons";
     import type { ContainerLoad } from "$lib/game/sheet";
     import type { InventoryEntry } from "$lib/server/sheet";
 
-    // Inventaire par conteneur. Un clic sur un objet ouvre sa fiche, d'où l'on équipe une armure.
+    // Inventaire par conteneur. Un clic sur un objet ouvre sa fiche, d'où l'on équipe une armure ou une arme.
     let {
         inventory,
         loads,
@@ -81,6 +82,35 @@
             </form>
         {/if}
 
+        {#if canEdit && opened.weapon && opened.container !== "commun"}
+            {#if opened.container !== "main"}
+                <p class="muted">À prendre en main pour pouvoir l'équiper.</p>
+            {:else}
+                <!-- Une arme se tient d'une main ou des deux : chaque bouton l'y met (ou l'y déplace). -->
+                <form method="POST" action="?/equip" use:enhance class="hands">
+                    <input type="hidden" name="id" value={opened.id} />
+                    <input type="hidden" name="equip" value="on" />
+                    {#each HANDS as hand (hand)}
+                        <button
+                            class="btn"
+                            class:btn-accent={opened.hand !== hand}
+                            name="hand"
+                            value={hand}
+                            disabled={opened.hand === hand}
+                        >
+                            {opened.hand === hand ? `Tenue : ${HAND_LABELS[hand].toLowerCase()}` : HAND_LABELS[hand]}
+                        </button>
+                    {/each}
+                </form>
+                {#if opened.hand}
+                    <form method="POST" action="?/equip" use:enhance>
+                        <input type="hidden" name="id" value={opened.id} />
+                        <button class="btn">Ranger l'arme</button>
+                    </form>
+                {/if}
+            {/if}
+        {/if}
+
         {#if isAdmin}
             <form
                 method="POST"
@@ -107,6 +137,12 @@
 
     .load.over {
         color: #ff9c9c;
+    }
+
+    .hands {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
     }
 
     .grid {

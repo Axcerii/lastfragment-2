@@ -10,9 +10,10 @@
     } from "$lib/game/inventory";
     import { FOOD_TYPE_LABELS } from "$lib/game/labels";
     import { STATS } from "$lib/game/stats";
+    import { HAND_LABELS, describeWeaponBonus } from "$lib/game/weapons";
     import type { InventoryEntry } from "$lib/server/sheet";
 
-    // Fiche détaillée d'un objet : description, bonus d'armure, contenu d'un sac de nourriture.
+    // Fiche détaillée d'un objet : description, bonus d'armure ou d'arme, contenu d'un sac de nourriture.
     let { entry }: { entry: InventoryEntry } = $props();
 
     let rarity = $derived(`var(--rarity-${Math.min(5, Math.max(1, entry.item.rarity))})`);
@@ -36,6 +37,7 @@
                 Poids : {stackWeight(entry)}
                 {#if entry.equipped}<span class="muted">(équipé, ne pèse rien)</span>{/if}
             </p>
+            {#if entry.hand}<p>Tenue : {HAND_LABELS[entry.hand].toLowerCase()}</p>{/if}
         </div>
     </div>
 
@@ -53,6 +55,14 @@
                     {STATS[effect.stat].label}
                     {effect.value > 0 ? "+" : ""}{effect.value}
                 </li>
+            {/each}
+        </ul>
+    {/if}
+
+    {#if entry.weaponBonuses.length > 0}
+        <ul class="effects">
+            {#each entry.weaponBonuses as bonus (bonus.code)}
+                <li class="weapon">{describeWeaponBonus(bonus)}</li>
             {/each}
         </ul>
     {/if}
@@ -114,6 +124,11 @@
         border-radius: 999px;
         color: var(--primary);
         font-size: 0.9rem;
+    }
+
+    .effects li.weapon {
+        border-color: var(--chance);
+        color: var(--foreground);
     }
 
     .effects li.malus {

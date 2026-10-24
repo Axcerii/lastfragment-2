@@ -132,12 +132,13 @@ const resources: Resource[] = [
 		orderBy: { name: 'asc' },
 		fields: [
 			{ name: 'name', label: 'Nom', type: 'text', required: true, list: true },
-			{ name: 'category', label: 'Catégorie', type: 'select', options: option(Object.keys(CATEGORY_LABELS), CATEGORY_LABELS), required: true, list: true, help: 'Casque, Torse, Gantelets et Jambières peuvent être équipés.' },
+			{ name: 'category', label: 'Catégorie', type: 'select', options: option(Object.keys(CATEGORY_LABELS), CATEGORY_LABELS), required: true, list: true, help: 'Casque, Torse, Gantelets et Jambières s’équipent comme armure ; une Arme se tient d’une main ou des deux.' },
 			{ name: 'rarity', label: 'Rareté', type: 'select', numeric: true, list: true, options: RARITIES.map((label, i) => ({ value: i + 1, label })) },
 			{ name: 'weight', label: 'Poids (emplacements)', type: 'number', list: true },
 			{ name: 'description', label: 'Description', type: 'textarea' },
 			{ name: 'icon', label: 'Icône', type: 'image', folder: 'objets', help: "Facultative : sans icône, celle de la catégorie est utilisée." },
-			{ name: 'armor', label: "Bonus d'armure", type: 'armor', help: 'Pour les objets qui s’équipent. Laisser vide sinon.' }
+			{ name: 'armor', label: 'Bonus de stats', type: 'armor', help: 'Pour les armures et les armes : comptés tant que l’objet est équipé. Laisser vide sinon.' },
+			{ name: 'weaponBonus', label: "Bonus d'arme", type: 'weaponBonus', list: true, help: 'Pour une arme : s’applique quand on attaque avec elle à la table de jeu.' }
 		]
 	},
 	{
@@ -154,13 +155,15 @@ const resources: Resource[] = [
 			if (data.playerId == null) data.localisation = 'commun';
 			if (data.localisation === 'commun') data.playerId = null;
 			if (data.localisation !== 'main') data.equipped = false;
+			// La main d'une arme ne se choisit que depuis la fiche ; retirée, l'arme n'est plus tenue.
+			if (data.equipped === false) data.hand = null;
 		},
 		fields: [
 			{ name: 'playerId', label: 'Propriétaire', type: 'relation', relation: 'player', resource: 'joueurs', nullLabel: 'Coffre commun', list: true },
 			{ name: 'itemId', label: 'Objet', type: 'relation', relation: 'item', resource: 'objets', required: true, list: true },
 			{ name: 'quantity', label: 'Quantité', type: 'number', list: true },
 			{ name: 'localisation', label: 'Conteneur', type: 'select', list: true, required: true, options: CONTAINER_KEYS.map((value) => ({ value, label: CONTAINERS[value].label })) },
-			{ name: 'equipped', label: 'Équipé', type: 'boolean', list: true, help: "Uniquement pour une armure tenue en main." },
+			{ name: 'equipped', label: 'Équipé', type: 'boolean', list: true, help: "Uniquement pour une armure ou une arme tenue en main. Une arme équipée d'ici est tenue en main droite." },
 			{ name: 'override', label: 'Particularités de cet exemplaire', type: 'armorOverride', help: 'Pour une armure modifiée : ce bonus remplace celui de l’objet.' }
 		]
 	},

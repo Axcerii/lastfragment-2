@@ -20,6 +20,7 @@
         <div class="zone">
             <div class="toast" role="status">
                 {#if roll.reason}<span class="reason">{roll.reason}</span>{/if}
+                {#if roll.manual}<span class="reason">Saisi à la main</span>{/if}
                 <div class="line">
                     <span class="dice" aria-hidden="true">
                         {#each roll.dice.slice(0, SHOWN_DICE) as die, i (i)}

@@ -5,11 +5,13 @@ import { computeSheet, type ArmorPiece, type Sheet } from '$lib/game/bonus';
 import { armorSlot } from '$lib/game/inventory';
 import { portrait } from '$lib/game/labels';
 import { sheetOf } from '$lib/game/sheet';
-import { STAT_KEYS, emptyStats, toStatBlock, type StatBlock } from '$lib/game/stats';
+import { STAT_KEYS, emptyStats, toStatBlock, type StatBlock, type StatKey } from '$lib/game/stats';
+import type { WeaponBonus } from '$lib/game/weapons';
 import { baseName, instanceName } from '$lib/table/naming';
 import type { TokenKind } from '$lib/table/types';
 import { prisma } from '../prisma';
 import { loadSheet } from '../sheet';
+import { broadcast } from './hub';
 import { numbers } from './state';
 
 export interface TokenSource {
@@ -41,6 +43,63 @@ export async function playerSource(playerId: number): Promise<TokenSource> {
 		...split(sheetOf(sheet.stats, sheet.inventory, sheet.passives)),
 		playerId,
 		refId: sheet.character.id
+	};
+}
+
+/**
+ * Relit les stats des jetons d'un joueur, dans toutes les parties, après un changement d'équipement
+ * fait depuis sa fiche. Les jauges actuelles ne bougent pas.
+ */
+export async function refreshPlayerTokens(playerId: number) {
+	const tokens = await prisma.tableToken.findMany({ where: { kind: 'player', playerId } });
+	if (!tokens.length) return;
+	const source = await playerSource(playerId).catch(() => null);
+	if (!source) return;
+	await prisma.tableToken.updateMany({
+		where: { id: { in: tokens.map((t) => t.id) } },
+		data: { stats: source.stats, armor: source.armor }
+	});
+	for (const sessionId of new Set(tokens.map((t) => t.sessionId))) broadcast(sessionId);
+}
+
+export interface AttackWeapon {
+	/** Arme choisie, ou `null` pour frapper sans arme. */
+	weapon: { id: number; name: string; bonuses: WeaponBonus[] } | null;
+	/**
+	 * Part de la stat d'attaque due aux armes tenues mais pas utilisées, à retirer :
+	 * frapper sans arme (ou avec l'autre main) ne profite pas de leurs bonus de stats.
+	 */
+	unused: number;
+	/** Le joueur tient au moins une arme (pour écrire « sans arme » au journal). */
+	holding: boolean;
+}
+
+/** Arme d'un joueur pour une attaque : elle doit être équipée. */
+export async function attackWeapon(
+	playerId: number,
+	weaponId: number | null,
+	stat: StatKey
+): Promise<AttackWeapon> {
+	const sheet = await loadSheet(playerId);
+	const weapons = sheet.inventory.filter((e) => e.hand && e.container === 'main');
+	const chosen = weaponId === null ? null : weapons.find((e) => e.id === weaponId);
+	if (weaponId !== null && !chosen) error(400, 'Cette arme n’est pas équipée.');
+
+	const unusedIds = new Set(weapons.filter((e) => e !== chosen).map((e) => e.id));
+	let unused = 0;
+	if (unusedIds.size) {
+		const full = sheetOf(sheet.stats, sheet.inventory, sheet.passives);
+		const without = sheetOf(
+			sheet.stats,
+			sheet.inventory.filter((e) => !unusedIds.has(e.id)),
+			sheet.passives
+		);
+		unused = full[stat].total - without[stat].total;
+	}
+	return {
+		weapon: chosen ? { id: chosen.id, name: chosen.item.name, bonuses: chosen.weaponBonuses } : null,
+		unused,
+		holding: weapons.length > 0
 	};
 }
 

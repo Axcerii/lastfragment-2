@@ -2,6 +2,7 @@
     // Lanceur de dés libres : bouton en haut à gauche du plateau, menu déroulant.
     import Icon from "$lib/components/ui/Icon.svelte";
     import DieShape from "$lib/components/ui/DieShape.svelte";
+    import { diceCount, parseDice, parseDieValues } from "$lib/game/combat";
     import type { TableClient } from "$lib/table/client.svelte";
     import type { DiceResult } from "$lib/table/types";
 
@@ -24,6 +25,10 @@
     let formula = $state("");
     let reason = $state("");
     let hidden = $state(false);
+    // Vrais dés : on tape la valeur de chaque dé, puis on choisit la formule ; rien n'est tiré.
+    let manual = $state(false);
+    let values = $state("");
+    let typed = $derived(parseDieValues(values));
     let menu: HTMLElement | undefined = $state();
 
     const build = (faces: number) =>
@@ -37,10 +42,25 @@
         open = false;
     }
 
+    /** En saisie à la main, il faut une valeur par dé de la formule. */
+    function ready(f: string): boolean {
+        if (!manual) return true;
+        const formula = parseDice(f);
+        return formula !== null && diceCount(formula) === typed.length;
+    }
+
     async function roll(f: string) {
         if (!f.trim()) return;
-        const result = await client.act<DiceResult>("roll.dice", { formula: f, label: reason, hidden });
-        if (result) onresult?.(result);
+        const result = await client.act<DiceResult>("roll.dice", {
+            formula: f,
+            label: reason,
+            hidden,
+            manual: manual ? typed : undefined,
+        });
+        if (result) {
+            onresult?.(result);
+            values = "";
+        }
     }
 
     // Un clic en dehors du menu le referme.
@@ -76,9 +96,28 @@
                 </label>
             </div>
 
+            <label class="check">
+                <input type="checkbox" bind:checked={manual} /> Saisir les dés à la main (vrais dés)
+            </label>
+            {#if manual}
+                <label>
+                    Valeur de chaque dé, dans l'ordre
+                    <input bind:value={values} placeholder="ex. 4 6" inputmode="numeric" aria-label="Valeurs des dés" />
+                </label>
+                <p class="hint">
+                    {typed.length} valeur{typed.length > 1 ? "s" : ""} saisie{typed.length > 1 ? "s" : ""} : choisis ensuite le dé
+                    (le nombre de dés doit correspondre).
+                </p>
+            {/if}
+
             <div class="faces">
                 {#each FACES as faces (faces)}
-                    <button class="face" onclick={() => roll(build(faces))} title="Lancer {build(faces)}">
+                    <button
+                        class="face"
+                        disabled={!ready(build(faces))}
+                        onclick={() => roll(build(faces))}
+                        title="{manual ? 'Enregistrer' : 'Lancer'} {build(faces)}"
+                    >
                         <DieShape {faces} size="2.4rem" />
                         <span>{build(faces)}</span>
                     </button>
@@ -92,7 +131,9 @@
                 }}
             >
                 <input bind:value={formula} placeholder="Formule libre : 2d6+d4+3" maxlength="60" aria-label="Formule" />
-                <button class="btn btn-small btn-chance" type="submit" disabled={!formula.trim()}>Lancer</button>
+                <button class="btn btn-small btn-chance" type="submit" disabled={!formula.trim() || !ready(formula)}>
+                    {manual ? "Valider" : "Lancer"}
+                </button>
             </form>
 
             <input bind:value={reason} placeholder="Raison (facultatif)" maxlength="80" aria-label="Raison du jet" />
@@ -202,6 +243,16 @@
 
     .face :global(.die) {
         transition: transform 0.2s ease-out;
+    }
+
+    .face:disabled {
+        opacity: 0.35;
+        pointer-events: none;
+    }
+
+    .hint {
+        font-size: 0.75rem;
+        color: var(--muted);
     }
 
     .face span {

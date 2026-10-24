@@ -1,5 +1,6 @@
 // Types partagés entre le serveur et le navigateur pour la table de jeu.
 import type { StatBlock } from '$lib/game/stats';
+import type { Hand } from '$lib/game/weapons';
 
 export const TOKEN_KINDS = ['player', 'character', 'monster', 'custom'] as const;
 export type TokenKind = (typeof TOKEN_KINDS)[number];
@@ -137,6 +138,18 @@ export interface TokenView {
 	passives: PassiveView[] | null;
 	/** Armure d'un personnage ou d'un monstre (ids de `armors`), envoyée au MJ seulement. */
 	armorIds: number[] | null;
+	/** Armes équipées d'un joueur, envoyées au MJ et au propriétaire du jeton seulement. */
+	weapons: WeaponView[] | null;
+}
+
+/** Arme tenue par le personnage d'un jeton joueur, proposée au moment d'attaquer. */
+export interface WeaponView {
+	/** Id de la ligne `items_in_player`. */
+	id: number;
+	name: string;
+	hand: Hand;
+	/** Bonus propres, lisibles (« Ignore 5 points de défense de la cible »). */
+	bonuses: string[];
 }
 
 /** Pièce d'armure du catalogue, proposée au MJ. */
@@ -217,6 +230,8 @@ export interface DiceResult {
 	detail: string | null;
 	dice: RolledDie[];
 	reason: string | null;
+	/** Valeurs saisies à la main (vrais dés) plutôt que tirées. */
+	manual: boolean;
 }
 
 export interface LogView {
@@ -232,5 +247,7 @@ export interface LogView {
 	dice: RolledDie[] | null;
 	/** Le MJ peut annuler l'effet (dégâts et coût d'une attaque). */
 	undoable: boolean;
+	/** Jet saisi à la main (vrais dés), signalé à tout le monde. */
+	manual: boolean;
 	createdAt: string;
 }

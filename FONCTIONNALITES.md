@@ -332,6 +332,8 @@ Puissance totale = somme sur les 13 stats (QDF/30, HP/30, END/20 avant calcul), 
 
 **Armure.** 4 emplacements (casque, torse, gantelets, jambières). Chaque pièce porte une liste de stats et de valeurs (`DEF,VIT` / `10,-5`). Un malus de VIT est ignoré si FOR ≥ 60 ; un malus d'ACC est ignoré si ACC ≥ 50.
 
+**Armes (ajout V2).** Une arme (catégorie `Arme`) s'équipe en main gauche, en main droite ou à deux mains (elle prend alors les deux), depuis le panneau « Armure et armes » ou la fiche de l'objet. Ses bonus de stats se saisissent comme ceux d'une armure et comptent tant qu'elle est équipée ; une arme équipée ne pèse rien. Chaque arme peut avoir des bonus propres (back-office, champ « Bonus d'arme »), appliqués quand on attaque avec elle à la table de jeu : pour l'instant « Ignore X points de défense de la cible », X saisi par le MJ pour chaque arme (`ignore-defense:X`, la DEF ne descend pas sous 0). Le joueur choisit « avec telle arme » ou « sans arme » ; les bonus de stats des armes tenues mais non utilisées ne comptent pas pour l'attaque. Nouveaux bonus : `src/lib/game/weapons.ts`.
+
 **Passifs.** Multiplicateur par stat : bonus = `⌈(valeur − 1) × stat⌉` quand le passif est actif. Deux cas particuliers : *Introverti* (30 % d'ELO transférés en FUR) et *Alcoolique* (+5 % aux 5 stats de combat si actif, −10 % si inactif).
 
 **Badges.** Un badge par stat à 50 et un autre à 70 (END : 1 000 et 1 400). Un token = paire de badges (`MDF:FOR`) consommée pour débloquer la compétence de badge correspondante.
@@ -342,6 +344,8 @@ Puissance totale = somme sur les 13 stats (QDF/30, HP/30, END/20 avant calcul), 
 - Jet d20. Bonus de puissance au jet : puissance 2 → +5 ; puissance n > 2 → +10 × (n − 2).
 - Dégâts = `((attaque + (jet − 10)) × 10 − défense × 5) × multiplicateur`, minimum 10.
 - Coût : Maîtrise → `puissance × 100` QDF ; Force → `(puissance − 1) × 100 + 50` END.
+
+**Jets saisis à la main (ajout V2).** Partout à la table (jets de stat, attaques, menu de dés, `/r 2d6+3 = 4 5` dans le chat), on peut taper le résultat de vrais dés au lieu de laisser la table tirer. Le journal l'indique à tout le monde (étiquette « jet saisi à la main » et mention dans le texte).
 
 **Combat — jet opposé (d100).** Seuil = `50 − (stat exécutant − stat cible)`. 1–2 : échec critique ; 99–100 : réussite critique ; à ±10 du seuil : « de justesse » / « de peu ». Jet sans cible : réussi si `jet ≥ 100 − stat`. Stat opposée par défaut : ACC↔VIT, PER↔FUR, CHA→PER, MDF/DEF→FOR.
 

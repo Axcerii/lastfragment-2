@@ -2,6 +2,7 @@
     import { tick } from "svelte";
     import type { TableClient } from "$lib/table/client.svelte";
     import DieShape from "$lib/components/ui/DieShape.svelte";
+    import { parseDieValues } from "$lib/game/combat";
     import type { LogView } from "$lib/table/types";
 
     let {
@@ -32,10 +33,12 @@
         const text = message.trim();
         if (!text) return;
         message = "";
-        // « /r 2d6+3 » lance des dés directement depuis le chat.
-        const roll = /^\/(?:r|roll|d)\s+(.+)$/i.exec(text);
-        if (roll) await client.act("roll.dice", { formula: roll[1], hidden });
-        else await client.act("chat", { text, hidden });
+        // « /r 2d6+3 » lance des dés directement depuis le chat ; « /r 2d6+3 = 4 5 » enregistre de vrais dés.
+        const roll = /^\/(?:r|roll|d)\s+([^=]+?)\s*(?:=\s*(.+))?$/i.exec(text);
+        if (roll) {
+            const manual = roll[2] ? parseDieValues(roll[2]) : undefined;
+            await client.act("roll.dice", { formula: roll[1], hidden, manual });
+        } else await client.act("chat", { text, hidden });
     }
 
     const time = (log: LogView) =>
@@ -51,6 +54,9 @@
                     <time>{time(log)}</time>
                     {#if log.hidden}<span class="tag">MJ seul</span>{/if}
                     {#if log.undone}<span class="tag">annulé</span>{/if}
+                    {#if log.manual}
+                        <span class="tag manual" title="Résultat de vrais dés, tapé par le lanceur">jet saisi à la main</span>
+                    {/if}
                 </div>
                 {#if log.dice}
                     <div class="dice" aria-hidden="true">
@@ -85,7 +91,7 @@
                 id="table-chat"
                 bind:value={message}
                 maxlength="1000"
-                placeholder="Message, ou /r 2d6+3"
+                placeholder="Message, /r 2d6+3, ou /r 2d6 = 4 5"
                 aria-label="Message"
             />
             {#if isAdmin}
@@ -141,6 +147,11 @@
         padding: 0 0.3rem;
         border: 1px solid var(--border);
         border-radius: var(--radius);
+    }
+
+    .tag.manual {
+        border-color: var(--chance);
+        color: var(--foreground);
     }
 
     .detail {

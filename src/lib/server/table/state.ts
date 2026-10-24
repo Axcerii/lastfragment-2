@@ -1,6 +1,7 @@
 // Lecture d'une partie et vue filtrée selon qui regarde (MJ, joueur, vue OBS).
 import type { Prisma, TableLog } from '@prisma/client';
 import { toStatBlock, type StatBlock } from '$lib/game/stats';
+import { describeWeaponBonus, parseWeaponBonuses, toHand } from '$lib/game/weapons';
 import {
 	HIDDEN_NAME,
 	NO_EFFECTS,
@@ -15,7 +16,8 @@ import {
 	type Side,
 	type TableView,
 	type TokenKind,
-	type TokenView
+	type TokenView,
+	type WeaponView
 } from '$lib/table/types';
 import { prisma } from '../prisma';
 
@@ -40,6 +42,8 @@ export type RawSession = Prisma.TableSessionGetPayload<{ include: typeof include
 	characters: Map<number, { id: number; passives: PassiveView[] }>;
 	/** Armure choisie par le MJ, par id de jeton (personnages et monstres). */
 	armors: Map<number, number[]>;
+	/** Armes équipées, par id de jeton (joueurs). */
+	weapons: Map<number, WeaponView[]>;
 };
 export type RawToken = RawSession['tokens'][number];
 export type RawScene = RawSession['scenes'][number];
@@ -104,7 +108,29 @@ export async function loadRaw(sessionId: number): Promise<RawSession | null> {
 		const sheet = list?.find((s) => s.id === token.refId);
 		if (sheet) armors.set(token.id, numbers(sheet.armorIds));
 	}
-	return { ...raw, characters, armors };
+
+	const held = await prisma.itemInPlayer.findMany({
+		where: { playerId: { in: playerIds }, equipped: true, localisation: 'main', item: { category: 'Arme' } },
+		select: { id: true, playerId: true, hand: true, item: { select: { name: true, weaponBonus: true } } },
+		orderBy: { id: 'asc' }
+	});
+	const weapons = new Map<number, WeaponView[]>();
+	for (const token of raw.tokens) {
+		if (token.kind !== 'player' || !token.playerId) continue;
+		weapons.set(
+			token.id,
+			held
+				.filter((w) => w.playerId === token.playerId)
+				.map((w) => ({
+					id: w.id,
+					name: w.item.name,
+					// Même règle que la fiche : sans main enregistrée, l'arme est en main droite.
+					hand: toHand(w.hand) ?? 'droite',
+					bonuses: parseWeaponBonuses(w.item.weaponBonus).map((b) => describeWeaponBonus(b))
+				}))
+		);
+	}
+	return { ...raw, characters, armors, weapons };
 }
 
 export const numbers = (value: Prisma.JsonValue | null | undefined): number[] =>
@@ -176,7 +202,8 @@ function tokenView(token: RawToken, viewer: Viewer, raw: RawSession): TokenView 
 		stats: exact ? stats : null,
 		armor: exact ? toStatBlock(token.armor as Partial<StatBlock>) : null,
 		passives: character && (viewer.isAdmin || isMine(token, viewer)) ? character.passives : null,
-		armorIds: viewer.isAdmin ? (raw.armors.get(token.id) ?? null) : null
+		armorIds: viewer.isAdmin ? (raw.armors.get(token.id) ?? null) : null,
+		weapons: viewer.isAdmin || isMine(token, viewer) ? (raw.weapons.get(token.id) ?? null) : null
 	};
 }
 
@@ -246,6 +273,8 @@ export interface LogData {
 	dice?: RolledDie[];
 	/** Modificateur ajouté aux dés libres. */
 	modifier?: number;
+	/** Jet saisi à la main (vrais dés) plutôt que tiré par la table. */
+	manual?: boolean;
 	/** Variations de jauges appliquées, pour pouvoir les annuler. */
 	effects?: { tokenId: number; gauge: 'pv' | 'qdf' | 'endurance'; delta: number }[];
 }
@@ -287,6 +316,7 @@ export function logView(log: TableLog, viewer: Viewer): LogView {
 		dice: data.dice?.length ? data.dice : null,
 		undone: log.undone,
 		undoable: viewer.isAdmin && !log.undone && (data.effects?.length ?? 0) > 0,
+		manual: Boolean(data.manual),
 		createdAt: log.createdAt.toISOString()
 	};
 }
