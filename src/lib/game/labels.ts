@@ -90,7 +90,7 @@ export const COUNTRY_LABELS: Record<string, string> = {
 };
 
 // Pays disposant d'un emblème dans /static/pays.
-const COUNTRY_ICONS = ['Augeaime', 'Celeste', 'Edenia', 'Inconnu', 'Irisia', 'Mudan', 'Saxifra'];
+const COUNTRY_ICONS = ['Amari', 'Augeaime', 'Celeste', 'Edenia', 'Inconnu', 'Irisia', 'Mudan', 'Saxifra'];
 
 export function countryIcon(country: string): string {
 	return `/pays/${COUNTRY_ICONS.includes(country) ? country : 'Inconnu'}.svg`;

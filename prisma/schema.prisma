@@ -99,6 +99,7 @@ model Player {
   badgesFusions BadgeFusion[]
   badges        PlayerBadge[]
   drafts        Draft[]
+  dleGames      DleGame[]
 
   @@index([characterId], map: "players_character_id_index")
   @@map("players")
@@ -132,6 +133,7 @@ model Character {
   statistics      Statistic?
   passives        Passive[]
   characterSkills CharacterSkill[]
+  dleDays         DleDay[]
 
   @@map("characters")
 }
@@ -532,4 +534,37 @@ model TableDrawing {
 
   @@index([sceneId])
   @@map("table_drawings")
+}
+
+// ─── Lastdle ─────────────────────────────────────────────────────────────
+
+// Personnage à deviner, fixé au premier passage du jour : le même pour tous jusqu'à minuit,
+// même si le MJ modifie la liste des personnages entre-temps.
+model DleDay {
+  // Date à Paris, AAAA-MM-JJ
+  date        String @id @db.VarChar(10)
+  characterId Int    @map("character_id")
+
+  // Relations
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@map("dle_days")
+}
+
+// Partie du jour d'un joueur connecté : ses essais, et l'heure où il a trouvé.
+model DleGame {
+  id        Int       @id @default(autoincrement())
+  playerId  Int       @map("player_id")
+  date      String    @db.VarChar(10)
+  // Ids des personnages proposés, dans l'ordre
+  guesses   Json
+  solvedAt  DateTime? @map("solved_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, date])
+  @@index([date])
+  @@map("dle_games")
 }

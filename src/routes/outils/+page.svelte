@@ -13,6 +13,12 @@
             text: "Génère des stats à la puissance voulue, imagine un personnage ou un monstre, et propose-le au MJ.",
             dragon: "Guizamark",
         },
+        {
+            href: "/outils/lastdle",
+            title: "Lastdle",
+            text: "Un personnage à deviner chaque jour : flux, race, pays, vivant ou mort, descendance et métier te mettent sur la piste.",
+            dragon: "Yinva",
+        },
     ];
 </script>
 
