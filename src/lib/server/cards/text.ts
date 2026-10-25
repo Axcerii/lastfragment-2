@@ -9,7 +9,10 @@ export function line(value: unknown, max: number): string {
 		.slice(0, max);
 }
 
-/** Texte sur plusieurs lignes (au plus 6 retours à la ligne). */
+/**
+ * Texte sur plusieurs lignes (au plus 6 retours à la ligne). Les retours en tête sont gardés :
+ * ils servent à espacer un texte de ce qui le précède (la citation, au verso d'une carte).
+ */
 export function paragraph(value: unknown, max: number): string {
 	let breaks = 0;
 	return String(value ?? '')
@@ -17,6 +20,7 @@ export function paragraph(value: unknown, max: number): string {
 		.replace(/[\u0000-\u0009\u000b-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, ' ')
 		.replace(/\n/g, () => (++breaks <= 6 ? '\n' : ' '))
 		.replace(/[ \t]+/g, ' ')
-		.trim()
+		.replace(/^ +/, '')
+		.trimEnd()
 		.slice(0, max);
 }

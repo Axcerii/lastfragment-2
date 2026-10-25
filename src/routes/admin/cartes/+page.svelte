@@ -112,14 +112,20 @@
     {:else}
         <div class="grid">
             {#each shown as t (t.id)}
-                <a class="item" href="/admin/cartes/{t.id}">
-                    <CollectibleCard card={t} lite tilt="hover" />
+                <div class="item">
+                    <a class="open" href="/admin/cartes/{t.id}">
+                        <CollectibleCard card={t} lite tilt="hover" />
+                    </a>
                     <span class="meta">
                         <span class="status s-{t.status}">{TEMPLATE_STATUSES[t.status]}</span>
                         <span class="muted">{t.copies}{t.maxPrints ? `/${t.maxPrints}` : ""} ex.</span>
                         {#if !t.inAll}<span class="muted" title="Ne tombe pas du booster All">hors All</span>{/if}
+                        <!-- Copie en brouillon, ouverte aussitôt dans l'éditeur. -->
+                        <form class="dup" method="POST" action="/admin/cartes/{t.id}?/duplicate" use:enhance>
+                            <button class="btn btn-small" title="Dupliquer {t.name}" aria-label="Dupliquer {t.name}">⧉</button>
+                        </form>
                     </span>
-                </a>
+                </div>
             {:else}
                 <p class="muted">Aucune carte ne correspond.</p>
             {/each}
@@ -259,6 +265,20 @@
         color: var(--foreground);
         content-visibility: auto;
         contain-intrinsic-size: 170px 270px;
+    }
+
+    .open {
+        color: inherit;
+    }
+
+    .dup {
+        margin-left: auto;
+    }
+
+    .dup .btn {
+        padding: 0.1rem 0.5rem;
+        font-size: 0.95rem;
+        line-height: 1.2;
     }
 
     .meta {

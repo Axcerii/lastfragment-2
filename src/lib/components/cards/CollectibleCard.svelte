@@ -78,8 +78,57 @@
 
     const src = (image: CardImage | null) => (image ? (lite ? image.small : image.large) : null);
 
+    // Le cadrage (décalage, zoom) s'applique à une boîte de la taille de la zone ; l'image y est
+    // posée dedans. En `cover`, elle n'est pas rognée par `object-fit` mais dimensionnée pour couvrir
+    // la zone et dépasser de ses bords : dézoomer révèle alors les côtés au lieu de rétrécir une
+    // image déjà coupée. Il faut pour ça son rapport largeur / hauteur, lu une fois chargée.
     function placement(image: CardImage) {
-        return `object-fit: ${image.fit}; object-position: ${image.fit === "contain" ? "50% 100%" : "50% 50%"}; transform: translate(${image.x}%, ${image.y}%) scale(${image.zoom});`;
+        return `transform: translate(${image.x}%, ${image.y}%) scale(${image.zoom});`;
+    }
+
+    // Nom trop long pour le bandeau : la taille estimée d'après sa longueur est affinée en mesurant,
+    // et réduite juste assez pour qu'il tienne (les lettres larges, « M » ou « W », prennent plus).
+    // Tout reste en unités de la carte : la mesure vaut quelle que soit sa taille à l'écran.
+    function fitName(el: HTMLElement) {
+        const fit = () => {
+            el.style.setProperty("--fit", "1");
+            if (el.clientWidth && el.scrollWidth > el.clientWidth) {
+                el.style.setProperty("--fit", String(Math.max(0.5, (el.clientWidth / el.scrollWidth) * 0.98)));
+            }
+        };
+        // Remesuré quand la carte change de taille et quand le nom change (une fois le texte en place).
+        const resized = new ResizeObserver(fit);
+        const renamed = new MutationObserver(fit);
+        resized.observe(el);
+        renamed.observe(el, { childList: true, characterData: true, subtree: true });
+        fit();
+        return {
+            destroy: () => {
+                resized.disconnect();
+                renamed.disconnect();
+            },
+        };
+    }
+
+    // Rapport largeur / hauteur de chaque image, rangé sous son adresse (attribut `src`).
+    let ratios = $state<Record<string, number>>({});
+
+    function measure(img: HTMLImageElement) {
+        const read = () => {
+            const url = img.getAttribute("src");
+            if (url && img.naturalWidth && img.naturalHeight) ratios[url] = img.naturalWidth / img.naturalHeight;
+        };
+        if (img.complete) read();
+        img.addEventListener("load", read);
+        return { destroy: () => img.removeEventListener("load", read) };
+    }
+
+    const sized = (image: CardImage) => image.fit === "cover" && !!ratios[src(image) ?? ""];
+
+    function imageStyle(image: CardImage) {
+        if (image.fit === "contain") return "object-fit: contain; object-position: 50% 100%;";
+        const ratio = ratios[src(image) ?? ""];
+        return ratio ? `--r: ${ratio};` : "object-fit: cover;";
     }
 
     // ─── Inclinaison ───
@@ -286,7 +335,9 @@
         <div class="face front frame-{face.frame} finish-{finish} r{card.rarity}" style={maskStyle(frontMask)}>
             <div class="art">
                 {#if face.background}
-                    <img class="layer" src={src(face.background)} alt="" style={placement(face.background)} loading="lazy" decoding="async" />
+                    <div class="layer framing" style={placement(face.background)}>
+                        <img class="picture" class:sized={sized(face.background)} src={src(face.background)} alt="" style={imageStyle(face.background)} use:measure loading="lazy" decoding="async" />
+                    </div>
                 {:else}
                     <div class="layer backdrop backdrop-{face.backdrop}"></div>
                 {/if}
@@ -294,7 +345,9 @@
                     <div class="shine under"></div>
                 {/if}
                 {#if face.art && !face.popout}
-                    <img class="layer subject" src={src(face.art)} alt="" style={placement(face.art)} loading="lazy" decoding="async" />
+                    <div class="layer framing" style={placement(face.art)}>
+                        <img class="picture subject" class:sized={sized(face.art)} src={src(face.art)} alt="" style={imageStyle(face.art)} use:measure loading="lazy" decoding="async" />
+                    </div>
                 {/if}
             </div>
 
@@ -302,7 +355,9 @@
 
             {#if face.art && face.popout}
                 <div class="pop">
-                    <img class="layer subject" src={src(face.art)} alt="" style={placement(face.art)} loading="lazy" decoding="async" />
+                    <div class="layer framing" style={placement(face.art)}>
+                        <img class="picture subject" src={src(face.art)} alt="" style={face.art.fit === "contain" ? imageStyle(face.art) : "object-fit: cover;"} loading="lazy" decoding="async" />
+                    </div>
                 </div>
             {/if}
 
@@ -320,7 +375,7 @@
             {/if}
 
             <div class="plate">
-                <strong class="name">{card.name || "Sans nom"}</strong>
+                <strong class="name" style:--len={Math.max(8, (card.name || "Sans nom").length)} use:fitName>{card.name || "Sans nom"}</strong>
                 {#if face.subtitle}<span class="subtitle">{face.subtitle}</span>{/if}
             </div>
 
@@ -485,8 +540,29 @@
         -webkit-user-drag: none;
     }
 
-    img.layer {
+    /* Boîte de cadrage : la zone de l'illustration, déplacée et zoomée d'un bloc. */
+    .framing {
+        container-type: size;
+    }
+
+    .picture {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        -webkit-user-drag: none;
         filter: saturate(calc(1 - var(--wear) * 0.45)) sepia(calc(var(--wear) * 0.3));
+    }
+
+    /* Couvre la zone sans être rognée : la plus petite taille qui la remplit, centrée. */
+    .picture.sized {
+        inset: auto;
+        left: 50%;
+        top: 50%;
+        width: max(100cqw, calc(100cqh * var(--r)));
+        height: max(100cqh, calc(100cqw / var(--r)));
+        max-width: none;
+        translate: -50% -50%;
     }
 
     .subject {
@@ -630,7 +706,8 @@
 
     .name {
         font-family: var(--titleFont);
-        font-size: 7cqw;
+        /* Un nom long rapetisse pour tenir sur le bandeau (l'ellipse reste en dernier recours). */
+        font-size: calc(min(7cqw, 118cqw / var(--len, 8)) * var(--fit, 1));
         font-weight: 700;
         line-height: 1.05;
         text-transform: uppercase;
@@ -666,7 +743,7 @@
 
     .frame-plein .name {
         color: color-mix(in srgb, var(--accent) 40%, #fff);
-        font-size: 8cqw;
+        font-size: calc(min(8cqw, 136cqw / var(--len, 8)) * var(--fit, 1));
     }
 
     .frame-vintage .plate {
@@ -687,6 +764,7 @@
     }
 
     .frame-vintage .name {
+        font-size: calc(min(7cqw, 124cqw / var(--len, 8)) * var(--fit, 1));
         color: color-mix(in srgb, var(--accent) 50%, #2b2620);
         max-width: 100%;
     }
