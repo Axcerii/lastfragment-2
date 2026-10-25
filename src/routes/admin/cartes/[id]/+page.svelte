@@ -320,9 +320,23 @@
         <section class="editor">
             <div class="top">
                 <h1>{draft.name || "Nouvelle carte"}</h1>
-                <button type="button" class="btn btn-small btn-players" onclick={() => (sourcesOpen = true)}>
-                    Partir d’une fiche
-                </button>
+                <span class="top-actions">
+                    {#if data.template}
+                        <!-- La copie part de la carte enregistrée : un changement en cours n'y serait pas. -->
+                        <form method="POST" action="?/duplicate" use:enhance>
+                            <button
+                                class="btn btn-small"
+                                disabled={dirty}
+                                title={dirty ? "Enregistre d’abord la carte" : "Crée une copie en brouillon, à retoucher"}
+                            >
+                                Dupliquer
+                            </button>
+                        </form>
+                    {/if}
+                    <button type="button" class="btn btn-small btn-players" onclick={() => (sourcesOpen = true)}>
+                        Partir d’une fiche
+                    </button>
+                </span>
             </div>
 
             <div class="tabs">
@@ -589,9 +603,6 @@
                     {/if}
 
                     <div class="danger">
-                        <form method="POST" action="?/duplicate" use:enhance>
-                            <button class="btn btn-small">Dupliquer</button>
-                        </form>
                         {#if data.template.printed === 0}
                             <form
                                 method="POST"
@@ -767,6 +778,12 @@
         flex-direction: column;
         gap: 1rem;
         min-width: 0;
+    }
+
+    .top-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
     .top {
