@@ -64,10 +64,7 @@
             />
             <div class="dialogue-background"></div>
             <p class="nom">
-                {nom}
-                {#if titre}
-                    <span class="title-mobile">, {titre}</span>
-                {/if}
+                {nom}{#if titre}<span class="title-mobile">, {titre}</span>{/if}
             </p>
 
             {#if titre}
@@ -310,13 +307,19 @@
             display: none;
         }
 
-        .title-mobile {
-            display: block;
-        }
-
         .dialogue {
             height: 100%;
             padding: 10px 20px;
+            gap: 0.3rem;
+        }
+
+        /* Le texte s'arrête avant le portrait au lieu de passer dessous. */
+        .inverter:nth-child(odd) .dialogue {
+            padding-right: 37%;
+        }
+
+        .inverter:nth-child(even) .dialogue {
+            padding-left: 33%;
         }
 
         .dialogue p {
@@ -347,20 +350,40 @@
             background-size: 30%;
         }
 
+        /* Le nom et le titre tiennent sur une ligne : le reste est coupé par des points de suspension. */
         .nom {
-            display: flex;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-shrink: 0;
+        }
+
+        .title-mobile {
+            display: inline;
+            font-weight: normal;
         }
 
         .tags {
-            flex-wrap: wrap;
             justify-content: start;
             align-items: start;
-            height: 60px;
+            margin-left: 0;
+            gap: 0.15rem;
         }
 
         .tag-container {
             opacity: 1;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        /* Sur mobile, seuls les deux premiers tags sont affichés. Le sélecteur est
+           plus précis que « .inverter:nth-child(even) .tag-container » qui repasse en flex. */
+        .inverter .tags .tag-container:nth-child(n + 3) {
+            display: none;
         }
 
         .pays {
@@ -394,7 +417,12 @@
         }
 
         .inverter:nth-child(even) .nom {
-            justify-content: flex-end;
+            text-align: right;
+        }
+
+        .inverter:nth-child(even) .tag {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .inverter:nth-child(even) .tag-container {

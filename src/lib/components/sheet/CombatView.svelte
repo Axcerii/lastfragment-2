@@ -14,6 +14,7 @@
         type ContainerKey,
     } from "$lib/game/inventory";
     import { containerLoads, sheetOf } from "$lib/game/sheet";
+    import { HAND_LABELS, describeWeaponBonus } from "$lib/game/weapons";
     import type { InventoryEntry, SheetData } from "$lib/server/sheet";
 
     // Vue d'ensemble plein écran pour le combat : stats, armure, passifs, objets à portée et argent.
@@ -36,6 +37,8 @@
             piece: data.inventory.find((e) => e.equipped && e.slot === slot),
         })),
     );
+
+    let weapons = $derived(data.inventory.filter((e) => e.hand));
 
     let openId = $state<number | null>(null);
     let detailsOpen = $state(false);
@@ -95,6 +98,25 @@
                             <span class="muted">—</span>
                         {/if}
                     </li>
+                {/each}
+            </ul>
+
+            <h2>Armes</h2>
+            <ul class="list">
+                {#each weapons as entry (entry.id)}
+                    <li>
+                        <span class="muted slot">{HAND_LABELS[entry.hand!]}</span>
+                        <button type="button" class="link" onclick={() => open(entry)}>
+                            {entry.item.name}
+                        </button>
+                        {#if entry.weaponBonuses.length}
+                            <span class="muted bonus">
+                                {entry.weaponBonuses.map((b) => describeWeaponBonus(b, true)).join(", ")}
+                            </span>
+                        {/if}
+                    </li>
+                {:else}
+                    <li class="muted">Mains nues.</li>
                 {/each}
             </ul>
 
@@ -242,6 +264,10 @@
     .slot {
         width: 5.5rem;
         flex-shrink: 0;
+    }
+
+    .bonus {
+        font-size: 0.8rem;
     }
 
     .weight {

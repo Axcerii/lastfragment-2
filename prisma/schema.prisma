@@ -94,12 +94,20 @@ model Player {
   money       Int    @default(0) @db.Int
 
   // Relations
-  character     Character?     @relation(fields: [characterId], references: [id])
-  itemsInPlayer ItemInPlayer[]
-  badgesFusions BadgeFusion[]
-  badges        PlayerBadge[]
-  drafts        Draft[]
-  dleGames      DleGame[]
+  character      Character?     @relation(fields: [characterId], references: [id])
+  itemsInPlayer  ItemInPlayer[]
+  badgesFusions  BadgeFusion[]
+  badges         PlayerBadge[]
+  drafts         Draft[]
+  dleGames       DleGame[]
+  // Cartes à collectionner
+  cards          Card[]
+  cardWallet     CardWallet?
+  cardOpenings   CardOpening[]
+  cardEventsFrom CardEvent[]    @relation("CardEventFrom")
+  cardEventsTo   CardEvent[]    @relation("CardEventTo")
+  tradesSent     CardTrade[]    @relation("CardTradeFrom")
+  tradesReceived CardTrade[]    @relation("CardTradeTo")
 
   @@index([characterId], map: "players_character_id_index")
   @@map("players")
@@ -193,6 +201,9 @@ model Item {
   description String       @db.Text
   // Icône personnalisée ; à défaut, l'icône de la catégorie est utilisée
   icon        String?      @db.VarChar(255)
+  // Bonus propres d'une arme, codes séparés par des virgules (« ignore-defense:5 ») — voir game/weapons.ts.
+  // Ses bonus de stats, eux, passent par `armors` comme pour une armure.
+  weaponBonus String?      @map("weapon_bonus") @db.VarChar(255)
 
   // Relations
   itemsInPlayer ItemInPlayer[]
@@ -209,6 +220,8 @@ model ItemInPlayer {
   quantity     Int     @default(1) @db.Int
   localisation String  @db.VarChar(255)
   equipped     Boolean @default(false)
+  // Arme équipée : "gauche", "droite" ou "deux" (deux mains). Null pour tout le reste.
+  hand         String? @db.VarChar(10)
 
   // Relations
   item          Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
@@ -567,4 +580,233 @@ model DleGame {
   @@unique([playerId, date])
   @@index([date])
   @@map("dle_games")
+}
+
+// ─── Cartes à collectionner ──────────────────────────────────────────────
+
+// Série de cartes : une bannière de boosters, avec sa numérotation (« 012/120 »).
+// Le booster « All » pioche dans toutes les cartes publiées marquées `inAll`, séries ou non.
+model CardSet {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(80)
+  // Code imprimé au verso des cartes (« ARC1 »)
+  code        String    @db.VarChar(8)
+  description String?   @db.VarChar(400)
+  logo        String?   @db.VarChar(255)
+  // Visuel de la bannière, et couleur d'accent du booster
+  banner      String?   @db.VarChar(255)
+  color       String    @default("#e5b8cc") @db.VarChar(7)
+  // Booster proposé aux joueurs ; `startsAt` / `endsAt` bornent une bannière temporaire
+  active      Boolean   @default(false)
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  templates CardTemplate[]
+  openings  CardOpening[]
+  packs     CardPack[]
+
+  @@map("card_sets")
+}
+
+// Paquet de booster d'une série : plusieurs illustrations pour un même contenu. Le joueur choisit
+// celui qui lui plaît, ça ne change rien aux cartes tirées.
+model CardPack {
+  id        Int      @id @default(autoincrement())
+  // null = booster « All »
+  setId     Int?     @map("set_id")
+  name      String   @db.VarChar(60)
+  // Illustration de toute la face avant ; les textes du site ne s'y ajoutent que si `showText`
+  image     String?  @db.VarChar(255)
+  showText  Boolean  @default(false) @map("show_text")
+  color     String   @default("#e5b8cc") @db.VarChar(7)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  set      CardSet?      @relation(fields: [setId], references: [id], onDelete: Cascade)
+  openings CardOpening[]
+
+  @@index([setId])
+  @@map("card_packs")
+}
+
+// Modèle de carte dessiné par le MJ. Chaque exemplaire tiré est une ligne de `cards`.
+model CardTemplate {
+  id         Int      @id @default(autoincrement())
+  setId      Int?     @map("set_id")
+  // Numéro dans la série (« 012 »), unique dans la série
+  number     Int?
+  // "personnage", "monstre", "arme", "objet", "lieu", "dragon", "evenement" — voir cards/types.ts
+  type       String   @db.VarChar(20)
+  // 1 Commun · 2 Singulier · 3 Rare · 4 Légendaire · 5 Unique
+  rarity     Int      @db.TinyInt
+  name       String   @db.VarChar(60)
+  // "brouillon" (MJ seul), "publiee" (tombe des boosters), "retiree" (ne tombe plus, reste possédée)
+  status     String   @default("brouillon") @db.VarChar(12)
+  // Tombe aussi du booster « All »
+  inAll      Boolean  @default(true) @map("in_all")
+  // Poids de tirage parmi les cartes de même rareté (10 = normal)
+  weight     Int      @default(10)
+  // Tirage limité : null = illimité. `printed` compte les exemplaires créés (= dernier n° de série).
+  maxPrints  Int?     @map("max_prints")
+  printed    Int      @default(0)
+  // Recto, verso et finition : voir CardFace dans cards/types.ts, nettoyé par server/cards/face.ts
+  face       Json
+  // Fiche d'origine, pour reprendre ses données (personnage, monstre, objet)
+  sourceKind String?  @map("source_kind") @db.VarChar(12)
+  sourceId   Int?     @map("source_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  set    CardSet? @relation(fields: [setId], references: [id], onDelete: Restrict)
+  copies Card[]
+
+  @@unique([setId, number])
+  @@index([status])
+  @@map("card_templates")
+}
+
+// Exemplaire possédé. Il n'est jamais supprimé par le jeu : retiré par le MJ, il passe à `ownerId` null.
+model Card {
+  id         Int      @id @default(autoincrement())
+  templateId Int      @map("template_id")
+  ownerId    Int?     @map("owner_id")
+  // N° de série dans le modèle (#12, ou #12/50 si tirage limité)
+  serial     Int
+  // Usure de 0 (neuve) à 1 (marquée par le combat), tirée à la création
+  wear       Float    @db.Double
+  // "booster", "mj"
+  origin     String   @db.VarChar(10)
+  pinned     Boolean  @default(false)
+  obtainedAt DateTime @default(now()) @map("obtained_at")
+
+  // Relations
+  template CardTemplate    @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  owner    Player?         @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  events   CardEvent[]
+  trades   CardTradeItem[]
+
+  @@unique([templateId, serial])
+  @@index([ownerId])
+  @@map("cards")
+}
+
+// Historique d'un exemplaire : tirage, échange, don ou retrait par le MJ
+model CardEvent {
+  id        Int      @id @default(autoincrement())
+  cardId    Int      @map("card_id")
+  // "tirage", "don", "echange", "transfert", "retrait"
+  kind      String   @db.VarChar(10)
+  fromId    Int?     @map("from_id")
+  toId      Int?     @map("to_id")
+  tradeId   Int?     @map("trade_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  card Card    @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  from Player? @relation("CardEventFrom", fields: [fromId], references: [id], onDelete: SetNull)
+  to   Player? @relation("CardEventTo", fields: [toId], references: [id], onDelete: SetNull)
+
+  @@index([cardId])
+  @@map("card_events")
+}
+
+// Réserve de boosters d'un joueur. Le stock se recalcule à la lecture (pas de tâche planifiée) :
+// un booster de plus par intervalle écoulé depuis `since`, jusqu'au maximum.
+model CardWallet {
+  playerId Int      @id @map("player_id")
+  stock    Int
+  since    DateTime
+  opened   Int      @default(0)
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("card_wallets")
+}
+
+// Booster ouvert : quelle série, quand, et les exemplaires obtenus
+model CardOpening {
+  id        Int       @id @default(autoincrement())
+  playerId  Int       @map("player_id")
+  // null = booster « All »
+  setId     Int?      @map("set_id")
+  // Paquet choisi (purement visuel), null pour le paquet par défaut
+  packId    Int?      @map("pack_id")
+  cardIds   Json      @map("card_ids")
+  createdAt DateTime  @default(now()) @map("created_at")
+  // Le joueur a vu tout le booster. Resté vide (page fermée, réseau coupé pendant l'ouverture),
+  // le booster lui est reproposé : ses cartes sont déjà dans sa collection, il ne les a juste pas vues.
+  seenAt    DateTime? @map("seen_at")
+
+  // Relations
+  player Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  set    CardSet?  @relation(fields: [setId], references: [id], onDelete: SetNull)
+  pack   CardPack? @relation(fields: [packId], references: [id], onDelete: SetNull)
+
+  @@index([playerId, id])
+  @@index([playerId, seenAt])
+  @@map("card_openings")
+}
+
+// Proposition d'échange entre deux joueurs (le MJ y compris)
+model CardTrade {
+  id         Int       @id @default(autoincrement())
+  fromId     Int       @map("from_id")
+  toId       Int       @map("to_id")
+  // "attente", "acceptee", "refusee", "annulee", "caduque" (une carte a changé de mains entre-temps)
+  status     String    @default("attente") @db.VarChar(10)
+  message    String?   @db.VarChar(200)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  resolvedAt DateTime? @map("resolved_at")
+
+  // Relations
+  from  Player          @relation("CardTradeFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to    Player          @relation("CardTradeTo", fields: [toId], references: [id], onDelete: Cascade)
+  items CardTradeItem[]
+
+  @@index([toId, status])
+  @@index([fromId, status])
+  @@map("card_trades")
+}
+
+model CardTradeItem {
+  id      Int     @id @default(autoincrement())
+  tradeId Int     @map("trade_id")
+  cardId  Int     @map("card_id")
+  // Vrai : carte donnée par l'auteur de la proposition ; faux : carte demandée au destinataire
+  offered Boolean
+
+  // Relations
+  trade CardTrade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  card  Card      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([tradeId, cardId])
+  @@index([cardId])
+  @@map("card_trade_items")
+}
+
+// Ligne unique (id = 1) : réglages du jeu de cartes, modifiables dans l'Espace MJ
+model CardSettings {
+  id              Int     @id @default(1)
+  // Jeu ouvert aux joueurs. Fermé (par défaut), seul le MJ voit les cartes et peut les préparer.
+  public          Boolean @default(false)
+  // Un booster de plus toutes les `boosterMinutes`, jusqu'à `boosterMax` en réserve
+  boosterMinutes  Int     @default(480) @map("booster_minutes")
+  boosterMax      Int     @default(3) @map("booster_max")
+  // Boosters offerts à l'ouverture de la réserve d'un nouveau joueur
+  starterBoosters Int     @default(1) @map("starter_boosters")
+  cardsPerBooster Int     @default(5) @map("cards_per_booster")
+  // Rareté minimale de la dernière carte de chaque booster (1 = aucune garantie)
+  guaranteed      Int     @default(3)
+  // Chance (en %) qu'un booster soit un God Pack : une Unique au moins, le reste en Légendaire
+  godPack         Float   @default(0) @map("god_pack") @db.Double
+  // Poids de tirage par rareté, en pour cent : { "1": 62, "2": 25, … }
+  rates           Json
+
+  @@map("card_settings")
 }

@@ -5,6 +5,12 @@ import { pairKey } from '$lib/game/badges';
 import { parseEffects } from '$lib/game/bonus';
 import { normalizeDescent, parseDragons } from '$lib/game/labels';
 import { STATS, toStatBlock } from '$lib/game/stats';
+import {
+	WEAPON_BONUS_KINDS,
+	describeWeaponBonus,
+	parseWeaponBonuses,
+	serializeWeaponBonuses
+} from '$lib/game/weapons';
 import { hashPassword } from '../auth';
 import { prisma } from '../prisma';
 import { readFlag, readStats, saveStats } from '../stats';
@@ -68,6 +74,8 @@ function cell(field: Field, record: Row): string | number | boolean | null {
 				.join(' · ');
 		case 'dragons':
 			return parseDragons(value).join(' · ') || value || null;
+		case 'weaponBonus':
+			return parseWeaponBonuses(value).map((b) => describeWeaponBonus(b, true)).join(' · ') || null;
 		default:
 			return value ?? null;
 	}
@@ -220,6 +228,19 @@ async function readColumns(resource: Resource, form: FormData, creating: boolean
 			case 'dragons':
 				data[field.name] = normalizeDescent(raw);
 				break;
+			case 'weaponBonus': {
+				// Une valeur X par bonus (« weaponBonus_ignore-defense ») ; vide ou 0 : pas de bonus.
+				const values: Record<string, number> = {};
+				for (const kind of WEAPON_BONUS_KINDS) {
+					const value = Math.round(Number(text(form, `${field.name}_${kind}`) || 0));
+					if (!Number.isFinite(value) || value < 0) {
+						throw new FormError(`« ${field.label} » : un nombre positif est attendu.`);
+					}
+					values[kind] = value;
+				}
+				data[field.name] = serializeWeaponBonuses(values);
+				break;
+			}
 			default:
 				if (!raw && field.required) throw missing();
 				data[field.name] = raw || empty();

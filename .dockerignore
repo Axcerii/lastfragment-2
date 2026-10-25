@@ -18,3 +18,4 @@ prisma/seed-*.mjs
 prisma/import-v1.sql
 .dockerignore
 *.md
+textures-sources

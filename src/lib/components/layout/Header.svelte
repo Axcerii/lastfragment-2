@@ -4,7 +4,7 @@
     import NavButton from "./NavButton.svelte";
     import BurgerMenu from "./BurgerMenu.svelte";
 
-    let { user }: { user: App.Locals["user"] } = $props();
+    let { user, cardsVisible = false }: { user: App.Locals["user"]; cardsVisible?: boolean } = $props();
 
     let isMenuOpen = $state(false);
 
@@ -26,6 +26,9 @@
         active={isActive("/personnages") || isActive("/bestiaire")}
     />
     <NavButton href="/outils" label="Outils" active={isActive("/outils")} />
+    {#if cardsVisible}
+        <NavButton href="/cartes" label="Cartes" active={isActive("/cartes")} />
+    {/if}
     <NavButton href="/flux" label="Don de Flux" active={isActive("/flux")} />
 
     {#if user}

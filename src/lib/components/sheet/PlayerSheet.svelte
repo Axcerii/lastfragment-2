@@ -147,7 +147,7 @@
     </main>
 </div>
 
-<Modal side id="panneau-armure" title="Armure" bind:open={armorOpen}>
+<Modal side id="panneau-armure" title="Armure et armes" bind:open={armorOpen}>
     <EquipmentPanel inventory={data.inventory} {canEdit} />
 </Modal>
 

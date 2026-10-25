@@ -1,5 +1,6 @@
 <script lang="ts">
     import MjPanel from "$lib/components/game/MjPanel.svelte";
+    import Showcase from "$lib/components/cards/Showcase.svelte";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import CensorScreen from "$lib/components/personnages/CensorScreen.svelte";
     import CharacterPlusCountry from "$lib/components/personnages/CharacterPlusCountry.svelte";
@@ -67,6 +68,10 @@
             <p>{character.description}</p>
         </div>
     {/if}
+
+    {#each data.showcases as showcase (showcase.id)}
+        <Showcase cards={showcase.cards} title="Collection de {character.name}" />
+    {/each}
 
     {#if data.stats}
         <MjPanel

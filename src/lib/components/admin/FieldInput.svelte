@@ -7,6 +7,7 @@
     import { parsePair } from "$lib/game/badges";
     import { DRAGONS } from "$lib/game/labels";
     import { emptyStats } from "$lib/game/stats";
+    import { BONUS_KINDS, WEAPON_BONUS_KINDS, weaponBonusValue } from "$lib/game/weapons";
 
     // Champ de formulaire du back-office, choisi d'après le type décrit dans la ressource.
     let {
@@ -100,6 +101,23 @@
             </div>
         {:else if field.type === "dragons"}
             <DragonPicker name={field.name} {value} />
+        {:else if field.type === "weaponBonus"}
+            <!-- Une valeur X par bonus ; vide ou 0 : l'arme n'a pas ce bonus. -->
+            <div class="bonuses">
+                {#each WEAPON_BONUS_KINDS as kind (kind)}
+                    <label class="bonus">
+                        {BONUS_KINDS[kind].field}
+                        <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            name="{field.name}_{kind}"
+                            value={weaponBonusValue(value, kind) || ""}
+                            placeholder="0 = aucun"
+                        />
+                    </label>
+                {/each}
+            </div>
         {:else if field.type === "stats"}
             <StatsEditor stats={value ?? emptyStats()} />
         {:else if field.type === "armor"}
@@ -147,6 +165,19 @@
 
     .field.wide {
         grid-column: 1 / -1;
+    }
+
+    .bonuses {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .bonus {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        max-width: 20rem;
     }
 
     .required {

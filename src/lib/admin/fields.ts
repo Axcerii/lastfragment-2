@@ -39,6 +39,8 @@ export type Field = Base &
 		| { type: 'badgePair' }
 		/** Descendance : un ou plusieurs dragons (« Goliath-Pura »), ou « Aucun » / « Inconnu ». */
 		| { type: 'dragons' }
+		/** Bonus propres d'une arme : une valeur X par bonus de `BONUS_KINDS` (codes séparés par des virgules). */
+		| { type: 'weaponBonus' }
 		/** Champs virtuels : enregistrés dans une table liée après la sauvegarde. */
 		| { type: 'stats'; owner: 'characterId' | 'monsterId' }
 		| { type: 'armor' }

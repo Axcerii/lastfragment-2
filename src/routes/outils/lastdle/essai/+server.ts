@@ -9,6 +9,8 @@ import {
 	today
 } from '$lib/server/dle';
 import { RateLimiter } from '$lib/server/ratelimit';
+import { giftBoosters } from '$lib/server/cards/boosters';
+import { cardsVisibleTo } from '$lib/server/cards/settings';
 import type { RequestHandler } from './$types';
 
 const MAX_BODY = 4096;
@@ -22,6 +24,8 @@ const requests = new RateLimiter(60, 60 * 1000);
  *
  * - `{ mode: 'daily', date, guesses }` : énigme du jour. Connecté, chaque essai est enregistré
  *   sur le compte ; sinon, la page renvoie toute sa partie à chaque chargement.
+ *   L'énigme du jour trouvée rapporte un booster, si le jeu de cartes est visible du joueur
+ *   (caché, il n'existe pas encore pour lui).
  * - `{ mode: 'infinite' }` : nouveau personnage au hasard, renvoyé sous forme de jeton chiffré.
  * - `{ mode: 'infinite', token, guesses }` : essais contre ce personnage, sans rien enregistrer.
  */
@@ -64,6 +68,11 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 
 	// Connecté : un seul essai à la fois, enregistré, et la partie complète en retour.
 	if (ids.length !== 1 || !pool.some((c) => c.id === ids[0])) error(400, 'Un essai à la fois.');
-	const all = await recordGuess(user.id, date, ids[0], ids[0] === answer.id);
-	return json({ rows: compareAll(all, pool, answer) });
+	const { ids: all, solved } = await recordGuess(user.id, date, ids[0], ids[0] === answer.id);
+	const rows = compareAll(all, pool, answer);
+	if (solved && (await cardsVisibleTo(user))) {
+		await giftBoosters([user.id], 1);
+		return json({ rows, booster: true });
+	}
+	return json({ rows });
 };

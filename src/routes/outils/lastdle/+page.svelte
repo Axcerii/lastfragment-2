@@ -268,6 +268,12 @@
             {#if mode === "daily"}
                 <div class="info">
                     <span class="muted">Énigme n°{data.day}</span>
+                    {#if !answer && data.cards}
+                        <a class="reward" href={data.account ? "/cartes" : "/auth/login"}>
+                            <span class="gem" aria-hidden="true"></span>
+                            {data.account ? "Trouve-le : un booster de cartes offert" : "Connecte-toi : le trouver rapporte un booster de cartes"}
+                        </a>
+                    {/if}
                     {#if !answer && left}
                         <span class="next">
                             <span class="muted">Prochain personnage dans</span>
@@ -296,6 +302,12 @@
                                     Trouvé en {rows.length} essai{rows.length > 1 ? "s" : ""}.
                                     Série en cours : {stats.streak} jour{stats.streak > 1 ? "s" : ""} (record {stats.best}).
                                 </p>
+                                {#if data.cards && data.account}
+                                    <a class="reward won" href="/cartes">
+                                        <span class="gem" aria-hidden="true"></span>
+                                        +1 booster de cartes gagné : va l’ouvrir !
+                                    </a>
+                                {/if}
                                 <div class="victory-actions">
                                     <a class="btn btn-accent" href="/personnages/{answer.id}">Voir sa fiche</a>
                                     <button class="btn" onclick={() => switchMode("infinite")}>Continuer en mode infini</button>
@@ -1033,5 +1045,36 @@
         .victory-actions {
             justify-content: center;
         }
+    }
+
+    /* Récompense du jour : un booster de cartes (seulement quand le jeu de cartes est visible). */
+    .reward {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.8rem 0.25rem 0.6rem;
+        border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+        color: var(--accent);
+        font-size: 0.85rem;
+        transition: var(--transition);
+    }
+
+    .reward:hover {
+        background: color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .reward.won {
+        align-self: flex-start;
+        margin: 0.25rem 0 0.5rem;
+    }
+
+    .reward .gem {
+        width: 0.75rem;
+        height: 1.15rem;
+        flex-shrink: 0;
+        clip-path: polygon(50% 0, 100% 17%, 100% 83%, 50% 100%, 0 83%, 0 17%);
+        background: linear-gradient(160deg, #fff, var(--accent) 45%, color-mix(in srgb, var(--accent) 40%, #000));
     }
 </style>

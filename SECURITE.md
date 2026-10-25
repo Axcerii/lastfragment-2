@@ -81,6 +81,21 @@ Légende : ✅ fait et testé · 🚀 à faire lors de la mise en production · 
 6. Docker contourne le pare-feu `ufw` pour les ports publiés : le site n'écoute que sur
    `127.0.0.1`, il faut le garder ainsi.
 
+## 7. Cartes à collectionner (25 octobre 2026)
+
+| Point | État |
+| --- | --- |
+| Tirage | ✅ au serveur seulement, `crypto.randomInt` ; le navigateur ne reçoit les cartes qu'une fois créées et l'animation ne décide de rien. Le paquet choisi n'est qu'une apparence : il doit appartenir à la série ouverte (sinon refus, sans consommer de booster, testé) et n'entre pas dans le tirage |
+| Ouverture interrompue | ✅ les cartes sont créées et attribuées dans la transaction, avant toute animation : page fermée, réseau coupé ou « Plus tard » ne font rien perdre. Le booster reste « pas vu » (`seen_at` vide) et se rejoue sans consommer de booster ; seul son propriétaire peut le marquer vu (testé) |
+| Double ouverture | ✅ réserve mise à jour par « compare-and-set » dans la transaction qui crée les cartes : 3 ouvertures simultanées avec 2 boosters en réserve → 2 passent, la 3ᵉ est refusée (testé). Conflit ou interblocage MySQL : la transaction est rejouée |
+| Tirage limité | ✅ le n° de série n'est incrémenté que sous la limite, ligne verrouillée jusqu'à la fin de la transaction ; contrainte unique (modèle, n° de série) en filet. Don de 5 exemplaires d'une carte limitée à 3 → 3 donnés, puis « épuisé » (testé) |
+| Échanges | ✅ chaque carte ne change de mains que si elle appartient encore à celui qui la cède, tout ou rien ; proposer la carte d'un autre ou s'échanger à soi-même est refusé (testé) ; les propositions qui portaient sur une carte déplacée deviennent caduques |
+| Perte de données | ✅ un modèle avec des exemplaires ne peut pas être supprimé (clé étrangère `Restrict`), seulement retiré des boosters ; une série non vide non plus ; un exemplaire retiré à un joueur reste dans la réserve du MJ avec son historique ; supprimer un compte rend ses cartes au MJ au lieu de les effacer |
+| Entrées du créateur | ✅ chaque champ borné et nettoyé (caractères de contrôle et d'inversion de sens retirés), listes fermées vérifiées avec `Object.hasOwn` (« __proto__ » refusé, testé), couleurs `#rrggbb` seulement : rien d'autre n'entre dans un attribut `style` |
+| Images | ✅ chemin résolu côté serveur et confiné aux dossiers d'uploads et d'emblèmes (`../../.env` refusé, testé) ; chaque image est réencodée en WebP par sharp (métadonnées retirées, SVG rastérisé, fichier piégé neutralisé), une à la fois pour ménager le processeur |
+| Accès | ✅ toutes les pages et actions sous `/admin/cartes` réservées au MJ (403 testé depuis un compte joueur) ; `/cartes` réservé aux comptes connectés. Jeu caché (par défaut) : `/cartes` et ses actions répondent 404 à tous sauf au MJ, vérifié dans `hooks.server.ts` (les actions de formulaire ne passent pas par les `load`), liens et vitrines masqués (testé en visiteur et en joueur) |
+| Limites de débit | ✅ ouverture 6 / 30 s, propositions 10 / 10 min, réponses 30 / min par joueur ; 15 propositions en attente et 12 cartes par côté au plus |
+
 ## Points connus, non corrigés (faible risque)
 
 - **Brouillard côté navigateur** : l'image de fond de la scène est envoyée entière, un joueur

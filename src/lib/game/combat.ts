@@ -42,14 +42,23 @@ export interface AttackInput {
 	multiplier?: number;
 	attackBonus?: number;
 	defenseBonus?: number;
+	/** Points de DEF de la cible ignorés (bonus d'arme). La DEF ne descend pas sous 0. */
+	ignoreDefense?: number;
 }
 
 export const MIN_DAMAGE = 10;
 
+/** DEF de la cible qui compte vraiment dans l'attaque : bonus du MJ ajouté, points ignorés retirés. */
+export function effectiveDefense(input: Pick<AttackInput, 'defense' | 'defenseBonus' | 'ignoreDefense'>): number {
+	const defense = input.defense + (input.defenseBonus ?? 0);
+	if (!input.ignoreDefense) return defense;
+	return Math.max(0, defense - input.ignoreDefense);
+}
+
 /** Dégâts = ((attaque + (jet − 10)) × 10 − défense × 5) × multiplicateur, 10 au minimum. */
 export function attackDamage(input: AttackInput): number {
 	const attack = input.attack + (input.attackBonus ?? 0);
-	const defense = input.defense + (input.defenseBonus ?? 0);
+	const defense = effectiveDefense(input);
 	const roll = input.roll + powerRollBonus(input.power);
 	const damage = ((attack + (roll - 10)) * 10 - defense * 5) * (input.multiplier ?? 1);
 	return Math.max(MIN_DAMAGE, Math.round(damage));
@@ -216,6 +225,40 @@ export function rollDice(formula: DiceFormula, rng: Rng = Math.random): DiceResu
 	}
 	const total = rolls.reduce((sum, r) => sum + r.sign * r.value, formula.modifier);
 	return { formula: formatDice(formula), rolls, modifier: formula.modifier, total };
+}
+
+/** Nombre de dés d'une formule. */
+export function diceCount(formula: DiceFormula): number {
+	return formula.dice.reduce((sum, term) => sum + term.count, 0);
+}
+
+/**
+ * Jet saisi à la main (vrais dés) : une valeur par dé, dans l'ordre de la formule.
+ * Renvoie `null` s'il manque des valeurs ou si l'une sort des faces du dé.
+ */
+export function manualDice(formula: DiceFormula, values: number[]): DiceResult | null {
+	if (values.length !== diceCount(formula)) return null;
+	const queue = [...values];
+	const rolls: DiceResult['rolls'] = [];
+	for (const term of formula.dice) {
+		for (let i = 0; i < term.count; i++) {
+			const value = queue.shift()!;
+			if (!isDieValue(value, term.faces)) return null;
+			rolls.push({ faces: term.faces, value, sign: term.sign });
+		}
+	}
+	const total = rolls.reduce((sum, r) => sum + r.sign * r.value, formula.modifier);
+	return { formula: formatDice(formula), rolls, modifier: formula.modifier, total };
+}
+
+/** Valeur possible sur un dé à `faces` faces. */
+export function isDieValue(value: number, faces: number): boolean {
+	return Number.isInteger(value) && value >= 1 && value <= faces;
+}
+
+/** Lit des valeurs de dés saisies à la main : « 4 6 », « 4, 6 », « 4+6 ». */
+export function parseDieValues(text: string): number[] {
+	return (text.match(/\d+/g) ?? []).map(Number);
 }
 
 export function formatDice(formula: DiceFormula): string {

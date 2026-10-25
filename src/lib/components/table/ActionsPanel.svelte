@@ -8,6 +8,7 @@
         type AttackKind,
     } from "$lib/game/combat";
     import { COMBAT_STATS, SOCIAL_STATS, STATS, type StatKey } from "$lib/game/stats";
+    import { HAND_LABELS } from "$lib/game/weapons";
     import DieShape from "$lib/components/ui/DieShape.svelte";
     import type { TableClient } from "$lib/table/client.svelte";
     import type { TokenView } from "$lib/table/types";
@@ -49,6 +50,16 @@
     });
     let targets = $derived(tokens);
 
+    // ─── Jets saisis à la main ───
+    // Avec de vrais dés : on tape le résultat, la table ne tire rien. Le journal le signale.
+    let manualRolls = $state(false);
+    let statRoll = $state<number | null>(null);
+    let attackRoll = $state<number | null>(null);
+    const validRoll = (value: number | null, faces: number) =>
+        value !== null && Number.isInteger(value) && value >= 1 && value <= faces;
+    let statReady = $derived(!manualRolls || validRoll(statRoll, 100));
+    let attackReady = $derived(!manualRolls || validRoll(attackRoll, 20));
+
     // ─── Jet de stat ───
     let stat = $state<StatKey>("perception");
     let targetStat = $state<StatKey>(OPPOSED_STAT.perception);
@@ -62,8 +73,8 @@
         targetStat = OPPOSED_STAT[key];
     }
 
-    function rollStat() {
-        client.act("roll.stat", {
+    async function rollStat() {
+        const done = await client.act("roll.stat", {
             tokenId: actorId,
             stat,
             targetId: opposed ? targetId : undefined,
@@ -71,7 +82,9 @@
             bonus,
             targetBonus,
             hidden,
+            manual: manualRolls ? statRoll : undefined,
         });
+        if (done) statRoll = null;
     }
 
     // ─── Attaque ───
@@ -85,9 +98,24 @@
     let cost = $derived(attackCost(kind, safePower));
     let costLabel = $derived(STATS[ATTACK_COST_STAT[kind]].abbr);
 
-    function attack() {
-        client.act("attack", {
+    // ─── Arme ───
+    // Un joueur frappe avec une de ses armes équipées, ou sans arme.
+    let weapons = $derived(tokens.find((t) => t.id === actorId)?.weapons ?? []);
+    let weaponId = $state<number | null>(null);
+    // L'arme reste choisie tant qu'elle est tenue ; sinon on propose la première, faute de quoi « sans arme ».
+    let lastActor: number | null = null;
+    $effect(() => {
+        if (actorId !== lastActor || (weaponId !== null && !weapons.some((w) => w.id === weaponId))) {
+            lastActor = actorId;
+            weaponId = weapons[0]?.id ?? null;
+        }
+    });
+    let weapon = $derived(weapons.find((w) => w.id === weaponId) ?? null);
+
+    async function attack() {
+        const done = await client.act("attack", {
             attackerId: actorId,
+            weaponId,
             targetId,
             kind,
             power: safePower,
@@ -95,7 +123,9 @@
             attackBonus,
             defenseBonus,
             hidden,
+            manual: manualRolls ? attackRoll : undefined,
         });
+        if (done) attackRoll = null;
     }
 
     const nameOf = (id: number | null) => tokens.find((t) => t.id === id)?.name ?? "—";
@@ -120,6 +150,10 @@
             {:else}
                 <strong>{nameOf(actorId)}</strong>
             {/if}
+        </label>
+
+        <label class="check manual" title="Pour lancer de vrais dés : le journal indique que le jet a été saisi">
+            <input type="checkbox" bind:checked={manualRolls} /> Saisir les jets à la main (vrais dés)
         </label>
 
         <section>
@@ -165,9 +199,15 @@
                     {/if}
                 </div>
             {/if}
+            {#if manualRolls}
+                <label>
+                    Résultat du d100
+                    <input type="number" min="1" max="100" step="1" bind:value={statRoll} placeholder="1 à 100" />
+                </label>
+            {/if}
             <button
                 class="btn btn-chance"
-                disabled={opposed && targetId === null}
+                disabled={(opposed && targetId === null) || !statReady}
                 onclick={rollStat}
             >
                 Lancer {STATS[stat].label}{opposed ? ` contre ${nameOf(targetId)}` : ""}
@@ -198,6 +238,24 @@
                     </select>
                 </label>
             </div>
+            {#if weapons.length > 0}
+                <div class="chips" role="radiogroup" aria-label="Arme">
+                    <button class="chip" class:on={weaponId === null} onclick={() => (weaponId = null)}>
+                        Sans arme
+                    </button>
+                    {#each weapons as w (w.id)}
+                        <button
+                            class="chip"
+                            class:on={weaponId === w.id}
+                            title={HAND_LABELS[w.hand]}
+                            onclick={() => (weaponId = w.id)}>Avec {w.name}</button
+                        >
+                    {/each}
+                </div>
+                {#if weapon?.bonuses.length}
+                    <p class="muted small weapon-bonus">{weapon.bonuses.join(" · ")}</p>
+                {/if}
+            {/if}
             {#if isAdmin}
                 <div class="grid3">
                     <label>Multiplicateur <input type="number" step="0.1" min="0" bind:value={multiplier} /></label>
@@ -209,9 +267,15 @@
                 {#if powerRollBonus(safePower)}+{powerRollBonus(safePower)} au jet · {/if}Coût : {cost}
                 {costLabel}. Les dégâts sont appliqués aussitôt.
             </p>
-            <button class="btn btn-chance" disabled={targetId === null} onclick={attack}>
+            {#if manualRolls}
+                <label>
+                    Résultat du d20
+                    <input type="number" min="1" max="20" step="1" bind:value={attackRoll} placeholder="1 à 20" />
+                </label>
+            {/if}
+            <button class="btn btn-chance" disabled={targetId === null || !attackReady} onclick={attack}>
                 {kind === "force" ? "Attaquer" : "Lancer le sort sur"}
-                {nameOf(targetId)}
+                {nameOf(targetId)}{weapon ? ` avec ${weapon.name}` : ""}
             </button>
         </section>
     {/if}
@@ -313,5 +377,13 @@
 
     .secret {
         color: var(--chance);
+    }
+
+    .manual {
+        color: var(--chance);
+    }
+
+    .weapon-bonus {
+        color: var(--foreground);
     }
 </style>

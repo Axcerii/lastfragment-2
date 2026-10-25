@@ -98,19 +98,38 @@ export async function playerGuesses(playerId: number, date: string): Promise<num
 	return game ? idsOf(game.guesses) : [];
 }
 
-/** Ajoute un essai à la partie du jour. Une partie gagnée n'accepte plus d'essai. */
-export async function recordGuess(playerId: number, date: string, id: number, correct: boolean): Promise<number[]> {
+/**
+ * Ajoute un essai à la partie du jour. Une partie gagnée n'accepte plus d'essai. `solved` n'est
+ * vrai qu'une fois, pour l'essai qui gagne : deux requêtes simultanées ne peuvent pas gagner
+ * toutes les deux (la mise à jour n'a lieu que si la partie n'était pas déjà gagnée).
+ */
+export async function recordGuess(
+	playerId: number,
+	date: string,
+	id: number,
+	correct: boolean
+): Promise<{ ids: number[]; solved: boolean }> {
 	return prisma.$transaction(async (tx) => {
 		const game = await tx.dleGame.findUnique({ where: { playerId_date: { playerId, date } } });
 		const ids = game ? idsOf(game.guesses) : [];
-		if (game?.solvedAt || ids.includes(id)) return ids;
+		if (game?.solvedAt || ids.includes(id)) return { ids, solved: false };
 
 		const next = [...ids, id];
 		const solvedAt = correct ? new Date() : null;
-		if (game) await tx.dleGame.update({ where: { id: game.id }, data: { guesses: next, solvedAt } });
-		else await tx.dleGame.create({ data: { playerId, date, guesses: next, solvedAt } });
-		return next;
+		if (game) {
+			const done = await tx.dleGame.updateMany({ where: { id: game.id, solvedAt: null }, data: { guesses: next, solvedAt } });
+			if (done.count !== 1) return { ids, solved: false };
+		} else {
+			await tx.dleGame.create({ data: { playerId, date, guesses: next, solvedAt } });
+		}
+		return { ids: next, solved: correct };
 	});
+}
+
+/** Le joueur a-t-il trouvé l'énigme de ce jour ? */
+export async function solvedOn(playerId: number, date: string): Promise<boolean> {
+	const game = await prisma.dleGame.findUnique({ where: { playerId_date: { playerId, date } }, select: { solvedAt: true } });
+	return !!game?.solvedAt;
 }
 
 export async function playerStats(playerId: number, date: string) {

@@ -23,6 +23,23 @@
         </span>
     </a>
 
+    <section class="panel cards" class:live={data.cardsPublic}>
+        <a href="/admin/cartes">
+            <strong>Cartes à collectionner</strong>
+            <span class="muted">Créateur de cartes, séries et paquets, réglages des boosters.</span>
+        </a>
+        <form method="POST" action="?/cards" use:enhance={() => ({ update }) => update({ reset: false })}>
+            <input type="hidden" name="public" value={data.cardsPublic ? "false" : "true"} />
+            <span class="state">
+                {data.cardsPublic ? "Public : visible de tous les joueurs" : "Caché : toi seul le vois"}
+            </span>
+            <button class={data.cardsPublic ? "btn btn-danger" : "btn btn-accent"}>
+                {data.cardsPublic ? "Cacher le jeu" : "Rendre public"}
+            </button>
+            {#if form?.cardsMessage}<span class="message-success" role="status">{form.cardsMessage}</span>{/if}
+        </form>
+    </section>
+
     <section>
         <h2>Joueurs</h2>
         {#if data.players.length === 0}
@@ -185,6 +202,44 @@
         align-items: baseline;
         gap: 0.5rem 1rem;
         transition: var(--transition);
+    }
+
+    .cards {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid var(--muted);
+    }
+
+    .cards.live {
+        border-left-color: var(--primary);
+    }
+
+    .cards a {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        color: var(--foreground);
+    }
+
+    .cards a strong {
+        font-family: var(--titleFont);
+        font-size: 1.4rem;
+    }
+
+    .cards form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .cards .state {
+        font-size: 0.85rem;
     }
 
     .drafts strong {
