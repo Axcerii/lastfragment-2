@@ -3,7 +3,11 @@
 
     // Compte à rebours jusqu'au prochain personnage du Lastdle. En grand (partie finie),
     // un anneau se vide au fil de la journée et les chiffres défilent à chaque seconde.
-    let { seconds, big = false }: { seconds: number; big?: boolean } = $props();
+    let {
+        seconds,
+        big = false,
+        label = "Prochain personnage dans",
+    }: { seconds: number; big?: boolean; label?: string } = $props();
 
     const DAY = 86_400;
     const RADIUS = 54;
@@ -28,7 +32,7 @@
     });
 </script>
 
-<div class="countdown" class:big role="timer" aria-label="Prochain personnage dans {parts.join(':')}">
+<div class="countdown" class:big role="timer" aria-label="{label} {parts.join(':')}">
     {#if big}
         <svg viewBox="0 0 120 120" aria-hidden="true">
             <circle class="track" cx="60" cy="60" r={RADIUS} />

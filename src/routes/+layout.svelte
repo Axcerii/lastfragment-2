@@ -16,7 +16,7 @@
 </svelte:head>
 
 {#if !bare}
-	<Header user={data.user} />
+	<Header user={data.user} cardsVisible={data.cardsVisible} />
 {/if}
 
 {@render children?.()}

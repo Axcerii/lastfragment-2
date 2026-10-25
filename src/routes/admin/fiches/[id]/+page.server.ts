@@ -2,16 +2,19 @@ import { fail } from '@sveltejs/kit';
 import { CONTAINER_KEYS, type ContainerKey } from '$lib/game/inventory';
 import { prisma } from '$lib/server/prisma';
 import { loadSheet, sheetActions } from '$lib/server/sheet';
+import { showcaseOf } from '$lib/server/cards/collection';
 import type { Actions, PageServerLoad } from './$types';
 
 // Tout /admin est déjà réservé au MJ par hooks.server.ts.
 
 export const load: PageServerLoad = async ({ params }) => {
-	const [sheet, items] = await Promise.all([
-		loadSheet(Number(params.id) || 0),
-		prisma.item.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } })
+	const id = Number(params.id) || 0;
+	const [sheet, items, showcase] = await Promise.all([
+		loadSheet(id),
+		prisma.item.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+		showcaseOf([id])
 	]);
-	return { sheet, items };
+	return { sheet, items, showcase: showcase.get(id) ?? [] };
 };
 
 export const actions: Actions = {

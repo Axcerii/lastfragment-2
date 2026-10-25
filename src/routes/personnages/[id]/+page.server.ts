@@ -1,8 +1,11 @@
 import { error } from '@sveltejs/kit';
+import type { OwnedCard } from '$lib/cards/types';
 import { toStatBlock } from '$lib/game/stats';
 import { requireAdmin } from '$lib/server/auth';
 import { censor } from '$lib/server/characters';
 import { prisma } from '$lib/server/prisma';
+import { showcaseOf } from '$lib/server/cards/collection';
+import { cardsVisibleTo } from '$lib/server/cards/settings';
 import { readFlag, readStats, saveStats } from '$lib/server/stats';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -15,8 +18,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	if (!character || (!character.visibility && !isAdmin)) error(404, 'Personnage introuvable.');
 
+	// Vitrine des joueurs qui incarnent ce personnage (pas sur une fiche censurée).
+	const showcases: { id: number; cards: OwnedCard[] }[] = [];
+	if ((!character.censored || isAdmin) && (await cardsVisibleTo(locals.user))) {
+		const players = await prisma.player.findMany({ where: { characterId: character.id }, select: { id: true } });
+		const pinned = await showcaseOf(players.map((p) => p.id));
+		for (const p of players) {
+			const cards = pinned.get(p.id);
+			if (cards?.length) showcases.push({ id: p.id, cards });
+		}
+	}
+
 	const { statistics, ...fiche } = character;
 	return {
+		showcases,
 		character: censor(fiche, isAdmin),
 		// Les stats ne partent vers le navigateur que pour le MJ.
 		stats: isAdmin ? toStatBlock(statistics) : null

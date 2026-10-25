@@ -1,5 +1,6 @@
-import type { Handle } from '@sveltejs/kit';
+import { error, type Handle } from '@sveltejs/kit';
 import { readSession, requireAdmin } from '$lib/server/auth';
+import { cardsVisibleTo } from '$lib/server/cards/settings';
 
 const UNSAFE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
@@ -18,6 +19,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// Tout ce qui est sous /admin est réservé au MJ, pages comme actions.
 	if (event.url.pathname === '/admin' || event.url.pathname.startsWith('/admin/')) {
 		requireAdmin(event.locals);
+	}
+
+	// Jeu de cartes pas encore public : pages et actions n'existent que pour le MJ.
+	if (event.url.pathname === '/cartes' || event.url.pathname.startsWith('/cartes/')) {
+		if (!(await cardsVisibleTo(event.locals.user))) error(404, 'Page introuvable.');
 	}
 
 	const response = await resolve(event);

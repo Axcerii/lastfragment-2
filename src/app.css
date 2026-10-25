@@ -377,3 +377,55 @@ button {
 	outline: 2px solid var(--accent);
 	outline-offset: 2px;
 }
+
+/* Variables des reflets des cartes à collectionner, déclarées pour pouvoir être animées
+   (balayage de lumière à la révélation d'une carte). */
+@property --mx {
+	syntax: '<number>';
+	inherits: true;
+	initial-value: 32;
+}
+
+@property --my {
+	syntax: '<number>';
+	inherits: true;
+	initial-value: 26;
+}
+
+@property --active {
+	syntax: '<number>';
+	inherits: true;
+	initial-value: 0;
+}
+
+/* Retournement et lancer des cartes : déclarées pour que seule la rotation soit animée. */
+@property --spin {
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
+}
+
+@property --drag {
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
+}
+
+@property --lift {
+	syntax: '<length>';
+	inherits: false;
+	initial-value: 0px;
+}
+
+@property --lean {
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
+}
+
+/* Rotation lente des paquets de booster au repos : le reflet de l'aluminium la suit. */
+@property --idle {
+	syntax: '<number>';
+	inherits: true;
+	initial-value: 0;
+}

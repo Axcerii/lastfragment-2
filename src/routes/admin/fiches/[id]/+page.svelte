@@ -2,6 +2,7 @@
     import { enhance } from "$app/forms";
     import Notice from "$lib/components/layout/Notice.svelte";
     import PlayerSheet from "$lib/components/sheet/PlayerSheet.svelte";
+    import Showcase from "$lib/components/cards/Showcase.svelte";
     import { CONTAINER_KEYS, CONTAINERS } from "$lib/game/inventory";
 
     let { data, form } = $props();
@@ -76,6 +77,7 @@
             </section>
         {/snippet}
     </PlayerSheet>
+    <Showcase cards={data.showcase} owner={sheet.player.login} />
 {:else}
     <Notice title={sheet.player.login} dragon="Artrish">
         <p>Ce compte n'est associé à aucun personnage.</p>

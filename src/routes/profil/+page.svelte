@@ -1,6 +1,7 @@
 <script lang="ts">
     import Notice from "$lib/components/layout/Notice.svelte";
     import PlayerSheet from "$lib/components/sheet/PlayerSheet.svelte";
+    import Showcase from "$lib/components/cards/Showcase.svelte";
 
     let { data, form } = $props();
 </script>
@@ -18,6 +19,7 @@
         base="/profil"
         error={form?.error}
     />
+    {#if data.showcase}<Showcase cards={data.showcase} title="Ma vitrine" mine />{/if}
 {:else}
     <Notice title="Bienvenue, {data.sheet.player.login}" dragon="Artrish">
         <p>

@@ -26,3 +26,6 @@ vite.config.ts.timestamp-*
 
 # Sauvegardes locales de la base
 /backups
+
+# Images des cartes calculées en développement (copies WebP, miniatures, envois du créateur)
+/static/uploads/cartes/

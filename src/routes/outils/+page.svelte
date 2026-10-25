@@ -1,6 +1,8 @@
 <script lang="ts">
     // Index des outils. Chaque outil est une carte ; les suivants s'ajouteront ici.
-    const TOOLS = [
+    let { data } = $props();
+
+    const ALL_TOOLS = [
         {
             href: "/outils/table",
             title: "Table de jeu",
@@ -14,12 +16,21 @@
             dragon: "Guizamark",
         },
         {
+            href: "/cartes",
+            title: "Cartes à collectionner",
+            text: "Ouvre un booster toutes les quelques heures, complète l'album des séries et échange tes doubles avec les autres joueurs.",
+            dragon: "Pura",
+        },
+        {
             href: "/outils/lastdle",
             title: "Lastdle",
             text: "Un personnage à deviner chaque jour : flux, race, pays, vivant ou mort, descendance et métier te mettent sur la piste.",
             dragon: "Yinva",
         },
     ];
+
+    // Le jeu de cartes n'apparaît qu'une fois rendu public par le MJ.
+    let TOOLS = $derived(ALL_TOOLS.filter((t) => t.href !== "/cartes" || data.cardsVisible));
 </script>
 
 <svelte:head>

@@ -2,10 +2,11 @@ import { prisma } from '$lib/server/prisma';
 import { RESOURCES } from '$lib/server/admin/resources';
 import { getGameState, openContainers } from '$lib/server/sheet';
 import { readFlag } from '$lib/server/stats';
+import { cardsPublic, setCardsPublic } from '$lib/server/cards/settings';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
-	const [counts, players, state, drafts] = await Promise.all([
+	const [counts, players, state, drafts, cards] = await Promise.all([
 		// Compte générique : un modèle Prisma par ressource du back-office.
 		Promise.all(RESOURCES.map((r) => (prisma as any)[r.model].count() as Promise<number>)),
 		prisma.player.findMany({
@@ -14,7 +15,8 @@ export const load: PageServerLoad = async () => {
 			orderBy: { login: 'asc' }
 		}),
 		getGameState(),
-		prisma.draft.count()
+		prisma.draft.count(),
+		cardsPublic()
 	]);
 
 	return {
@@ -26,7 +28,8 @@ export const load: PageServerLoad = async () => {
 		})),
 		players,
 		access: openContainers(state),
-		drafts
+		drafts,
+		cardsPublic: cards
 	};
 };
 
@@ -43,5 +46,12 @@ export const actions: Actions = {
 		};
 		await prisma.gameState.upsert({ where: { id: 1 }, create: { id: 1, ...data }, update: data });
 		return { message: 'Accès aux conteneurs mis à jour.' };
+	},
+
+	/** Rend le jeu de cartes visible des joueurs, ou le cache pour le préparer tranquillement. */
+	cards: async ({ request }) => {
+		const visible = (await request.formData()).get('public') === 'true';
+		await setCardsPublic(visible);
+		return { cardsMessage: visible ? 'Le jeu de cartes est public.' : 'Le jeu de cartes est caché aux joueurs.' };
 	}
 };
