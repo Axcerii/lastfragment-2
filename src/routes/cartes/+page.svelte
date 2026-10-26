@@ -51,7 +51,7 @@
                 packs: b.packs,
                 pack: b.packs[data.featured.banners[b.id] ?? 0] ?? b.packs[0],
                 description: b.description,
-                total: b.total,
+                total: b.pool,
                 endsAt: b.endsAt,
                 progress: data.progress[b.id] ?? null,
                 disabled: b.pool === 0,

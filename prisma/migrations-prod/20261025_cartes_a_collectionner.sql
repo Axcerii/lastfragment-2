@@ -1,5 +1,6 @@
 -- Cartes à collectionner : séries, paquets, modèles, exemplaires, historique, réserves de
--- boosters, ouvertures, échanges et réglages (dont la chance de God Pack).
+-- boosters, ouvertures, échanges, réglages (dont la chance de God Pack) et boosters
+-- supplémentaires des cartes génériques.
 --
 -- Migration sans perte : uniquement des tables ajoutées et leurs clés étrangères vers `players`.
 -- Aucune table ni colonne existante n'est renommée, modifiée ou supprimée.
@@ -213,4 +214,21 @@ ALTER TABLE `card_trade_items` ADD CONSTRAINT `card_trade_items_trade_id_fkey` F
 
 -- AddForeignKey
 ALTER TABLE `card_trade_items` ADD CONSTRAINT `card_trade_items_card_id_fkey` FOREIGN KEY (`card_id`) REFERENCES `cards`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+
+-- Boosters supplémentaires d'un modèle (cartes génériques qui tombent aussi d'autres séries)
+-- CreateTable
+CREATE TABLE `card_template_boosters` (
+    `template_id` INTEGER NOT NULL,
+    `set_id` INTEGER NOT NULL,
+
+    INDEX `card_template_boosters_set_id_idx`(`set_id`),
+    PRIMARY KEY (`template_id`, `set_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `card_template_boosters` ADD CONSTRAINT `card_template_boosters_template_id_fkey` FOREIGN KEY (`template_id`) REFERENCES `card_templates`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `card_template_boosters` ADD CONSTRAINT `card_template_boosters_set_id_fkey` FOREIGN KEY (`set_id`) REFERENCES `card_sets`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 

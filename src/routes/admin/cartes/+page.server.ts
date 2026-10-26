@@ -77,6 +77,7 @@ export const actions: Actions = {
 					type: prefill.type,
 					rarity: prefill.rarity ?? rarity,
 					setId,
+					boosters: [],
 					number: null,
 					status: 'brouillon',
 					inAll: true,

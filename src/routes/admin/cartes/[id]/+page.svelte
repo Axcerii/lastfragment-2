@@ -38,6 +38,8 @@
         type: CardType;
         rarity: number;
         setId: number | null;
+        /** Autres séries dont les boosters donnent aussi cette carte. */
+        boosters: number[];
         number: number | null;
         status: TemplateStatus;
         inAll: boolean;
@@ -56,6 +58,7 @@
             type: t?.type ?? "personnage",
             rarity: t?.rarity ?? 1,
             setId: t?.setId ?? null,
+            boosters: [...(t?.boosters ?? [])],
             number: t?.number ?? null,
             status: (t?.status as TemplateStatus) ?? "brouillon",
             inAll: t?.inAll ?? true,
@@ -512,7 +515,7 @@
                             {draft.status === "brouillon"
                                 ? "Visible de toi seul, ne tombe d’aucun booster."
                                 : draft.status === "publiee"
-                                  ? "Tombe des boosters de sa série (et du booster All si coché)."
+                                  ? "Tombe des boosters de sa série (et de ceux cochés plus bas)."
                                   : "Ne tombe plus d’aucun booster ; les exemplaires possédés restent."}
                         </small>
                     </div>
@@ -547,6 +550,30 @@
                         <input type="checkbox" bind:checked={draft.inAll} />
                         Tombe aussi du booster All
                     </label>
+                    {#if data.sets.some((s) => s.id !== draft.setId)}
+                        <div class="field">
+                            <span>
+                                Tombe aussi des boosters de
+                                <small>pour les cartes génériques (« énergies ») : sans numéro ni case dans leur album</small>
+                            </span>
+                            <div class="boosters">
+                                {#each data.sets.filter((s) => s.id !== draft.setId) as s (s.id)}
+                                    <label class="check">
+                                        <input
+                                            type="checkbox"
+                                            checked={draft.boosters.includes(s.id)}
+                                            onchange={(e) =>
+                                                (draft.boosters = e.currentTarget.checked
+                                                    ? [...draft.boosters, s.id]
+                                                    : draft.boosters.filter((id) => id !== s.id))}
+                                        />
+                                        <span class="set-dot" style="--c: {s.color}"></span>
+                                        {s.code} · {s.name}
+                                    </label>
+                                {/each}
+                            </div>
+                        </div>
+                    {/if}
                     <label class="field">
                         <span>Poids de tirage <small>parmi les cartes de même rareté ; 10 = normal, 20 = deux fois plus fréquente</small></span>
                         <input type="number" min="1" max="1000" bind:value={draft.weight} />
@@ -649,6 +676,9 @@
                 <input type="hidden" name="number" value={draft.number ?? ""} />
                 <input type="hidden" name="status" value={draft.status} />
                 <input type="hidden" name="inAll" value={draft.inAll ? "true" : "false"} />
+                {#each draft.boosters.filter((id) => id !== draft.setId) as id (id)}
+                    <input type="hidden" name="boosters" value={id} />
+                {/each}
                 <input type="hidden" name="weight" value={draft.weight} />
                 <input type="hidden" name="maxPrints" value={draft.limited ? draft.maxPrints : ""} />
                 <input type="hidden" name="sourceKind" value={draft.sourceKind ?? ""} />
@@ -849,6 +879,20 @@
     textarea {
         min-height: 0;
         font-size: 17px;
+    }
+
+    .boosters {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .set-dot {
+        width: 0.7rem;
+        height: 0.7rem;
+        border-radius: 50%;
+        background: var(--c);
+        flex-shrink: 0;
     }
 
     .check {

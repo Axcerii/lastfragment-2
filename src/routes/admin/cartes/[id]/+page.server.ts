@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	requireAdmin(locals);
 	const id = templateId(params.id);
 	const [template, sets, totals, characters, monsters, items, players, copies] = await Promise.all([
-		id ? prisma.cardTemplate.findUnique({ where: { id } }) : null,
+		id ? prisma.cardTemplate.findUnique({ where: { id }, include: { boosters: { select: { setId: true } } } }) : null,
 		prisma.cardSet.findMany({ orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] }),
 		setTotals(),
 		prisma.character.findMany({
@@ -79,6 +79,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 					type,
 					rarity: template.rarity,
 					setId: template.setId,
+					boosters: template.boosters.map((b) => b.setId),
 					number: template.number,
 					status: template.status,
 					inAll: template.inAll,

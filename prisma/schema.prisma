@@ -607,6 +607,8 @@ model CardSet {
   templates CardTemplate[]
   openings  CardOpening[]
   packs     CardPack[]
+  // Cartes d'autres séries (ou hors série) qui tombent aussi de ce booster
+  extras    CardTemplateBooster[]
 
   @@map("card_sets")
 }
@@ -662,8 +664,10 @@ model CardTemplate {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
-  set    CardSet? @relation(fields: [setId], references: [id], onDelete: Restrict)
-  copies Card[]
+  set      CardSet?              @relation(fields: [setId], references: [id], onDelete: Restrict)
+  copies   Card[]
+  // Boosters d'autres séries d'où la carte tombe aussi (cartes génériques, « énergies »)
+  boosters CardTemplateBooster[]
 
   @@unique([setId, number])
   @@index([status])
@@ -671,6 +675,21 @@ model CardTemplate {
 }
 
 // Exemplaire possédé. Il n'est jamais supprimé par le jeu : retiré par le MJ, il passe à `ownerId` null.
+// Booster supplémentaire d'un modèle : il tombe aussi des boosters de cette série, sans en faire
+// partie (ni numéro ni case dans son album). Sa propre série reste `CardTemplate.setId`.
+model CardTemplateBooster {
+  templateId Int @map("template_id")
+  setId      Int @map("set_id")
+
+  // Relations
+  template CardTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  set      CardSet      @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, setId])
+  @@index([setId])
+  @@map("card_template_boosters")
+}
+
 model Card {
   id         Int      @id @default(autoincrement())
   templateId Int      @map("template_id")
