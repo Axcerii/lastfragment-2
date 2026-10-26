@@ -64,10 +64,16 @@ export function bannerWhere(now: Date): Prisma.CardSetWhereInput {
 	};
 }
 
-/** Modèles qui peuvent tomber d'un booster : publiés, et pas encore épuisés. */
+/**
+ * Modèles qui peuvent tomber d'un booster : publiés, et pas encore épuisés. Celui d'une série
+ * donne ses cartes et celles qu'on y a ajoutées d'ailleurs (cartes génériques).
+ */
 async function poolOf(setId: number | null): Promise<PoolCard[]> {
 	const rows = await prisma.cardTemplate.findMany({
-		where: { status: 'publiee', ...(setId === null ? { inAll: true } : { setId }) },
+		where: {
+			status: 'publiee',
+			...(setId === null ? { inAll: true } : { OR: [{ setId }, { boosters: { some: { setId } } }] })
+		},
 		select: { id: true, rarity: true, weight: true, maxPrints: true, printed: true }
 	});
 	return rows

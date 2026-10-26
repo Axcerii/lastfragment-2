@@ -35,6 +35,8 @@ export interface TemplateInput {
 	maxPrints: number | null;
 	sourceKind: string | null;
 	sourceId: number | null;
+	/** Séries dont les boosters donnent aussi cette carte (en plus de la sienne). */
+	boosters: number[];
 	face: unknown;
 }
 
@@ -62,6 +64,14 @@ export function readTemplateForm(form: FormData): TemplateInput {
 		maxPrints: intOrNull(form.get('maxPrints'), 1, 1_000_000),
 		sourceKind: SOURCE_KINDS.includes(sourceKind) ? sourceKind : null,
 		sourceId: intOrNull(form.get('sourceId'), 1, 1e9),
+		boosters: [
+			...new Set(
+				form
+					.getAll('boosters')
+					.map((v) => intOrNull(v, 1, 1e9))
+					.filter((v): v is number => v !== null)
+			)
+		].slice(0, 50),
 		face
 	};
 }
@@ -120,12 +130,16 @@ export async function saveTemplate(id: number | null, input: TemplateInput): Pro
 		sourceId: input.sourceKind ? input.sourceId : null,
 		face: face as unknown as Prisma.InputJsonValue
 	};
+	// Boosters supplémentaires : des séries existantes, sans la sienne (elle y tombe déjà).
+	const known = await prisma.cardSet.findMany({ where: { id: { in: input.boosters } }, select: { id: true } });
+	const boosters = known.map((s) => s.id).filter((setId) => setId !== input.setId);
 	try {
-		if (id) {
-			await prisma.cardTemplate.update({ where: { id }, data });
-			return id;
-		}
-		return (await prisma.cardTemplate.create({ data })).id;
+		return await prisma.$transaction(async (tx) => {
+			const saved = id ? (await tx.cardTemplate.update({ where: { id }, data })).id : (await tx.cardTemplate.create({ data })).id;
+			await tx.cardTemplateBooster.deleteMany({ where: { templateId: saved } });
+			if (boosters.length) await tx.cardTemplateBooster.createMany({ data: boosters.map((setId) => ({ templateId: saved, setId })) });
+			return saved;
+		});
 	} catch (e) {
 		if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
 			throw new CardError(`Le n° ${number} est déjà pris dans cette série.`);
@@ -135,7 +149,7 @@ export async function saveTemplate(id: number | null, input: TemplateInput): Pro
 }
 
 export async function duplicateTemplate(id: number): Promise<number> {
-	const source = await prisma.cardTemplate.findUnique({ where: { id } });
+	const source = await prisma.cardTemplate.findUnique({ where: { id }, include: { boosters: { select: { setId: true } } } });
 	if (!source) throw new CardError('Carte introuvable.', 404);
 	const copy = await prisma.cardTemplate.create({
 		data: {
@@ -150,7 +164,8 @@ export async function duplicateTemplate(id: number): Promise<number> {
 			maxPrints: source.maxPrints,
 			sourceKind: source.sourceKind,
 			sourceId: source.sourceId,
-			face: source.face as Prisma.InputJsonValue
+			face: source.face as Prisma.InputJsonValue,
+			boosters: { create: source.boosters.map((b) => ({ setId: b.setId })) }
 		}
 	});
 	return copy.id;
