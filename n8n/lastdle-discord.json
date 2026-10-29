@@ -1,0 +1,117 @@
+{
+  "name": "Lastdle → Discord",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "1 0 * * *"
+            }
+          ]
+        }
+      },
+      "id": "5b0f6a3e-1c1e-4c51-9a4f-0d7d6c1a0001",
+      "name": "Chaque nuit à 00:01",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://app:3000/integrations/lastdle",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "5b0f6a3e-1c1e-4c51-9a4f-0d7d6c1a0002",
+      "name": "Lire le Lastdle du jour",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Met en forme le message Discord à partir de la réponse du site.\nconst d = $input.first().json;\n\n// Un nom comme « Kael_le_Brave » ne doit pas passer en italique.\nconst escape = (text) => String(text).replace(/([\\\\*_~`|>\\[\\]()])/g, '\\\\$1');\nconst essais = (n) => `${n} essai${n > 1 ? 's' : ''}`;\n\nlet content = `🧩 **Le Lastdle n°${d.day} est disponible !**\\nQui se cache derrière le personnage du jour ? ${d.url}`;\nif (d.booster) content += '\\n🎁 Le trouver rapporte un booster.';\n\n// Un embed vide est ignoré par le nœud Discord : pas de réponse de la veille si personne n'a joué.\nlet embed = {};\nconst y = d.yesterday;\nif (y) {\n  const lines = [`Il fallait trouver **[${escape(y.name)}](${y.url})**.`];\n  if (y.winners === 0) lines.push('Personne ne l\\'a trouvé.');\n  else lines.push(`${y.winners} joueur${y.winners > 1 ? 's l\\'ont' : ' l\\'a'} trouvé.`);\n  if (y.best) lines.push(`🏆 ${y.best.name ? escape(y.best.name) : \"Un joueur\"}, en ${essais(y.best.tries)} (${y.best.time})`);\n  embed = {\n    title: `Réponse du Lastdle n°${y.day}`,\n    description: lines.join('\\n'),\n    color: 0xe5b8cc,\n    // Simple adresse : le nœud Discord la range lui-même dans { url }.\n    thumbnail: y.image\n  };\n}\n\nreturn [{ json: { content, embed } }];"
+      },
+      "id": "5b0f6a3e-1c1e-4c51-9a4f-0d7d6c1a0003",
+      "name": "Préparer le message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.content }}",
+        "options": {},
+        "embeds": {
+          "values": [
+            {
+              "inputMethod": "json",
+              "json": "={{ JSON.stringify($json.embed) }}"
+            }
+          ]
+        }
+      },
+      "id": "5b0f6a3e-1c1e-4c51-9a4f-0d7d6c1a0004",
+      "name": "Envoyer sur Discord",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Chaque nuit à 00:01": {
+      "main": [
+        [
+          {
+            "node": "Lire le Lastdle du jour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire le Lastdle du jour": {
+      "main": [
+        [
+          {
+            "node": "Préparer le message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer le message": {
+      "main": [
+        [
+          {
+            "node": "Envoyer sur Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Paris"
+  },
+  "active": false
+}

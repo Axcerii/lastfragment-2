@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 import { Prisma } from '@prisma/client';
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomInt } from 'crypto';
 import { compareGuess, computeStats, previousDay, type DleRow } from '$lib/game/dle';
-import { ROLE_ADMIN } from '$lib/game/labels';
+import { portrait, ROLE_ADMIN } from '$lib/game/labels';
 import { prisma } from './prisma';
 
 const TIME_ZONE = 'Europe/Paris';
@@ -174,6 +174,31 @@ export async function ranking(date: string, viewerId: number) {
 			me: g.playerId === viewerId
 		})),
 		playing: games.filter((g) => !g.solvedAt && idsOf(g.guesses).length > 0).length
+	};
+}
+
+/**
+ * Annonce du jour pour Discord : l'énigme qui commence et la réponse de la veille, avec ceux
+ * qui l'ont trouvée. Jamais la réponse du jour. Pas de réponse de la veille si personne n'a joué.
+ */
+export async function dailyAnnouncement(date: string, origin: string) {
+	const before = previousDay(date);
+	const [answer, board] = await Promise.all([yesterdayAnswer(date), ranking(before, 0)]);
+	const best = board.entries[0];
+	return {
+		date,
+		day: dayNumber(date),
+		url: `${origin}/outils/lastdle`,
+		yesterday: answer && {
+			date: before,
+			day: dayNumber(before),
+			name: answer.name,
+			url: `${origin}/personnages/${answer.id}`,
+			image: new URL(portrait(answer.image), origin).href,
+			winners: board.entries.length,
+			// Nom du personnage, jamais le pseudo de connexion : l'annonce part sur un salon public.
+			best: best ? { name: best.character?.name ?? null, tries: best.tries, time: best.time } : null
+		}
 	};
 }
 

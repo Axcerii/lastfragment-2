@@ -1,0 +1,38 @@
+# n8n, l'outil d'automatisation (annonces Discord…), à côté du site.
+# Activé par COMPOSE_FILE dans le .env (voir .env.example), ou à la main :
+#   docker compose -f docker-compose.yml -f docker-compose.n8n.yml up -d
+#
+# L'interface répond sur http://localhost:5678, sur cette machine seulement. Sur un serveur, y accéder
+# par un tunnel SSH (ssh -L 5678:127.0.0.1:5678 serveur) plutôt que de la publier.
+# n8n n'a pas accès à la base : il lit le site par ses routes /integrations, avec INTEGRATION_TOKEN.
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.45.5}
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:${N8N_PORT:-5678}:5678
+    environment:
+      # Les déclencheurs planifiés suivent l'heure de Paris, comme l'énigme du Lastdle.
+      GENERIC_TIMEZONE: Europe/Paris
+      TZ: Europe/Paris
+      # Chiffre les identifiants enregistrés dans n8n (jeton du site, webhooks Discord).
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY manquant dans .env}
+      # Interface en HTTP sur localhost : le cookie ne peut pas être réservé au HTTPS.
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}
+      N8N_DIAGNOSTICS_ENABLED: 'false'
+      N8N_PERSONALIZATION_ENABLED: 'false'
+    volumes:
+      - n8n_data:/home/node/.n8n
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '${N8N_CPUS:-1.0}'
+          memory: ${N8N_MEMORY:-1G}
+    # Réseau par défaut seulement : il joint le site (http://app:3000) et Internet (Discord),
+    # jamais la base, qui est sur le réseau interne `backend`.
+    networks: [default]
+
+volumes:
+  n8n_data:
