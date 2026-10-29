@@ -69,6 +69,8 @@ services:
       ADDRESS_HEADER: ${ADDRESS_HEADER:-}
       XFF_DEPTH: ${XFF_DEPTH:-1}
       PUBLIC_LORE_URL: ${PUBLIC_LORE_URL:-}
+      # Jeton des routes /integrations lues par n8n. Vide : ces routes n'existent pas.
+      INTEGRATION_TOKEN: ${INTEGRATION_TOKEN:-}
       # Taille maximale d’une requête : images jusqu’à 8 Mo, musiques de la table de jeu jusqu’à 40 Mo.
       BODY_SIZE_LIMIT: 50M
     volumes:
