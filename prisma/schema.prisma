@@ -100,6 +100,7 @@ model Player {
   badges         PlayerBadge[]
   drafts         Draft[]
   dleGames       DleGame[]
+  fluxDiscovery  FluxDiscovery?
   // Cartes à collectionner
   cards          Card[]
   cardWallet     CardWallet?
@@ -580,6 +581,22 @@ model DleGame {
   @@unique([playerId, date])
   @@index([date])
   @@map("dle_games")
+}
+
+// ─── Don de flux : découverte ────────────────────────────────────────────
+
+// Progression d'un joueur connecté dans les énigmes de /flux : la constellation, puis la carte.
+model FluxDiscovery {
+  playerId        Int       @id @map("player_id")
+  constellationAt DateTime? @map("constellation_at")
+  // Ids des pays trouvés sur la carte, dans l'ordre
+  countries       Json
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("flux_discoveries")
 }
 
 // ─── Cartes à collectionner ──────────────────────────────────────────────
