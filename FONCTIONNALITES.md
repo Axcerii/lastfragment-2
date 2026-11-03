@@ -305,7 +305,9 @@ Projet SvelteKit séparé (Svelte 5 + Tailwind 4, plus récent que ce dépôt) a
 | K1 | `DragonCode` : cliquer les 11 dragons dans le bon ordre, indices débloqués après un échec — version moderne de J1 |
 | K2 | `WorldMapPuzzle` : carte du monde dont on débloque les pays en devinant leur nom |
 
-**Décidé :** intégré sous `/flux`, réécrit en CSS scopé. Les réponses sont vérifiées par le serveur (`/flux/essai`), la progression est enregistrée sur le compte (`flux_discoveries`) ou dans le navigateur pour un visiteur. Les textes, positions des pays et noms acceptés sont provisoires (`src/lib/flux/discovery.ts`, `src/lib/server/flux/discovery.ts`).
+**Décidé :** intégré sous `/flux`, réécrit en CSS scopé. Les réponses des énigmes sont vérifiées par le serveur (`/flux/essai`) ; toute la progression reste dans le navigateur (localStorage), rien en base. Données : `src/lib/flux/discovery.ts`, `src/lib/server/flux/discovery.ts`.
+
+Après la carte : trois portails (Humain, Géant, Éternelle) puis le test de flux de la V1 (H1, mêmes 25 questions et même calcul, `src/lib/flux/quiz.ts`) dans un parcours en 3D (three.js) où l'on suit un fil, et le résultat avec la citation du dragon. Le certificat complet (H2 : stats, pentagone) reste à faire.
 
 - [x] K1 · [x] K2
 

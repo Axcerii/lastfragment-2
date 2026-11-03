@@ -1,8 +1,12 @@
 <script lang="ts">
-    import { onMount, tick, untrack } from "svelte";
+    import { onMount, tick } from "svelte";
     import { fade } from "svelte/transition";
     import Constellation from "$lib/components/flux/Constellation.svelte";
+    import FluxJourney from "$lib/components/flux/FluxJourney.svelte";
+    import FluxResult from "$lib/components/flux/FluxResult.svelte";
+    import Portals from "$lib/components/flux/Portals.svelte";
     import WorldMap from "$lib/components/flux/WorldMap.svelte";
+    import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
     import {
         COUNTRIES,
         DRAGONS,
@@ -12,48 +16,52 @@
         type DiscoveryProgress,
         type DragonName,
     } from "$lib/flux/discovery";
+    import { isFluxResult, scoreAnswers } from "$lib/flux/quiz";
+    import { raceById, type Race } from "$lib/flux/races";
 
-    let { data } = $props();
+    // La progression reste dans le navigateur, lue au chargement.
+    let progress = $state<DiscoveryProgress>({ constellation: false, found: {} });
+    let ready = $state(false);
+    let stage = $state<"constellation" | "travel" | "map" | "portals" | "journey" | "result">("constellation");
+    let race = $derived(raceById(progress.race));
 
-    // Connecté : la progression vient du compte. Visiteur : du navigateur, lue au chargement.
-    // Lue une fois : la page la tient ensuite à jour elle-même.
-    const account = untrack(() => data.progress);
-    let progress = $state<DiscoveryProgress>(account ?? { constellation: false, found: {} });
-    let ready = $state(!!account);
-    let stage = $state<"constellation" | "travel" | "map">(account?.constellation ? "map" : "constellation");
+    // Voile de couleur quand on franchit un portail.
+    let veil = $state<string | null>(null);
 
     // Voyage des dragons de la constellation vers leur symbole sur la carte.
     type Flyer = { name: DragonName; x: number; y: number; size: number; delay: number };
     let flyers = $state<Flyer[]>([]);
     let flying = $state(false);
-    let mapShown = $state(account?.constellation ?? false);
+    let mapShown = $state(false);
     let mapEl = $state<HTMLElement | null>(null);
 
     let knownCount = $derived(COUNTRIES.filter((c) => c.description || progress.found[c.id]).length);
     let allKnown = $derived(knownCount === COUNTRIES.length);
 
     onMount(() => {
-        if (account) return;
         try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
             if (saved && typeof saved === "object") {
                 const found: Record<string, string> = {};
                 for (const c of COUNTRIES)
                     if (typeof saved.found?.[c.id] === "string") found[c.id] = saved.found[c.id];
-                progress = { constellation: saved.constellation === true, found };
+                progress = {
+                    constellation: saved.constellation === true,
+                    found,
+                    race: raceById(saved.race)?.id,
+                    result: isFluxResult(saved.result) ? saved.result : undefined,
+                };
             }
         } catch {
             // Stockage indisponible ou abîmé : on repart de zéro.
         }
-        if (progress.constellation) {
-            stage = "map";
-            mapShown = true;
-        }
+        if (progress.result) stage = "result";
+        else if (progress.constellation) stage = "map";
+        mapShown = progress.constellation;
         ready = true;
     });
 
     function save() {
-        if (account) return;
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
         } catch {
@@ -104,6 +112,36 @@
         progress.found[id] = description;
         save();
     }
+
+    function goTo(next: typeof stage) {
+        stage = next;
+        mapShown = next === "map";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Le portail s'ouvre : un voile de sa couleur couvre l'écran, et le test commence derrière.
+    async function enter(chosen: Race) {
+        progress.race = chosen.id;
+        save();
+        veil = chosen.color;
+        await wait(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900);
+        goTo("journey");
+        await wait(300);
+        veil = null;
+    }
+
+    function finish(answers: number[]) {
+        progress.result = scoreAnswers(answers);
+        save();
+        goTo("result");
+    }
+
+    const SUBTITLES: Record<string, string> = {
+        constellation: "Les onze dragons attendent. Touche-les dans le bon ordre.",
+        portals: "Trois portails. Un seul est le tien.",
+        journey: "Suis le fil. Réponds sans trop réfléchir.",
+        result: "Ton don de flux.",
+    };
 </script>
 
 <svelte:head>
@@ -114,24 +152,39 @@
     <header>
         <h1>Don de flux</h1>
         {#if ready}
-            {#if stage === "constellation"}
-                <p class="muted" in:fade>Les onze dragons attendent. Touche-les dans le bon ordre.</p>
-            {:else}
-                <p class="muted" in:fade={{ delay: 400 }}>
-                    Le monde s'ouvre à toi. {knownCount} terres sur {COUNTRIES.length} te sont connues.
+            {#key stage}
+                <p class="muted" in:fade={{ delay: 300 }}>
+                    {SUBTITLES[stage] ?? `Le monde s'ouvre à toi. ${knownCount} terres sur ${COUNTRIES.length} te sont connues.`}
                 </p>
-            {/if}
+            {/key}
         {/if}
     </header>
 
-    {#if ready}
+    {#if stage === "portals" || stage === "journey" || stage === "result"}
+        <PatternBackground />
+    {/if}
+
+    {#if ready && stage === "portals"}
+        <div class="full" in:fade={{ duration: 600 }}>
+            <Portals onChoose={enter} />
+            <button class="btn btn-small" onclick={() => goTo("map")}>Revenir à la carte</button>
+        </div>
+    {:else if ready && stage === "journey" && race}
+        <div class="full" in:fade={{ duration: 800 }}>
+            <FluxJourney color={race.color} onFinish={finish} />
+        </div>
+    {:else if ready && stage === "result" && progress.result}
+        <div class="full" in:fade={{ duration: 800 }}>
+            <FluxResult result={progress.result} {race} onRetry={() => goTo("portals")} onMap={() => goTo("map")} />
+        </div>
+    {:else if ready}
         <div class="stack">
             {#if stage === "constellation"}
                 <div class="layer" out:fade={{ duration: 900 }}>
                     <Constellation onComplete={travel} />
                 </div>
             {/if}
-            {#if stage !== "constellation"}
+            {#if stage === "travel" || stage === "map"}
                 <div class="layer map-layer" class:shown={mapShown}>
                     <WorldMap found={progress.found} onFound={found} bind:mapEl />
                 </div>
@@ -141,21 +194,18 @@
         {#if stage === "map"}
             <footer in:fade={{ delay: 300 }}>
                 {#if allKnown}
-                    <p class="ending" in:fade>
-                        Toutes les terres te sont connues. Le test qui révélera ton don de flux arrive bientôt.
-                    </p>
+                    <p class="ending" in:fade>Toutes les terres te sont connues. Les portails t'attendent.</p>
+                    <button class="btn portals-btn" in:fade onclick={() => goTo("portals")}>Franchir les portails</button>
                 {/if}
-                {#if !account}
-                    <p class="muted small">
-                        Ta progression reste dans ce navigateur. <a href="/auth/login">Connecte-toi</a> pour la garder
-                        sur ton compte.
-                    </p>
-                {/if}
-                <button class="btn btn-small" onclick={() => (stage = "constellation")}>Revoir la constellation</button>
+                <button class="btn btn-small" onclick={() => goTo("constellation")}>Revoir la constellation</button>
             </footer>
         {/if}
     {/if}
 </main>
+
+{#if veil}
+    <div class="veil" style="--c: {veil};" transition:fade={{ duration: 700 }} aria-hidden="true"></div>
+{/if}
 
 {#each flyers as f (f.name)}
     <span
@@ -231,12 +281,25 @@
         color: var(--secondary);
     }
 
-    .small {
-        font-size: 0.85rem;
+    .full {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        width: 100%;
     }
 
-    .small a {
-        text-decoration: underline;
+    .portals-btn {
+        border-color: var(--secondary);
+        box-shadow: 0 0 14px rgba(210, 182, 116, 0.45);
+    }
+
+    .veil {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        background: radial-gradient(circle, #fff 0%, var(--c) 35%, #060608 100%);
+        pointer-events: none;
     }
 
     .flyer {

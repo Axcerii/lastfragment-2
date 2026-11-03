@@ -1,12 +1,6 @@
 import { error, json } from '@sveltejs/kit';
 import { COUNTRIES, DRAGONS } from '$lib/flux/discovery';
-import {
-	checkConstellation,
-	checkCountry,
-	isDragon,
-	recordConstellation,
-	recordCountry
-} from '$lib/server/flux/discovery';
+import { checkConstellation, checkCountry, isDragon } from '$lib/server/flux/discovery';
 import { RateLimiter } from '$lib/server/ratelimit';
 import type { RequestHandler } from './$types';
 
@@ -20,9 +14,9 @@ const requests = new RateLimiter(90, 60 * 1000);
  * - `{ type: 'constellation', sequence }` : dragons cliqués jusqu'ici, dans l'ordre.
  * - `{ type: 'country', id, guess }` : nom proposé pour un pays de la carte.
  *
- * Connecté, chaque réussite est enregistrée sur le compte ; sinon, la page la garde dans le navigateur.
+ * Rien n'est enregistré ici : la page garde la progression dans le navigateur.
  */
-export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
+export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 	if (!requests.take(getClientAddress())) error(429, 'Doucement : réessaie dans une minute.');
 
 	const raw = await request.text();
@@ -35,15 +29,11 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 		error(400, 'Requête invalide.');
 	}
 
-	const user = locals.user;
-
 	if (body.type === 'constellation') {
 		const sequence = body.sequence;
 		if (!Array.isArray(sequence) || sequence.length > DRAGONS.length || !sequence.every(isDragon))
 			error(400, 'Séquence invalide.');
-		const result = checkConstellation(sequence);
-		if (result.complete && user) await recordConstellation(user.id);
-		return json(result);
+		return json(checkConstellation(sequence));
 	}
 
 	if (body.type === 'country') {
@@ -51,7 +41,6 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 		if (typeof id !== 'string' || !COUNTRIES.some((c) => c.id === id)) error(400, 'Pays inconnu.');
 		if (typeof guess !== 'string' || guess.length > MAX_GUESS) error(400, 'Nom invalide.');
 		const description = checkCountry(id, guess);
-		if (description && user) await recordCountry(user.id, id);
 		return json(description ? { found: true, description } : { found: false });
 	}
 

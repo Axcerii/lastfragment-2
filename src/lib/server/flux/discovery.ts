@@ -1,5 +1,4 @@
-import { DRAGONS, type DiscoveryProgress, type DragonName } from '$lib/flux/discovery';
-import { prisma } from '../prisma';
+import { DRAGONS, type DragonName } from '$lib/flux/discovery';
 
 // Ordre de la Genèse : c'est la réponse de la constellation, elle ne quitte jamais le serveur.
 const ORDER: DragonName[] = [
@@ -96,31 +95,4 @@ export function checkCountry(id: string, guess: string): string | null {
 	if (!secret) return null;
 	const answer = normalize(guess);
 	return secret.answers.some((a) => normalize(a) === answer) ? secret.description : null;
-}
-
-export async function readProgress(playerId: number): Promise<DiscoveryProgress> {
-	const row = await prisma.fluxDiscovery.findUnique({ where: { playerId } });
-	const ids = Array.isArray(row?.countries) ? (row.countries as unknown[]) : [];
-	const found: Record<string, string> = {};
-	for (const id of ids) if (typeof id === 'string' && SECRETS[id]) found[id] = SECRETS[id].description;
-	return { constellation: !!row?.constellationAt, found };
-}
-
-export async function recordConstellation(playerId: number) {
-	await prisma.fluxDiscovery.upsert({
-		where: { playerId },
-		create: { playerId, constellationAt: new Date(), countries: [] },
-		update: { constellationAt: new Date() }
-	});
-}
-
-export async function recordCountry(playerId: number, id: string) {
-	const row = await prisma.fluxDiscovery.findUnique({ where: { playerId } });
-	const ids = Array.isArray(row?.countries) ? (row.countries as string[]) : [];
-	if (ids.includes(id)) return;
-	await prisma.fluxDiscovery.upsert({
-		where: { playerId },
-		create: { playerId, countries: [id] },
-		update: { countries: [...ids, id] }
-	});
 }

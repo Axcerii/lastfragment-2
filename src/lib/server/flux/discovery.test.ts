@@ -1,8 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('../prisma', () => ({ prisma: {} }));
-
-const { checkConstellation, checkCountry } = await import('./discovery');
+import { describe, expect, it } from 'vitest';
+import { checkConstellation, checkCountry } from './discovery';
 
 describe('constellation', () => {
 	it('accepte le début de la Genèse et dévoile un indice de plus', () => {

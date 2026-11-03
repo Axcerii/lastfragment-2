@@ -1,3 +1,6 @@
+import type { FluxResult } from './quiz';
+import type { RaceId } from './races';
+
 // Données publiques des énigmes de /flux. L'ordre de la constellation, les indices et les noms
 // des pays à deviner restent côté serveur ($lib/server/flux/discovery).
 
@@ -50,7 +53,7 @@ export const MAP_DRAGONS: Record<DragonName, { x: number; y: number }> = {
 	Aqua: { x: 33.1, y: 61.9 },
 	Goliath: { x: 51.9, y: 42.7 },
 	Drii: { x: 58.3, y: 51.9 },
-	Chronos: { x: 52.6, y: 77.3 },
+	Chronos: { x: 43, y: 65.5 },
 	Pestia: { x: 92.6, y: 52.6 },
 	Lada: { x: 89.8, y: 61.9 }
 };
@@ -78,8 +81,8 @@ export const COUNTRIES: Country[] = [
 	{
 		id: 'augeaime',
 		name: 'Augeaime',
-		x: 44,
-		y: 60,
+		x: 51,
+		y: 62,
 		icon: 'Augeaime',
 		description:
 			"Augeaime, au centre du monde. Autour d'elle, chaque terre porte le nom d'une fleur : trouve la fleur, et la terre te dira son nom."
@@ -96,8 +99,8 @@ export const COUNTRIES: Country[] = [
 	{
 		id: 'saxifra',
 		name: 'Saxifra',
-		x: 66,
-		y: 33,
+		x: 77,
+		y: 35,
 		icon: 'Saxifra',
 		riddle: 'Ici, une petite fleur pousse dans les fissures des rochers. Son nom veut dire « qui brise la pierre ».'
 	},
@@ -138,10 +141,15 @@ export const COUNTRIES: Country[] = [
 /** Territoire neutre de Vulcain, rempli du motif des pages personnages (masque tiré de la carte). */
 export const NEUTRAL_MASK = '/flux/vulcain-masque.webp';
 
-/** Progression d'un joueur : constellation réussie, et descriptions des pays trouvés. */
+/**
+ * Progression d'un visiteur, gardée dans son navigateur : constellation réussie, descriptions
+ * des pays trouvés, puis race choisie et résultat du test de flux.
+ */
 export type DiscoveryProgress = {
 	constellation: boolean;
 	found: Record<string, string>;
+	race?: RaceId;
+	result?: FluxResult;
 };
 
 export const STORAGE_KEY = 'flux_decouverte';
