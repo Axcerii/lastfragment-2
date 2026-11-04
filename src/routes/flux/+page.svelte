@@ -136,7 +136,11 @@
         veil = null;
     }
 
+    // Vrai quand on arrive au certificat en sortant du test (et non en rechargeant la page).
+    let fromTest = $state(false);
+
     function finish(answers: number[]) {
+        fromTest = true;
         progress.result = scoreAnswers(answers);
         save();
         goTo("result");
@@ -145,7 +149,6 @@
     const SUBTITLES: Record<string, string> = {
         constellation: "Les onze dragons attendent. Touche-les dans le bon ordre.",
         portals: "Trois portails. Un seul est le tien.",
-        result: "Ton don de flux.",
     };
 </script>
 
@@ -160,6 +163,9 @@
             <span>Last Fragment</span>
         </a>
 
+    {/if}
+    <!-- Le certificat a son propre titre : le nom du flux. -->
+    {#if stage !== "journey" && stage !== "result"}
         <header transition:fade={{ duration: 300 }} bind:clientHeight={headHeight}>
             <h1>Don de flux</h1>
             {#if ready}
@@ -186,8 +192,8 @@
             <FluxJourney color={race.color} onFinish={finish} />
         </div>
     {:else if ready && stage === "result" && progress.result}
-        <div class="full" in:fade={{ duration: 800 }}>
-            <FluxResult result={progress.result} {race} onRetry={() => goTo("portals")} onMap={() => goTo("map")} />
+        <div class="full">
+            <FluxResult result={progress.result} {race} intro={fromTest} onRetry={() => goTo("portals")} onMap={() => goTo("map")} />
         </div>
     {:else if ready}
         <div class="stack">

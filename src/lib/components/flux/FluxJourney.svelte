@@ -3,9 +3,10 @@
     import * as THREE from "three";
     import { QUESTIONS } from "$lib/flux/quiz-data";
 
-    // Le test de flux, plein écran. Pour chaque question : la question apparaît seule au centre,
-    // puis monte, et les réponses flottent autour d'un noyau de flux. Choisir une réponse la fait
-    // absorber par le noyau, puis on plonge à travers lui jusqu'à la question suivante.
+    // Le test de flux, plein écran. Au loin brille le noyau du flux, petite étoile. Pour chaque
+    // question : la question apparaît seule au centre, puis monte, et les réponses flottent autour
+    // du noyau. Choisir une réponse la fait absorber, puis on vole vers lui, en courbe : à chaque
+    // réponse il est plus proche, plus grand. À la dernière, on entre dedans.
     //
     // La 3D se limite à deux choses peu coûteuses, animées dans les shaders : un champ d'étoiles
     // (points + traînées) et le noyau (un plan). Chaque image ne change que quelques uniformes :
@@ -127,9 +128,15 @@
 
         const tint = new THREE.Color(color);
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
+        const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 200);
         const FOV = 60;
-        const CORE_Z = -10;
+        // Distance du noyau : très loin au départ, à NEAR_D une fois toutes les réponses données.
+        // Elle diminue d'un même facteur à chaque réponse : le noyau grossit de façon régulière.
+        const FAR_D = 80;
+        const NEAR_D = 10;
+        const distAt = (p: number) => FAR_D * Math.pow(NEAR_D / FAR_D, p);
+        // Le plan du noyau est plus grand que le noyau : son halo et son rayon débordent.
+        const HALO = 3;
 
         // ---- Champ d'étoiles : un tube autour de l'axe de vol, qui défile vers la caméra.
         const STARS = reduced ? 600 : 1600;
@@ -241,6 +248,8 @@
             uFocusAmt: { value: 0 },
             uFade: { value: 0 },
             uCharge: { value: 0 },
+            // 1 au plus loin, 0 tout près : de loin, le noyau brille et scintille comme une étoile.
+            uFar: { value: 1 },
         };
         const coreMaterial = new THREE.ShaderMaterial({
             uniforms: coreUniforms,
@@ -252,7 +261,7 @@
                 }
             `,
             fragmentShader: /* glsl */ `
-                uniform float uTime, uFlare, uFocusAmt, uFade, uCharge;
+                uniform float uTime, uFlare, uFocusAmt, uFade, uCharge, uFar;
                 uniform vec2 uFocus;
                 uniform vec3 uColor;
                 varying vec2 vUv;
@@ -268,10 +277,22 @@
                     return v;
                 }
                 void main() {
-                    vec2 p = vUv * 2.0 - 1.0;
+                    vec2 p = (vUv * 2.0 - 1.0) * ${HALO.toFixed(1)};
                     float r = length(p);
-                    if (r > 1.0) discard;
                     vec2 dir = p / max(r, 1e-4);
+                    // Halo : de loin, le noyau brille comme une étoile.
+                    float halo = exp(-r * 2.4) * (0.35 + uCharge * 0.25 + uFar * 0.5) * smoothstep(${HALO.toFixed(1)}, 1.2, r);
+                    // Aigrettes d'étoile, qui s'effacent à l'approche.
+                    float twinkle = 0.8 + 0.2 * sin(uTime * 3.1) * sin(uTime * 1.7);
+                    float spikes = (exp(-abs(p.y) * 40.0) + exp(-abs(p.x) * 40.0)) * exp(-r * 1.1) * uFar * twinkle;
+                    halo += spikes * smoothstep(${HALO.toFixed(1)}, 0.5, r);
+                    float da = 1.0 - dot(dir, uFocus);
+                    float ray = exp(-da * 60.0) * smoothstep(${HALO.toFixed(1)}, 0.4, r) * smoothstep(0.12, 0.38, r) * uFocusAmt;
+                    if (r > 1.0) {
+                        float o = (halo + ray * 0.6) * (1.0 - uFade);
+                        gl_FragColor = vec4(mix(uColor, vec3(1.0), 0.3) * o, min(o, 1.0));
+                        return;
+                    }
                     float t = uTime;
                     // Anneau déformé par le bruit, lu sur la direction : pas de couture.
                     float n = fbm(dir * 1.7 + vec2(t * 0.12, -t * 0.09) + r * 1.5);
@@ -282,11 +303,8 @@
                     vec2 q = mat2(c, -s, s, c) * p;
                     float wisps = pow(fbm(q * 3.0 - t * 0.2), 3.0) * 2.2 * smoothstep(1.0, 0.25, r);
                     float heart = exp(-r * r * (22.0 - uFlare * 12.0)) * (0.55 + uCharge * 0.6 + uFlare * 2.5);
-                    // Rayon vers la réponse survolée.
-                    float da = 1.0 - dot(dir, uFocus);
-                    float ray = exp(-da * 60.0) * smoothstep(1.0, 0.3, r) * smoothstep(0.12, 0.38, r) * uFocusAmt;
-                    float v = ring * (0.8 + uCharge * 0.6 + uFlare * 1.5) + wisps * (0.3 + uCharge * 0.4) + heart + ray * (0.7 + n);
-                    v *= smoothstep(1.0, 0.7, r) * (1.0 - uFade);
+                    float v = halo + ring * (0.8 + uCharge * 0.6 + uFlare * 1.5) + wisps * (0.3 + uCharge * 0.4) + heart + ray * (0.6 + n * smoothstep(1.0, 0.4, r));
+                    v *= 1.0 - uFade;
                     vec3 col = mix(uColor, vec3(1.0), clamp(heart * 0.5 + ring * 0.2, 0.0, 1.0));
                     gl_FragColor = vec4(col * v, min(v, 1.0));
                 }
@@ -297,10 +315,12 @@
         });
         const coreGeometry = new THREE.PlaneGeometry(1, 1);
         const core = new THREE.Mesh(coreGeometry, coreMaterial);
-        core.position.z = CORE_Z;
+        let dist = FAR_D;
+        core.position.z = -dist;
         scene.add(core);
 
-        // ---- Taille : le noyau garde la même part de l'écran quel que soit son format.
+        // ---- Taille : arrivé tout près (NEAR_D), le noyau occupe la même part de l'écran quel
+        // que soit son format, entre les deux colonnes de réponses.
         let coreSize = 8;
         let width = 1;
         let height = 1;
@@ -310,7 +330,7 @@
             renderer.setSize(width, height, false);
             camera.aspect = width / Math.max(height, 1);
             camera.updateProjectionMatrix();
-            const visibleH = 2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) * -CORE_Z;
+            const visibleH = 2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)) * NEAR_D;
             const visibleW = visibleH * camera.aspect;
             coreSize = Math.min(visibleH * 0.62, visibleW * 0.55);
         }
@@ -322,7 +342,9 @@
         const focusDir = new THREE.Vector2(0, 1);
         let focusTarget = 0;
         let flareTarget = 0;
-        let warp: { start: number; ms: number; last: boolean; done: () => void } | null = null;
+        // Un vol : de la distance actuelle à la suivante, en s'écartant de l'axe vers `angle`.
+        let warp: { start: number; ms: number; last: boolean; from: number; to: number; angle: number; done: () => void } | null = null;
+        let flights = 0;
         const pointer = new THREE.Vector2();
 
         scene3d = {
@@ -337,7 +359,10 @@
                 flareTarget = 1;
             },
             warp(ms, last) {
-                return new Promise((done) => (warp = { start: performance.now(), ms, last, done }));
+                // Angle d'or : chaque vol part d'un côté différent, sans motif visible.
+                const angle = flights++ * 2.39996 + Math.random() * 0.6;
+                const to = last ? 0.4 : distAt(charge);
+                return new Promise((done) => (warp = { start: performance.now(), ms, last, from: dist, to, angle, done }));
             },
             progress(p) {
                 charge = p;
@@ -381,50 +406,50 @@
             }
             let speed = reduced ? 0.4 : 1.6;
             let s = 0;
-            let scale = 1;
-            let fade = 0;
+            let swerve = 0;
+            let angle = 0;
 
             if (warp) {
                 const t = Math.min(1, (now - warp.start) / warp.ms);
-                // La vitesse monte puis retombe ; la dernière plongée ne ralentit pas.
-                s = warp.last ? Math.min(1, t * 1.6) : Math.pow(Math.sin(Math.PI * t), 2);
-                speed += 160 * s;
-                // On traverse le noyau : il grossit jusqu'à couvrir l'écran, puis un nouveau naît au loin.
-                if (warp.last) {
-                    scale = 1 + t * t * 9;
-                } else if (t < 0.5) {
-                    scale = 1 + Math.pow(t / 0.5, 2) * 6;
-                    fade = Math.pow(t / 0.5, 3);
-                } else {
-                    scale = 0.2 + ((t - 0.5) / 0.5) * 0.8;
-                    fade = 1 - (t - 0.5) / 0.5;
-                }
+                // Un vol accélère puis ralentit à l'approche ; la dernière plongée ne ralentit pas.
+                const e = warp.last ? t * t * t : t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                dist = warp.from + (warp.to - warp.from) * e;
+                s = warp.last ? Math.min(1, t * 1.4) : Math.pow(Math.sin(Math.PI * t), 2);
+                speed += (warp.last ? 200 : 70) * s;
+                // Pas en ligne droite : la trajectoire s'écarte puis revient face au noyau.
+                swerve = warp.last ? 0 : Math.sin(Math.PI * t);
+                angle = warp.angle;
                 if (t >= 1) {
                     const done = warp.done;
                     warp = null;
                     flareTarget = 0;
                     done();
                 }
+            } else {
+                // Sans vol (mouvement réduit) : le noyau se rapproche en douceur.
+                dist = smooth(dist, distAt(charge), 2, dt);
             }
 
             uniforms.uTravel.value += speed * dt;
-            uniforms.uStretch.value = 18 * s;
+            uniforms.uStretch.value = (warp?.last ? 18 : 10) * s;
             uniforms.uStreak.value = s;
             lines.visible = s > 0.01;
 
             coreUniforms.uFlare.value = smooth(coreUniforms.uFlare.value, warp ? 1 : flareTarget, 6, dt);
             coreUniforms.uFocusAmt.value = smooth(coreUniforms.uFocusAmt.value, focusTarget, 8, dt);
             coreUniforms.uFocus.value.lerp(focusDir, 1 - Math.exp(-10 * dt)).normalize();
-            coreUniforms.uFade.value = fade;
-            core.scale.setScalar(coreSize * scale * (0.78 + chargeShown * 0.32));
+            const off = dist * 0.3 * swerve;
+            core.position.set(Math.cos(angle) * off, Math.sin(angle) * off * 0.6, -dist);
+            core.scale.setScalar(coreSize * HALO);
+            coreUniforms.uFar.value = Math.max(0, Math.min(1, (dist - NEAR_D) / (FAR_D - NEAR_D))) ** 0.6;
 
             // La caméra suit doucement le pointeur, s'élargit et tourne un peu pendant la plongée.
             const sway = reduced ? 0 : 1;
             camera.position.x = smooth(camera.position.x, pointer.x * 0.8 * sway, 2, dt);
             camera.position.y = smooth(camera.position.y, -pointer.y * 0.5 * sway, 2, dt);
-            camera.lookAt(0, 0, CORE_Z);
-            camera.rotation.z += s * 0.25;
-            const fov = FOV + s * 28;
+            camera.lookAt(0, 0, -dist);
+            camera.rotation.z += s * (warp?.last ? 0.25 : 0.12) * Math.sign(Math.cos(angle) || 1);
+            const fov = FOV + s * (warp?.last ? 28 : 10);
             if (Math.abs(camera.fov - fov) > 0.01) {
                 camera.fov = fov;
                 camera.updateProjectionMatrix();

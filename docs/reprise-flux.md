@@ -10,8 +10,8 @@ Branche : `feat/flux-decouverte`. Pas encore fusionnée. Suite du travail (plein
 2. **Voyage** : à la réussite, les icônes des dragons volent jusqu'à leur symbole sur la carte du monde.
 3. **Carte**, plein écran (titre et boutons flottent par-dessus) : Augeaime et Vulcain sont donnés ; il faut deviner Saxifra, Irisia, Mudan, Edenia, Amari, chacun d'après une fleur. En paysage, la carte tient entière dans l'écran ; en portrait, elle garde de la hauteur et défile de côté, et la fiche d'un pays monte du bas de l'écran sur téléphone.
 4. **Portails** (une fois les 7 terres connues) : Humain, Géant, Éternelle, le symbole du peuple en filigrane sur toute la porte. Un clic ouvre, par-dessus les portes, une phrase avec « Revenir en arrière » / « Franchir le portail ». Franchir : les deux battants pivotent vers l'intérieur, la lumière se découvre, puis le portail grandit jusqu'à remplir l'écran.
-5. **Test de flux en 3D**, plein écran : la question apparaît seule au centre puis monte ; les réponses flottent en arc de part et d'autre d'un noyau de flux (le noyau tend un rayon vers la réponse survolée). La réponse choisie est aspirée par le noyau, puis on plonge à travers lui (étoiles en traînées) ; la question suivante naît pendant que la plongée ralentit (environ 1,8 s entre deux questions). Avancée : une barre de 25 segments (le dernier allumé jaillit), et le flux grandit à chaque réponse (plus d'étoiles, noyau plus grand et plus vif). Touches 1 à 6 pour répondre.
-6. **Résultat (certificat)** : citation du dragon, flux, description, prénoms possibles (et une note pour les géants), puis les 13 stats qui défilent 4 s avant de se figer, le pentagone de potentiel et la puissance totale.
+5. **Test de flux en 3D**, plein écran : au loin brille le noyau du flux, petite étoile à aigrettes. La question apparaît seule au centre puis monte ; les réponses flottent en arc de part et d'autre du noyau (il tend un rayon vers la réponse survolée). La réponse choisie est aspirée, puis on vole vers le noyau, pas en ligne droite (la trajectoire s'écarte puis revient face à lui) : à chaque réponse il est plus proche (distance divisée par le même facteur à chaque fois, de 80 à 10), donc plus grand. La question suivante naît pendant que le vol ralentit (environ 1,8 s entre deux questions). Barre de 25 segments en haut. Après la dernière réponse, on plonge dans le noyau : l'écran devient lumière. Touches 1 à 6 pour répondre.
+6. **Résultat (certificat)**, sur un seul écran sans défilement : on sort de la lumière, la citation du dragon naît devant soi puis se dissipe (un clic ou une touche la passe), puis le certificat : flux, citation, description, prénoms possibles (et une note pour les géants), pentagone de potentiel et puissance totale, les 13 stats (une ligne chacune) qui défilent 4 s avant de se figer. Seuls les très petits écrans (iPhone SE couché, par exemple) défilent encore.
 
 La page `/flux` est affichée sans le header du site (`src/routes/+layout.svelte`, comme l'accueil) ; un lien « Last Fragment » en haut à gauche ramène au site, sauf pendant le test.
 
@@ -63,7 +63,7 @@ Logique V1 reprise dans `quiz.ts`, testée dans `quiz.test.ts` :
 - **Chaos** : stats fixes de la V1, sans bornes ni ajustement.
 - **Pentagone** : Leader, Brute, Tank, Assassin, Mage, `floor(100/60 × moyenne)` ; rempli de la couleur du premier dragon (opacité 0,6), contour du second. Les valeurs du Chaos débordent du cadre (plafonnées à 160 %).
 - Couleurs : les variables `--Aqua`, `--Chronos`… du site ; Shizari éclairci, Chaos rouge.
-- Mise en scène : les stats défilent au hasard toutes les 50 ms pendant **4 s** (8 s dans la V1, raccourci), puis se figent ; le pentagone se déploie depuis son centre.
+- Mise en scène : la citation seule d'abord (environ 4 s, passable), puis le certificat ; les stats défilent au hasard toutes les 50 ms pendant **4 s** (8 s dans la V1, raccourci), puis se figent ; le pentagone se déploie depuis son centre.
 
 Non repris : le drapeau « invocateur » de la V1 (calculé, jamais affiché).
 
@@ -72,6 +72,7 @@ Non repris : le drapeau « invocateur » de la V1 (calculé, jamais affiché).
 L'ancienne version (fil qui se divise) ramait : bloom en post-traitement, tubes recréés à chaque question, état Svelte modifié à chaque image. La nouvelle :
 
 - n'a que deux objets 3D, animés **dans les shaders** : un champ d'étoiles (points + segments pour les traînées) et le noyau (un plan, bruit fractal) ; chaque image ne change que quelques uniformes ;
+- le noyau est un plan de taille fixe placé de plus en plus près (`distAt` : 80 → 10, puis 0,4 pour la plongée finale) ; son halo et ses aigrettes (uniforme `uFar`) le font briller comme une étoile tant qu'il est loin ;
 - pas de post-traitement, pas d'antialiasing, résolution plafonnée à 1,5 et abaissée à 0,75 si les 90 premières images sont lentes ;
 - l'interface (question, réponses) est en HTML/CSS par-dessus le canvas : elle marche aussi sans WebGL.
 
