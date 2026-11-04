@@ -7,7 +7,15 @@
     // Les trois portails : Humains et Géants côte à côte, reliés par la lueur d'un possible
     // demi-géant ; les Éternelles à part. Choisir un portail dévoile une phrase par-dessus les
     // portes ; le franchir ouvre ses deux battants, et on plonge dans la lumière.
-    let { onChoose }: { onChoose: (race: Race) => void } = $props();
+    // Les portes ne portent pas le nom de leur peuple : leurs phrases sont les seuls indices.
+    let {
+        onChoose,
+        doorTitle,
+    }: {
+        onChoose: (race: Race) => void;
+        /** Bulle au survol des portes (le secret, voir secret.ts). */
+        doorTitle?: string;
+    } = $props();
 
     // Durées de l'ouverture des battants, puis de l'entrée dans le portail (ms).
     const OPEN_MS = 900;
@@ -59,44 +67,47 @@
 {#snippet portal(race: Race)}
     {@const isSelected = selected?.id === race.id}
     <div
-        class="portal"
+        class="portal {race.id}"
         class:selected={isSelected}
         class:dimmed={selected && !isSelected}
         class:open={isSelected && opening}
         class:entering={isSelected && entering}
         style="--c: {race.color};"
     >
-        <svg class="maze" viewBox="0 0 {VIEW.width} {VIEW.height}" aria-hidden="true">
-            {#each mazes[race.id] ?? [] as d, i (i)}
-                <path class="trace" {d} />
-                <path class="pulse" {d} pathLength="100" style="animation-delay: {delay(i)};" />
-            {/each}
-        </svg>
+        <!-- La porte et son labyrinthe : c'est ce cadre qui grandit quand on entre. -->
+        <div class="frame">
+            <svg class="maze" viewBox="0 0 {VIEW.width} {VIEW.height}" aria-hidden="true">
+                {#each mazes[race.id] ?? [] as d, i (i)}
+                    <path class="trace" {d} />
+                    <path class="pulse" {d} pathLength="100" style="animation-delay: {delay(i)};" />
+                {/each}
+            </svg>
 
-        <button
-            class="door"
-            aria-label="Portail des {race.name}s"
-            aria-pressed={isSelected}
-            disabled={opening}
-            onclick={() => (selected = isSelected ? null : race)}
-        >
-            <!-- Derrière les battants : la lumière de l'autre côté. -->
-            <span class="inside" aria-hidden="true"></span>
-            {#each ["left", "right"] as side (side)}
-                <span class="leaf {side}" aria-hidden="true">
-                    <!-- Chaque battant porte sa moitié de la même façade. -->
-                    <span class="face">
-                        <span class="swirl"></span>
-                        <span class="emblem" class:pair={race.symbols.length > 1}>
-                            {#each race.symbols as symbol (symbol)}
-                                <span class="symbol" style="--icon: url('{symbol}');"></span>
-                            {/each}
+            <button
+                class="door"
+                aria-label="Portail : {race.motto}"
+                title={doorTitle}
+                aria-pressed={isSelected}
+                disabled={opening}
+                onclick={() => (selected = isSelected ? null : race)}
+            >
+                <!-- Derrière les battants : la lumière de l'autre côté. -->
+                <span class="inside" aria-hidden="true"></span>
+                {#each ["left", "right"] as side (side)}
+                    <span class="leaf {side}" aria-hidden="true">
+                        <!-- Chaque battant porte sa moitié de la même façade. -->
+                        <span class="face">
+                            <span class="swirl"></span>
+                            <span class="emblem" class:pair={race.symbols.length > 1}>
+                                {#each race.symbols as symbol (symbol)}
+                                    <span class="symbol" style="--icon: url('{symbol}');"></span>
+                                {/each}
+                            </span>
                         </span>
-                        <span class="name">{race.name}</span>
                     </span>
-                </span>
-            {/each}
-        </button>
+                {/each}
+            </button>
+        </div>
         <p class="motto">{race.motto}</p>
     </div>
 {/snippet}
@@ -125,7 +136,7 @@
 
 <section class="portals">
     <div class="row">
-        <div class="pair">
+        <div class="duo">
             {@render portal(RACES[0])}
             <div class="bridge" class:dimmed={selected}>
                 {@render link(bridges.across, false)}
@@ -168,13 +179,16 @@
 {/if}
 
 <style>
+    /* Tout tient sur un écran : la taille des portes suit la hauteur disponible. */
     .portals {
+        --door-h: clamp(8rem, calc(100svh - 23rem), 19rem);
+        --door-w: calc(var(--door-h) * 0.632);
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 2rem;
+        gap: clamp(0.6rem, 2.5svh, 2rem);
         width: 100%;
-        padding: 2rem 0 1rem;
+        padding: clamp(0.5rem, 3svh, 2rem) 0 0;
         /* Les labyrinthes débordent des portails : c'est la page (main) qui les rogne. */
     }
 
@@ -186,19 +200,18 @@
         width: 100%;
     }
 
-    .pair {
+    .duo {
         display: flex;
         align-items: flex-start;
     }
 
     .portal {
-        --door-h: 19rem;
         position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
-        width: 12rem;
+        gap: clamp(0.5rem, 2svh, 1rem);
+        width: var(--door-w);
         transition:
             opacity 0.5s ease,
             filter 0.5s ease,
@@ -214,16 +227,23 @@
         transform: scale(1.04);
     }
 
-    /* On entre : le portail grandit autour de sa porte jusqu'à remplir l'écran. */
+    .frame {
+        position: relative;
+        width: var(--door-w);
+    }
+
+    /* On entre : la porte grandit autour de son centre jusqu'à remplir l'écran. */
     .portal.entering {
         z-index: 5;
+    }
+
+    .portal.entering .frame {
         transform: scale(9);
-        transform-origin: 50% calc(var(--door-h, 19rem) / 2);
         transition: transform 0.75s cubic-bezier(0.6, 0, 0.9, 0.5);
     }
 
     /* Une seule couche, agrandie telle quelle : ni ombres ni filtres recalculés à 9 fois la taille. */
-    .portal.open {
+    .portal.open .frame {
         will-change: transform;
     }
 
@@ -243,10 +263,10 @@
 
     .maze {
         position: absolute;
-        top: -2.5rem;
+        top: calc(var(--door-w) * -0.208);
         left: 50%;
-        width: 31.2rem;
-        height: 24rem;
+        width: calc(var(--door-w) * 2.6);
+        height: calc(var(--door-w) * 2);
         transform: translateX(-50%);
         overflow: visible;
         pointer-events: none;
@@ -279,7 +299,6 @@
     }
 
     .door {
-        --door-h: 19rem;
         position: relative;
         display: block;
         width: 100%;
@@ -288,7 +307,7 @@
         overflow: hidden;
         color: var(--foreground);
         border: 2px solid var(--c);
-        border-radius: 6rem 6rem var(--radius) var(--radius);
+        border-radius: calc(var(--door-w) / 2) calc(var(--door-w) / 2) var(--radius) var(--radius);
         background: #000;
         box-shadow: 0 0 14px color-mix(in srgb, var(--c) 70%, transparent);
         /* Profondeur des battants qui pivotent vers l'intérieur. */
@@ -420,9 +439,9 @@
         transition: opacity 0.4s ease;
     }
 
+    /* Deux symboles l'un sur l'autre : chacun prend la moitié de la hauteur libre. */
     .emblem.pair .symbol {
-        width: auto;
-        height: 50%;
+        width: min(88%, calc((var(--door-h) - 3.8rem) / 2));
     }
 
     .door:hover .symbol,
@@ -431,24 +450,9 @@
         opacity: 0.32;
     }
 
-    .name {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        text-align: center;
-        font-family: var(--titleFont);
-        font-size: 1.6rem;
-        color: var(--c);
-        text-shadow:
-            0 0 10px var(--c),
-            0 0 4px #000;
-    }
-
     .motto {
         font-family: var(--titleFont);
-        font-size: 1rem;
+        font-size: clamp(0.8rem, 2.2svh, 1rem);
         line-height: 1.35;
         text-align: center;
         color: rgba(255, 255, 255, 0.8);
@@ -459,9 +463,9 @@
     /* Lueur entre Humains et Géants. */
     .bridge {
         align-self: flex-start;
-        width: 6rem;
-        height: 3rem;
-        margin-top: 8rem;
+        width: calc(var(--door-w) * 0.5);
+        height: calc(var(--door-h) * 0.16);
+        margin-top: calc(var(--door-h) * 0.42);
         transition: opacity 0.5s ease;
         filter: drop-shadow(0 0 3px var(--half, #a9d8ff));
     }
@@ -579,23 +583,74 @@
         }
     }
 
-    /* Téléphone : les portails s'empilent, la lueur relie Humains et Géants de haut en bas. */
+    /* Téléphone : les trois portes en diagonale, chaque phrase dans l'espace laissé libre. La
+       lueur des demi-géants relie en biais les Humains (en haut) aux Géants (au milieu). */
     @media (max-width: 860px) {
-        .row,
-        .pair {
-            flex-direction: column;
-            align-items: center;
+        .portals {
+            --door-h: clamp(5rem, calc((100svh - 17rem) / 3 - 0.8rem), 11rem);
+            --row-gap: clamp(0.4rem, 2svh, 1.2rem);
         }
 
         .row {
-            gap: 4rem;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            column-gap: 0.75rem;
+            row-gap: var(--row-gap);
+            position: relative;
+            width: 100%;
         }
 
+        .duo {
+            display: contents;
+        }
+
+        .portal {
+            width: auto;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.9rem;
+        }
+
+        .portal.humain {
+            grid-area: 1 / 1 / 2 / 4;
+        }
+
+        .portal.geant {
+            grid-area: 2 / 2 / 3 / 4;
+        }
+
+        .portal.eternelle {
+            grid-area: 3 / 1 / 4 / 4;
+            flex-direction: row-reverse;
+        }
+
+        .frame {
+            flex: none;
+        }
+
+        .motto {
+            flex: 1;
+            min-width: 0;
+            text-align: left;
+            font-size: clamp(0.72rem, 1.9svh, 0.9rem);
+        }
+
+        .eternelle .motto {
+            text-align: right;
+        }
+
+        /* Part du centre de la porte des Humains vers celui des Géants. */
         .bridge {
-            align-self: center;
-            width: 3rem;
-            height: 5rem;
-            margin: 0.5rem 0;
+            --dy: calc(var(--door-h) + var(--row-gap));
+            position: absolute;
+            top: calc(var(--door-h) / 2);
+            left: calc(var(--door-w) / 2 - 1.2rem);
+            z-index: -1;
+            width: 2.4rem;
+            height: hypot(calc((100vw - 2rem) / 3 + 0.25rem), var(--dy));
+            margin: 0;
+            transform-origin: 50% 0;
+            rotate: calc(-1 * atan2(calc((100vw - 2rem) / 3 + 0.25rem), var(--dy)));
         }
 
         .link {
@@ -606,9 +661,9 @@
             display: block;
         }
 
-        .portal,
-        .door {
-            --door-h: 16rem;
+        /* Les phrases à côté des portes suffisent. */
+        .hint {
+            display: none;
         }
     }
 

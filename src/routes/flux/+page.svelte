@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
+    import { goto } from "$app/navigation";
     import { fade } from "svelte/transition";
     import Constellation from "$lib/components/flux/Constellation.svelte";
     import FluxJourney from "$lib/components/flux/FluxJourney.svelte";
@@ -18,10 +19,13 @@
     } from "$lib/flux/discovery";
     import { isFluxResult, scoreAnswers } from "$lib/flux/quiz";
     import { raceById, type Race } from "$lib/flux/races";
+    import { SECRET_TITLES, SECRET_UNLOCKED_KEY, consumeFromHome } from "$lib/flux/secret";
 
     // La progression reste dans le navigateur, lue au chargement.
     let progress = $state<DiscoveryProgress>({ constellation: false, found: {} });
     let ready = $state(false);
+    // Arrivée par la page d'accueil : le secret s'éveille pour cette visite (voir secret.ts).
+    let secret = $state(false);
     let stage = $state<"constellation" | "travel" | "map" | "portals" | "journey" | "result">("constellation");
     let race = $derived(raceById(progress.race));
 
@@ -44,6 +48,7 @@
     let allKnown = $derived(knownCount === COUNTRIES.length);
 
     onMount(() => {
+        secret = consumeFromHome();
         try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
             if (saved && typeof saved === "object") {
@@ -139,6 +144,16 @@
     // Vrai quand on arrive au certificat en sortant du test (et non en rechargeant la page).
     let fromTest = $state(false);
 
+    // Le chemin secret a été suivi : la page secrète s'ouvre.
+    function toSecret() {
+        try {
+            localStorage.setItem(SECRET_UNLOCKED_KEY, "1");
+        } catch {
+            // Sans stockage, la page secrète ne saura pas qu'on l'a méritée.
+        }
+        goto("/flux/secret");
+    }
+
     function finish(answers: number[]) {
         fromTest = true;
         // Le peuple choisi rend certains dragons plus probables (aucun pour les humains).
@@ -185,12 +200,12 @@
 
     {#if ready && stage === "portals"}
         <div class="full" in:fade={{ duration: 600 }}>
-            <Portals onChoose={enter} />
+            <Portals onChoose={enter} doorTitle={secret ? SECRET_TITLES.door : undefined} />
             <button class="btn btn-small" onclick={() => goTo("map")}>Revenir à la carte</button>
         </div>
     {:else if ready && stage === "journey" && race}
         <div in:fade={{ duration: 800 }}>
-            <FluxJourney color={race.color} onFinish={finish} />
+            <FluxJourney color={race.color} {secret} onFinish={finish} onSecret={toSecret} />
         </div>
     {:else if ready && stage === "result" && progress.result}
         <div class="full">
@@ -199,12 +214,12 @@
     {:else if ready}
         <div class="stack">
             {#if stage === "constellation"}
-                <div class="layer" out:fade={{ duration: 900 }}>
+                <div class="layer" out:fade={{ duration: 900 }} title={secret ? SECRET_TITLES.constellation : undefined}>
                     <Constellation onComplete={travel} />
                 </div>
             {/if}
             {#if fullMap}
-                <div class="layer map-layer" class:shown={mapShown}>
+                <div class="layer map-layer" class:shown={mapShown} title={secret ? SECRET_TITLES.map : undefined}>
                     <WorldMap found={progress.found} onFound={found} bind:mapEl />
                 </div>
             {/if}

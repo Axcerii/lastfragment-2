@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 
 	import { env } from '$env/dynamic/public';
+	import { markFromHome } from '$lib/flux/secret';
 
 	let { data } = $props();
 
@@ -155,7 +156,7 @@
                 <li><a href={loreUrl} id="LHistoires" onmouseenter={() => movingBackground(2, 50, 'Vide', '6 Livres')}>Histoires</a><div class="brillance"></div></li>
             {/if}
             <li><a href={data.user ? '/profil' : '/auth/login'} id="LConnexion" onmouseenter={() => movingBackground(1.5, 50.5, 'Connexion', '1 porte enchaînée')}>{data.user ? 'Profil' : 'Connexion'}</a><div class="brillance"></div></li>
-            <li><a href="/flux" id="LFlux" onmouseenter={() => movingBackground(1, 51, 'Don_de_flux', '12 Oeils t\'observants')}>Ton don de flux</a><div class="brillance" style="background-color: var(--primary);"></div></li>
+            <li><a href="/flux" id="LFlux" onclick={markFromHome} onmouseenter={() => movingBackground(1, 51, 'Don_de_flux', '12 Oeils t\'observants')}>Ton don de flux</a><div class="brillance" style="background-color: var(--primary);"></div></li>
         </ul>
     </div>
 </div>

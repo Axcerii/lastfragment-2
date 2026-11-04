@@ -2,6 +2,7 @@
     import { onMount } from "svelte";
     import * as THREE from "three";
     import { QUESTIONS } from "$lib/flux/quiz-data";
+    import { secretComplete, secretTitle } from "$lib/flux/secret";
 
     // Le test de flux, plein écran. Au loin brille le noyau du flux, petite étoile. Pour chaque
     // question : la question apparaît seule au centre, puis monte, et les réponses flottent autour
@@ -11,7 +12,19 @@
     // La 3D se limite à deux choses peu coûteuses, animées dans les shaders : un champ d'étoiles
     // (points + traînées) et le noyau (un plan). Chaque image ne change que quelques uniformes :
     // pas de post-traitement, aucune géométrie recréée, aucun état Svelte touché pendant le rendu.
-    let { color, onFinish }: { color: string; onFinish: (answers: number[]) => void } = $props();
+    let {
+        color,
+        secret = false,
+        onFinish,
+        onSecret,
+    }: {
+        color: string;
+        /** Secret éveillé (arrivée par l'accueil) : bulles sur les bonnes réponses, voir secret.ts. */
+        secret?: boolean;
+        onFinish: (answers: number[]) => void;
+        /** Le chemin secret vient d'être suivi jusqu'au bout. */
+        onSecret?: () => void;
+    } = $props();
 
     // Durées des étapes d'une question (ms). La question suivante naît pendant que la plongée
     // ralentit (WARP_NEXT) : les étapes se chevauchent pour garder le rythme sur 25 questions.
@@ -91,14 +104,17 @@
         answered++;
         scene3d?.progress(answered / QUESTIONS.length);
 
-        const last = index + 1 >= QUESTIONS.length;
+        // Chemin secret suivi jusqu'au bout : on plonge dans le noyau sans finir le test.
+        const found = secret && !!onSecret && secretComplete(answers);
+        const last = found || index + 1 >= QUESTIONS.length;
         phase = last ? "ending" : "warp";
         if (last) {
             if (scene3d && !reduced) await scene3d.warp(WARP_MS * 1.4, true);
             else await wait(300);
             flash = true;
             await wait(800);
-            onFinish(answers);
+            if (found) onSecret!();
+            else onFinish(answers);
             return;
         }
         if (scene3d && !reduced) {
@@ -575,6 +591,7 @@
                                     class:gone={chosen !== null && chosen !== k}
                                     style={chosen === k ? `--dx: ${pull.x}px; --dy: ${pull.y}px;` : ""}
                                     data-k={k}
+                                    title={secret ? secretTitle(answers, index, k) : undefined}
                                     disabled={phase !== "answers"}
                                     onclick={(e) => choose(k, e.currentTarget)}
                                     onpointerenter={(e) => hover(e.currentTarget)}

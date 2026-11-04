@@ -9,13 +9,19 @@ Branche : `feat/flux-decouverte`. Pas encore fusionnée. Suite du travail (plein
 1. **Constellation** : toucher les 11 dragons dans l'ordre de la Genèse. Le serveur vérifie chaque clic ; après un premier échec, des indices apparaissent un à un.
 2. **Voyage** : à la réussite, les icônes des dragons volent jusqu'à leur symbole sur la carte du monde.
 3. **Carte**, plein écran (titre et boutons flottent par-dessus) : Augeaime et Vulcain sont donnés ; il faut deviner Saxifra, Irisia, Mudan, Edenia, Amari, chacun d'après une fleur. En paysage, la carte tient entière dans l'écran ; en portrait, elle garde de la hauteur et défile de côté, et la fiche d'un pays monte du bas de l'écran sur téléphone.
-4. **Portails** (une fois les 7 terres connues) : Humain, Géant, Éternelle, le symbole du peuple en filigrane sur toute la porte. Un clic ouvre, par-dessus les portes, une phrase avec « Revenir en arrière » / « Franchir le portail ». Franchir : les deux battants pivotent vers l'intérieur, la lumière se découvre, puis le portail grandit jusqu'à remplir l'écran.
+4. **Portails** (une fois les 7 terres connues) : Humain, Géant, Éternelle. Les portes ne portent **pas le nom de leur peuple** : seuls le symbole en filigrane et la phrase en dessous guident. Tout tient sur un écran sans défilement, portable compris (la taille des portes suit la hauteur de l'écran) ; sur téléphone, les trois portes sont en diagonale, chaque phrase dans l'espace libre, et la lueur des demi-géants relie en biais Humains et Géants. Un clic ouvre, par-dessus les portes, une phrase avec « Revenir en arrière » / « Franchir le portail ». Franchir : les deux battants pivotent vers l'intérieur, la lumière se découvre, puis la porte grandit jusqu'à remplir l'écran.
 5. **Test de flux en 3D**, plein écran : au loin brille le noyau du flux, petite étoile à aigrettes. La question apparaît seule au centre puis monte ; les réponses flottent en arc de part et d'autre du noyau (il tend un rayon vers la réponse survolée). Le noyau n'est pas forcément au centre : il change de place à chaque question, toujours en entier à l'écran (entre les deux colonnes de réponses sur grand écran ; sur téléphone, dans une bande réservée entre la question et les réponses). La réponse choisie est aspirée vers lui, puis on vole vers le noyau, pas en ligne droite (la trajectoire s'écarte puis revient face à lui) : à chaque réponse il est plus proche (distance divisée par le même facteur à chaque fois, de 80 à 10), donc plus grand. La question suivante naît pendant que le vol ralentit (environ 1,8 s entre deux questions). Barre de 25 segments en haut. Après la dernière réponse, on plonge dans le noyau : l'écran devient lumière. Touches 1 à 6 pour répondre.
 6. **Résultat (certificat)**, sur un seul écran sans défilement : on sort de la lumière, la citation du dragon naît devant soi puis se dissipe (un clic ou une touche la passe). Puis le certificat, dans cet ordre : les 13 stats (une ligne chacune) défilent 4 s avant de se figer, le pentagone de potentiel se déploie et la puissance totale s'affiche, et **le flux se révèle en dernier** (« Ton flux s'éveille… » jusque-là) : nom, citation, description, prénoms possibles, note des géants. Seuls les très petits écrans (iPhone SE, téléphone couché) défilent encore.
 
 La page `/flux` est affichée sans le header du site (`src/routes/+layout.svelte`, comme l'accueil) ; un lien « Last Fragment » en haut à gauche ramène au site, sauf pendant le test.
 
 Toute la progression reste dans le navigateur (`localStorage`, clé `flux_decouverte`) : **choix du porteur du projet, rien en base**. Seule la vérification des énigmes passe par le serveur.
+
+## Le secret
+
+Pour qui arrive par le lien « Ton don de flux » de la **page d'accueil** (pas par la barre de navigation) : le lien pose une marque datée dans le `localStorage` (`flux_origine`), que `/flux` lit et efface à l'ouverture (valable 60 s). Pour cette visite, des bulles (attribut `title`, au survol) apparaissent : sur la constellation, sur la carte, sur les portes, puis sur la bonne réponse de chaque étape du chemin, tant que les étapes d'avant ont été suivies. La dernière bonne réponse fait plonger dans le noyau et ouvre **`/flux/secret`** (marque `flux_secret` ; sans elle, la page dit « Il n'y a rien ici »).
+
+Tout se règle dans **`src/lib/flux/secret.ts`** : les phrases des bulles, le chemin (`SECRET_PATH` : numéro de question, texte exact de la bonne réponse, bulle), le texte de la page secrète. Une question absente du chemin laisse libre. Visible dans le code du navigateur, c'est accepté. `secret.test.ts` vérifie que chaque réponse du chemin existe bien dans `quiz-data.ts`.
 
 ## Où est quoi
 
@@ -25,7 +31,9 @@ Toute la progression reste dans le navigateur (`localStorage`, clé `flux_decouv
 | `src/routes/flux/essai/+server.ts` | `POST` qui vérifie une séquence de la constellation ou un nom de pays (limité à 90 requêtes/min par IP) |
 | `src/lib/flux/discovery.ts` | Données publiques : positions des dragons (constellation et carte), pays, énigmes florales, type de progression |
 | `src/lib/server/flux/discovery.ts` | Secrets : ordre des dragons, indices, noms acceptés et textes révélés des pays |
-| `src/lib/flux/races.ts` | Les trois races : couleurs, symboles, phrases |
+| `src/lib/flux/races.ts` | Les trois races : couleurs, symboles, phrases, dragons favorisés |
+| `src/lib/flux/secret.ts` | Le secret : bulles, chemin de réponses, texte de la page secrète |
+| `src/routes/flux/secret/+page.svelte` | La page secrète |
 | `src/lib/flux/maze.ts` | Générateur des traits néon « labyrinthe » des portails |
 | `src/lib/flux/quiz-data.ts` | **Données V1** : 25 questions (lettres par réponse), 45 flux (matrice dragon × dragon), citations |
 | `src/lib/flux/quiz.ts` | **Calcul V1** du flux (`scoreAnswers`), des stats (`drawStats`), du pentagone (`potential`) et affichage (`revealFlux`) |
@@ -53,6 +61,7 @@ Tests : `src/lib/flux/quiz.test.ts`, `src/lib/server/flux/discovery.test.ts`.
 - Les textes révélés quand on trouve une terre sont minimaux (« Irisia, la terre du sud. Elle tient son nom de l'iris. »).
 - Le nombre de sommets de Pestia (5), Chronos (6) et Aqua (7) a été déduit à l'œil pour les indices.
 - La force du bonus de race (×1,2) est un choix de Claude, à ajuster si besoin.
+- Le chemin secret (5 premières questions) et le texte de la page secrète sont des exemples provisoires de Claude ; les phrases des bulles ont été légèrement corrigées (« Prends cette porte et suis-moi », « ne te joue pas de moi »).
 - Le défilement des stats du certificat dure 4 s au lieu des 8 s de la V1.
 
 ## Certificat (H2) : porté

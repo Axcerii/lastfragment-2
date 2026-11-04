@@ -10,6 +10,7 @@
 	let bare = $derived(
 		page.route.id === "/accueil" ||
 			page.route.id === "/flux" ||
+			page.route.id === "/flux/secret" ||
 			(page.route.id ?? "").startsWith("/outils/table/[id]")
 	);
 </script>
