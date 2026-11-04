@@ -17,6 +17,7 @@
         secret = false,
         onFinish,
         onSecret,
+        onTitle,
     }: {
         color: string;
         /** Secret éveillé (arrivée par l'accueil) : bulles sur les bonnes réponses, voir secret.ts. */
@@ -24,6 +25,8 @@
         onFinish: (answers: number[]) => void;
         /** Le chemin secret vient d'être suivi jusqu'au bout. */
         onSecret?: () => void;
+        /** Titre de l'onglet le temps d'un survol (le secret), undefined pour le titre normal. */
+        onTitle?: (title: string | undefined) => void;
     } = $props();
 
     // Durées des étapes d'une question (ms). La question suivante naît pendant que la plongée
@@ -95,6 +98,7 @@
         pull = { x: target.x - (r.left + r.width / 2), y: target.y - (r.top + r.height / 2) };
         chosen = k;
         phase = "leaving";
+        onTitle?.(undefined);
         scene3d?.unfocus();
         scene3d?.absorb();
         await wait(ABSORB_MS);
@@ -127,7 +131,10 @@
     }
 
     function hover(el: HTMLElement | null) {
-        if (!scene3d || phase !== "answers") return;
+        if (phase !== "answers") return;
+        // Secret : survoler la bonne réponse de l'étape change le titre de l'onglet.
+        if (secret) onTitle?.(el ? secretTitle(answers, index, Number(el.dataset.k)) : undefined);
+        if (!scene3d) return;
         if (!el) return scene3d.unfocus();
         const r = el.getBoundingClientRect();
         scene3d.focus(r.left + r.width / 2, r.top + r.height / 2);

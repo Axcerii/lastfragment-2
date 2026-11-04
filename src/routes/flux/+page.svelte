@@ -26,6 +26,14 @@
     let ready = $state(false);
     // Arrivée par la page d'accueil : le secret s'éveille pour cette visite (voir secret.ts).
     let secret = $state(false);
+    // Secret : le titre de l'onglet change selon l'étape, et le temps d'un survol (porte, bonne réponse).
+    let hoverTitle = $state<string | undefined>(undefined);
+    let tabTitle = $derived.by(() => {
+        if (secret && hoverTitle) return hoverTitle;
+        if (secret && stage === "constellation") return SECRET_TITLES.constellation;
+        if (secret && (stage === "travel" || stage === "map")) return SECRET_TITLES.map;
+        return "Don de flux : Last Fragment";
+    });
     let stage = $state<"constellation" | "travel" | "map" | "portals" | "journey" | "result">("constellation");
     let race = $derived(raceById(progress.race));
 
@@ -132,6 +140,7 @@
 
     function goTo(next: typeof stage) {
         stage = next;
+        hoverTitle = undefined;
         mapShown = next === "map";
         approach = null;
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -194,7 +203,7 @@
 </script>
 
 <svelte:head>
-    <title>Don de flux : Last Fragment</title>
+    <title>{tabTitle}</title>
 </svelte:head>
 
 <main
@@ -242,12 +251,17 @@
 
     {#if ready && stage === "portals"}
         <div class="full" in:fade={{ duration: 600 }}>
-            <Portals onChoose={enter} onApproach={(x, y) => (approach = { x, y })} doorTitle={secret ? SECRET_TITLES.door : undefined} />
+            <Portals
+                onChoose={enter}
+                onApproach={(x, y) => (approach = { x, y })}
+                doorTitle={secret ? SECRET_TITLES.door : undefined}
+                onHover={(on) => (hoverTitle = on && secret ? SECRET_TITLES.door : undefined)}
+            />
             <button class="btn btn-small" onclick={() => goTo("map")}>Revenir à la carte</button>
         </div>
     {:else if ready && stage === "journey" && race}
         <div in:fade={{ duration: 800 }}>
-            <FluxJourney color={race.color} {secret} onFinish={finish} onSecret={toSecret} />
+            <FluxJourney color={race.color} {secret} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
         </div>
     {:else if ready && stage === "result" && progress.result}
         <div class="full">

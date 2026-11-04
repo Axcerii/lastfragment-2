@@ -1,11 +1,13 @@
 import { QUESTIONS } from './quiz-data';
 
 // Le secret du don de flux. Il ne s'éveille que pour qui arrive par la page d'accueil (et non par
-// la barre de navigation) : des bulles (attribut title, au survol) le guident alors pas à pas.
+// la barre de navigation) : le titre de l'onglet le guide alors pas à pas (sur la constellation, sur
+// la carte, puis le temps d'un survol : une porte, la bonne réponse de chaque étape). Les mêmes
+// phrases s'affichent aussi en bulle au survol.
 // Tout se règle ici : phrases, chemin de réponses, page secrète. Visible dans le code du
 // navigateur, et c'est accepté : c'est un jeu de piste, pas un coffre-fort.
 
-/** Bulles affichées au survol, étape par étape, quand le secret est éveillé. */
+/** Titres de l'onglet (et bulles au survol), étape par étape, quand le secret est éveillé. */
 export const SECRET_TITLES = {
 	/** Sur la constellation des dragons */
 	constellation: 'Relie-les, tu les connais.',
@@ -20,13 +22,13 @@ export type SecretStep = {
 	question: number;
 	/** Texte exact de la bonne réponse, tel qu'il est écrit dans quiz-data.ts */
 	answer: string;
-	/** Bulle affichée en survolant cette réponse */
+	/** Titre de l'onglet (et bulle) en survolant cette réponse */
 	title: string;
 };
 
 /**
  * Le chemin : une bonne réponse par étape, dans l'ordre des questions. Une question absente de la
- * liste laisse libre. La bulle d'une étape n'apparaît que si toutes les étapes d'avant ont été
+ * liste laisse libre. Le titre d'une étape n'apparaît que si toutes les étapes d'avant ont été
  * suivies ; la dernière bonne réponse mène à la page secrète, sans finir le test.
  *
  * Le test `quiz.test.ts` vérifie que chaque réponse existe bien dans sa question.
