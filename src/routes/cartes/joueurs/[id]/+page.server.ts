@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 	const id = Number(params.id);
 	if (id === user.id) redirect(303, '/cartes/collection');
 	try {
-		return { collection: await collectionOf(id), album: albumCookie(cookies), isAdmin: user.isAdmin };
+		return { collection: await collectionOf(id, user), album: albumCookie(cookies), isAdmin: user.isAdmin };
 	} catch (e) {
 		if (e instanceof CardError) error(e.status, e.message);
 		throw e;

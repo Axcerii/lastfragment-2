@@ -8,6 +8,7 @@ import type { OwnedCard } from '$lib/cards/types';
 import { prisma } from '../prisma';
 import { CardError } from './settings';
 import { COLLECTOR_SELECT, collectorView, COPY_INCLUDE, ownedView, setTotals, type CollectorView } from './views';
+import { backReader, ownedForReader, type Viewer } from './secrets';
 
 export const MAX_TRADE_SIDE = 12;
 const MAX_PENDING = 15;
@@ -155,8 +156,10 @@ export interface TradeView {
 	stale: boolean;
 }
 
-export async function tradesOf(userId: number): Promise<TradeView[]> {
-	const [trades, totals] = await Promise.all([
+/** Échanges de `viewer` : les cartes qu'il n'a jamais eues y gardent leur verso scellé. */
+export async function tradesOf(viewer: Viewer): Promise<TradeView[]> {
+	const userId = viewer.id;
+	const [trades, totals, canRead] = await Promise.all([
 		prisma.cardTrade.findMany({
 			where: { OR: [{ fromId: userId }, { toId: userId }] },
 			orderBy: { id: 'desc' },
@@ -167,7 +170,8 @@ export async function tradesOf(userId: number): Promise<TradeView[]> {
 				items: { include: { card: { include: COPY_INCLUDE } } }
 			}
 		}),
-		setTotals()
+		setTotals(),
+		backReader(viewer)
 	]);
 	return trades.map((t) => {
 		const offered = t.items.filter((i) => i.offered);
@@ -184,8 +188,8 @@ export async function tradesOf(userId: number): Promise<TradeView[]> {
 			from: collectorView(t.from),
 			to: collectorView(t.to),
 			incoming: t.toId === userId,
-			offered: offered.map((i) => ownedView(i.card, totals)),
-			requested: requested.map((i) => ownedView(i.card, totals)),
+			offered: offered.map((i) => ownedForReader(ownedView(i.card, totals), canRead)),
+			requested: requested.map((i) => ownedForReader(ownedView(i.card, totals), canRead)),
 			stale
 		};
 	});

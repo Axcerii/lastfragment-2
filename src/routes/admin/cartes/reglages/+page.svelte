@@ -118,7 +118,7 @@
             <tbody>
                 {#each data.players as p (p.id)}
                     <tr>
-                        <td><a href="/cartes/joueurs/{p.id}">{p.login}</a></td>
+                        <td><a href="/admin/cartes/joueurs/{p.id}">{p.login}</a></td>
                         <td>{p.stock ?? "—"}</td>
                         <td>{p.opened}</td>
                         <td>{p.cards}</td>

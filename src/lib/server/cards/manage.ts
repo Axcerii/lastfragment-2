@@ -4,6 +4,7 @@
 
 import { Prisma } from '@prisma/client';
 import { isCardType, isTemplateStatus, type CardType, type TemplateStatus } from '$lib/cards/types';
+import { checkNumbering } from '$lib/cards/numbering';
 import { prisma } from '../prisma';
 import { UploadError } from '../uploads';
 import { sanitizeFace } from './face';
@@ -242,6 +243,36 @@ export async function saveSet(id: number | null, input: SetInput): Promise<numbe
 		return id;
 	}
 	return (await prisma.cardSet.create({ data: input })).id;
+}
+
+/**
+ * Renumérote les cartes d'une série d'un coup. `proposed` doit contenir chaque modèle de la série
+ * une fois (voir checkNumbering) ; renvoie le nombre de cartes dont le numéro a changé.
+ * Les numéros changés sont d'abord vidés puis réattribués, dans une transaction : échanger deux
+ * numéros ne bute pas sur l'unicité (série, n°), et une erreur ne laisse rien à moitié fait.
+ */
+export async function renumberSet(setId: number, proposed: unknown): Promise<number> {
+	const current = await prisma.cardTemplate.findMany({ where: { setId }, select: { id: true, number: true } });
+	const check = checkNumbering(current, proposed);
+	if (!check.ok) throw new CardError(check.error);
+	if (check.changes.length === 0) return 0;
+	const ids = check.changes.map((c) => c.id);
+	try {
+		await prisma.$transaction(async (tx) => {
+			await tx.cardTemplate.updateMany({ where: { id: { in: ids }, setId }, data: { number: null } });
+			for (const change of check.changes) {
+				if (change.number === null) continue;
+				const done = await tx.cardTemplate.updateMany({ where: { id: change.id, setId }, data: { number: change.number } });
+				if (done.count !== 1) throw new CardError('La série a changé entre-temps : recharge la page.');
+			}
+		});
+	} catch (e) {
+		if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+			throw new CardError('Un numéro est déjà pris : recharge la page.');
+		}
+		throw e;
+	}
+	return check.changes.length;
 }
 
 export async function deleteSet(id: number) {

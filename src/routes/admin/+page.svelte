@@ -50,18 +50,24 @@
         {:else}
             <div class="players">
                 {#each data.players as player (player.id)}
-                    <a class="player panel" href="/admin/fiches/{player.id}">
-                        <img src={portrait(player.character?.image)} alt="" />
-                        <span>
-                            <strong>{player.character?.name}</strong>
-                            <span class="muted">{player.login}</span>
-                            <span>{formatMoney(player.money, true)} po</span>
-                        </span>
-                    </a>
+                    <div class="player panel">
+                        <a class="sheet" href="/admin/fiches/{player.id}">
+                            <img src={portrait(player.character?.image)} alt="" />
+                            <span>
+                                <strong>{player.character?.name}</strong>
+                                <span class="muted">{player.login}</span>
+                                <span>{formatMoney(player.money, true)} po</span>
+                            </span>
+                        </a>
+                        <a class="player-cards" href="/admin/cartes/joueurs/{player.id}" title="Boosters et cartes de {player.character?.name}">Cartes</a>
+                    </div>
                 {/each}
             </div>
         {/if}
-        <a class="btn btn-accent" href="/admin/argent">Distribuer de l'argent</a>
+        <div class="links">
+            <a class="btn btn-accent" href="/admin/argent">Distribuer de l'argent</a>
+            <a class="btn" href="/admin/cartes/joueurs">Boosters et cartes par joueur</a>
+        </div>
     </section>
 
     <section class="panel">
@@ -145,9 +151,39 @@
     .player {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 0.5rem;
         padding: 0.6rem;
         transition: var(--transition);
+    }
+
+    .player .sheet {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--foreground);
+    }
+
+    .player-cards {
+        align-self: flex-start;
+        padding: 0.15rem 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--primary);
+        font-size: 0.75rem;
+        transition: var(--transition);
+    }
+
+    .player-cards:hover {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 15%, transparent);
+    }
+
+    .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
     }
 
     .player img {
@@ -159,7 +195,7 @@
         background-color: #101010;
     }
 
-    .player > span {
+    .player .sheet > span {
         display: flex;
         flex-direction: column;
         font-size: 0.9rem;

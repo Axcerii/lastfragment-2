@@ -6,7 +6,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = requireUser(locals);
-	const showcase = (await cardsVisibleTo(user)) ? ((await showcaseOf([user.id])).get(user.id) ?? []) : null;
+	const showcase = (await cardsVisibleTo(user)) ? ((await showcaseOf([user.id], user)).get(user.id) ?? []) : null;
 	return { sheet: await loadSheet(user.id), showcase };
 };
 

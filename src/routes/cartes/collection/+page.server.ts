@@ -6,7 +6,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
 	const user = requireUser(locals);
-	return { collection: await collectionOf(user.id), album: albumCookie(cookies) };
+	return { collection: await collectionOf(user.id, user), album: albumCookie(cookies) };
 };
 
 export const actions: Actions = {

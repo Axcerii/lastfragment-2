@@ -245,6 +245,8 @@ export interface CardLook {
 	maxPrints: number | null;
 	set: { code: string; color: string; logo: string | null; total: number } | null;
 	face: CardFace;
+	/** Verso scellé : celui qui regarde n'a jamais eu cette carte, ses secrets ne lui sont pas envoyés. */
+	sealed?: boolean;
 }
 
 export interface TemplateView {
@@ -258,6 +260,8 @@ export interface TemplateView {
 	number: number | null;
 	set: { id: number; name: string; code: string; color: string; logo: string | null; total: number } | null;
 	face: CardFace;
+	/** Verso vidé par le serveur (voir server/cards/secrets.ts). */
+	sealed?: boolean;
 }
 
 export interface CopyView {

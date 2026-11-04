@@ -703,7 +703,7 @@
         content: "";
         position: absolute;
         inset: -4px;
-        border-radius: 6%;
+        border-radius: 6% / 4.3%;
         background: conic-gradient(from var(--spin, 0deg), var(--rarity-5), var(--Pura), var(--rarity-3), var(--rarity-5));
         filter: blur(6px);
         opacity: 0.7;
@@ -728,12 +728,13 @@
         white-space: nowrap;
     }
 
-    /* Une pile de doublons : une carte fantôme décalée derrière. */
+    /* Une pile de doublons : une carte fantôme décalée derrière. Coins « 4,6 % / 3,29 % » : 4,6 % de la
+       largeur dans les deux sens, comme les cartes (un seul pourcentage donnerait des coins ovales). */
     .stacked {
         position: absolute;
         inset: 0;
         transform: translate(5px, 5px) rotate(2deg);
-        border-radius: 4.6%;
+        border-radius: 4.6% / 3.29%;
         background: var(--surface-raised);
         border: 1px solid var(--border);
     }
@@ -758,7 +759,7 @@
         align-items: center;
         justify-content: center;
         gap: 0.2rem;
-        border-radius: 4.6%;
+        border-radius: 4.6% / 3.29%;
         border: 1px dashed color-mix(in srgb, var(--r) 60%, transparent);
         background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0 8px, transparent 8px 16px), var(--surface);
         color: var(--muted);
