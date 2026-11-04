@@ -1,40 +1,26 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import { fade } from "svelte/transition";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
-    import { SECRET_PAGE, SECRET_UNLOCKED_KEY } from "$lib/flux/secret";
 
-    // Page secrète du don de flux : on n'y entre qu'en ayant suivi le chemin (voir secret.ts).
-    // Sans la marque laissée à la fin du chemin, elle se fait passer pour une page vide.
-    let unlocked = $state<boolean | null>(null);
-
-    onMount(() => {
-        try {
-            unlocked = localStorage.getItem(SECRET_UNLOCKED_KEY) === "1";
-        } catch {
-            unlocked = false;
-        }
-    });
+    // Page secrète du don de flux. Le serveur ne la sert qu'à qui a suivi le chemin jusqu'au bout
+    // (voir $lib/server/flux/secret) ; son texte vient de lui.
+    let { data } = $props();
 </script>
 
 <svelte:head>
-    <title>{unlocked ? SECRET_PAGE.title : "Don de flux"} : Last Fragment</title>
+    <title>{data.page.title} : Last Fragment</title>
 </svelte:head>
 
 <PatternBackground />
 
 <main>
-    {#if unlocked}
-        <div class="glow" aria-hidden="true"></div>
-        <article in:fade={{ duration: 1600 }}>
-            <h1>{SECRET_PAGE.title}</h1>
-            {#each SECRET_PAGE.paragraphs as paragraph, i (i)}
-                <p in:fade={{ duration: 1200, delay: 900 + i * 700 }}>{paragraph}</p>
-            {/each}
-        </article>
-    {:else if unlocked === false}
-        <p class="muted" in:fade>Il n'y a rien ici.</p>
-    {/if}
+    <div class="glow" aria-hidden="true"></div>
+    <article in:fade={{ duration: 1600 }}>
+        <h1>{data.page.title}</h1>
+        {#each data.page.paragraphs as paragraph, i (i)}
+            <p in:fade={{ duration: 1200, delay: 900 + i * 700 }}>{paragraph}</p>
+        {/each}
+    </article>
     <a class="btn btn-small" href="/flux">Revenir au don de flux</a>
 </main>
 

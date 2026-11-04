@@ -19,14 +19,15 @@
     } from "$lib/flux/discovery";
     import { isFluxResult, scoreAnswers } from "$lib/flux/quiz";
     import { raceById, type Race } from "$lib/flux/races";
-    import { SECRET_TITLES, SECRET_UNLOCKED_KEY, consumeFromHome } from "$lib/flux/secret";
+    import { SECRET_DOOR, SECRET_TITLES, consumeFromHome } from "$lib/flux/secret";
 
     // La progression reste dans le navigateur, lue au chargement.
     let progress = $state<DiscoveryProgress>({ constellation: false, found: {} });
     let ready = $state(false);
     // Arrivée par la page d'accueil : le secret s'éveille pour cette visite (voir secret.ts).
     let secret = $state(false);
-    // Secret : le titre de l'onglet change selon l'étape, et le temps d'un survol (porte, bonne réponse).
+    // Secret : le titre de l'onglet change selon l'étape, et le temps d'un survol (la bonne porte,
+    // la bonne réponse). Le chemin des réponses ne vaut que pour qui a pris la bonne porte.
     let hoverTitle = $state<string | undefined>(undefined);
     let tabTitle = $derived.by(() => {
         if (secret && hoverTitle) return hoverTitle;
@@ -178,14 +179,20 @@
     // Vrai quand on arrive au certificat en sortant du test (et non en rechargeant la page).
     let fromTest = $state(false);
 
-    // Le chemin secret a été suivi : la page secrète s'ouvre.
-    function toSecret() {
+    // Le chemin secret a été suivi : le serveur le vérifie et ouvre la page secrète. S'il refuse
+    // (ou ne répond pas), le test se termine normalement, sur le certificat.
+    async function toSecret(answers: number[]) {
         try {
-            localStorage.setItem(SECRET_UNLOCKED_KEY, "1");
+            const res = await fetch("/flux/essai", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ type: "secret", race: race?.id, answers }),
+            });
+            if (res.ok && (await res.json()).opened) return goto("/flux/secret");
         } catch {
-            // Sans stockage, la page secrète ne saura pas qu'on l'a méritée.
+            // Hors ligne : on finit le test.
         }
-        goto("/flux/secret");
+        finish(answers);
     }
 
     function finish(answers: number[]) {
@@ -254,14 +261,13 @@
             <Portals
                 onChoose={enter}
                 onApproach={(x, y) => (approach = { x, y })}
-                doorTitle={secret ? SECRET_TITLES.door : undefined}
-                onHover={(on) => (hoverTitle = on && secret ? SECRET_TITLES.door : undefined)}
+                onHover={(door) => (hoverTitle = secret && door?.id === SECRET_DOOR ? SECRET_TITLES.door : undefined)}
             />
             <button class="btn btn-small" onclick={() => goTo("map")}>Revenir à la carte</button>
         </div>
     {:else if ready && stage === "journey" && race}
         <div in:fade={{ duration: 800 }}>
-            <FluxJourney color={race.color} {secret} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
+            <FluxJourney color={race.color} secret={secret && race.id === SECRET_DOOR} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
         </div>
     {:else if ready && stage === "result" && progress.result}
         <div class="full">
@@ -270,12 +276,12 @@
     {:else if ready}
         <div class="stack">
             {#if stage === "constellation"}
-                <div class="layer" out:fade={{ duration: 900 }} title={secret ? SECRET_TITLES.constellation : undefined}>
+                <div class="layer" out:fade={{ duration: 900 }}>
                     <Constellation onComplete={travel} />
                 </div>
             {/if}
             {#if fullMap}
-                <div class="layer map-layer" class:shown={mapShown} title={secret ? SECRET_TITLES.map : undefined}>
+                <div class="layer map-layer" class:shown={mapShown}>
                     <WorldMap found={progress.found} onFound={found} bind:mapEl />
                 </div>
             {/if}

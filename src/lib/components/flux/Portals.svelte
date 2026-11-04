@@ -11,16 +11,13 @@
     let {
         onChoose,
         onApproach,
-        doorTitle,
         onHover,
     }: {
         onChoose: (race: Race) => void;
         /** On commence à avancer vers la porte, dont le centre est à (x, y) à l'écran. */
         onApproach?: (x: number, y: number) => void;
-        /** Bulle au survol des portes, et titre de l'onglet le temps du survol (le secret, voir secret.ts). */
-        doorTitle?: string;
-        /** Survol d'une porte commencé (true) ou fini (false). */
-        onHover?: (hovering: boolean) => void;
+        /** Porte survolée (ou null quand le survol finit) : le secret en a besoin, voir secret.ts. */
+        onHover?: (race: Race | null) => void;
     } = $props();
 
     // Durées de l'ouverture des battants, puis de l'avancée vers la porte (ms).
@@ -105,14 +102,13 @@
             <button
                 class="door"
                 aria-label="Portail : {race.motto}"
-                title={doorTitle}
                 aria-pressed={isSelected}
                 disabled={opening}
                 onclick={() => (selected = isSelected ? null : race)}
-                onpointerenter={() => onHover?.(true)}
-                onpointerleave={() => onHover?.(false)}
-                onfocus={() => onHover?.(true)}
-                onblur={() => onHover?.(false)}
+                onpointerenter={() => onHover?.(race)}
+                onpointerleave={() => onHover?.(null)}
+                onfocus={() => onHover?.(race)}
+                onblur={() => onHover?.(null)}
             >
                 <!-- Derrière les battants : la lumière de l'autre côté. -->
                 <span class="inside" aria-hidden="true"></span>

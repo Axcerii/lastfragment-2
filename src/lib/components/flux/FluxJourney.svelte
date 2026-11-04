@@ -20,11 +20,11 @@
         onTitle,
     }: {
         color: string;
-        /** Secret éveillé (arrivée par l'accueil) : bulles sur les bonnes réponses, voir secret.ts. */
+        /** Secret éveillé (arrivée par l'accueil, bonne porte) : voir secret.ts. */
         secret?: boolean;
         onFinish: (answers: number[]) => void;
-        /** Le chemin secret vient d'être suivi jusqu'au bout. */
-        onSecret?: () => void;
+        /** Le chemin secret vient d'être suivi jusqu'au bout (réponses données). */
+        onSecret?: (answers: number[]) => void;
         /** Titre de l'onglet le temps d'un survol (le secret), undefined pour le titre normal. */
         onTitle?: (title: string | undefined) => void;
     } = $props();
@@ -117,7 +117,7 @@
             else await wait(300);
             flash = true;
             await wait(800);
-            if (found) onSecret!();
+            if (found) onSecret!(answers);
             else onFinish(answers);
             return;
         }
@@ -598,7 +598,6 @@
                                     class:gone={chosen !== null && chosen !== k}
                                     style={chosen === k ? `--dx: ${pull.x}px; --dy: ${pull.y}px;` : ""}
                                     data-k={k}
-                                    title={secret ? secretTitle(answers, index, k) : undefined}
                                     disabled={phase !== "answers"}
                                     onclick={(e) => choose(k, e.currentTarget)}
                                     onpointerenter={(e) => hover(e.currentTarget)}

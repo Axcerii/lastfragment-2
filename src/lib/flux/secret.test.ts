@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTIONS } from './quiz-data';
-import { SECRET_PATH, onSecretPath, secretComplete, secretTitle } from './secret';
+import { RACES } from './races';
+import { SECRET_DOOR, SECRET_PATH, onSecretPath, secretComplete, secretTitle } from './secret';
 
 // Les bonnes réponses du chemin, en indices, question par question.
 const goodAnswers = () =>
@@ -19,7 +20,11 @@ describe('chemin secret', () => {
 		}
 	});
 
-	it('la bulle n’apparaît que sur la bonne réponse, chemin suivi jusque-là', () => {
+	it('la bonne porte existe', () => {
+		expect(RACES.map((r) => r.id)).toContain(SECRET_DOOR);
+	});
+
+	it('le titre n’apparaît que sur la bonne réponse, chemin suivi jusque-là', () => {
 		// Chemin d'exemple sur des questions consécutives depuis la première.
 		const good = goodAnswers();
 		const first = SECRET_PATH[0];

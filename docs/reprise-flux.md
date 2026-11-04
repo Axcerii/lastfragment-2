@@ -21,9 +21,15 @@ Toute la progression reste dans le navigateur (`localStorage`, clé `flux_decouv
 
 ## Le secret
 
-Pour qui arrive par le lien « Ton don de flux » de la **page d'accueil** (pas par la barre de navigation) : le lien pose une marque datée dans le `localStorage` (`flux_origine`), que `/flux` lit et efface à l'ouverture (valable 60 s). Pour cette visite, **le titre de l'onglet** change : « Relie-les… » sur la constellation, « Complète-les… » sur la carte, puis le temps d'un survol : « Prends cette porte… » sur une porte, « Par ici. », « Par là. »… sur la bonne réponse de chaque étape du chemin, tant que les étapes d'avant ont été suivies. Les mêmes phrases s'affichent aussi en bulle au survol (attribut `title`). La dernière bonne réponse fait plonger dans le noyau et ouvre **`/flux/secret`** (marque `flux_secret` ; sans elle, la page dit « Il n'y a rien ici »).
+Pour qui arrive par le lien « Ton don de flux » de la **page d'accueil** (pas par la barre de navigation) : le lien pose une marque datée dans le `localStorage` (`flux_origine`), que `/flux` lit et efface à l'ouverture (valable 60 s). Pour cette visite, **le titre de l'onglet** change : « Relie-les… » sur la constellation, « Complète-les… » sur la carte, puis le temps d'un survol : « Prends cette porte… » sur **la bonne porte** seulement (`SECRET_DOOR`), et, derrière elle, « Par ici. », « Par là. »… sur la bonne réponse de chacune des 25 questions, tant que les précédentes ont été suivies. Pas de bulle au survol.
 
-Tout se règle dans **`src/lib/flux/secret.ts`** : les phrases des bulles, le chemin (`SECRET_PATH` : numéro de question, texte exact de la bonne réponse, bulle), le texte de la page secrète. Une question absente du chemin laisse libre. Visible dans le code du navigateur, c'est accepté. `secret.test.ts` vérifie que chaque réponse du chemin existe bien dans `quiz-data.ts`.
+La dernière bonne réponse fait plonger dans le noyau : le navigateur envoie la porte et les réponses à `POST /flux/essai` (`type: 'secret'`), le serveur les vérifie et pose un **cookie signé** (`flux_secret`, HMAC de `JWT_SECRET`, `httpOnly`, un an). **`/flux/secret`** n'existe (404) que pour ce cookie : taper l'adresse, ou forger cookie ou `localStorage`, ne mène à rien. Si le serveur refuse, le test finit normalement sur le certificat.
+
+Où régler :
+- **`src/lib/flux/secret.ts`** : les titres, la bonne porte (`SECRET_DOOR`), le chemin (`SECRET_PATH` : numéro de question, texte exact de la bonne réponse, titre de l'onglet). Visible dans le code du navigateur : c'est accepté.
+- **`src/lib/server/flux/secret.ts`** : le texte de la page secrète (`SECRET_PAGE`), qui ne quitte le serveur que pour qui a suivi le chemin.
+
+`src/lib/flux/secret.test.ts` vérifie que chaque réponse du chemin existe dans `quiz-data.ts` ; `src/lib/server/flux/secret.test.ts`, que le serveur n'ouvre la page qu'au bout du chemin, derrière la bonne porte.
 
 ## Où est quoi
 
@@ -34,7 +40,8 @@ Tout se règle dans **`src/lib/flux/secret.ts`** : les phrases des bulles, le ch
 | `src/lib/flux/discovery.ts` | Données publiques : positions des dragons (constellation et carte), pays, énigmes florales, type de progression |
 | `src/lib/server/flux/discovery.ts` | Secrets : ordre des dragons, indices, noms acceptés et textes révélés des pays |
 | `src/lib/flux/races.ts` | Les trois races : couleurs, symboles, phrases, dragons favorisés |
-| `src/lib/flux/secret.ts` | Le secret : bulles, chemin de réponses, texte de la page secrète |
+| `src/lib/flux/secret.ts` | Le secret : titres de l'onglet, bonne porte, chemin de réponses |
+| `src/lib/server/flux/secret.ts` | Le secret côté serveur : vérification du chemin, cookie signé, texte de la page secrète |
 | `src/routes/flux/secret/+page.svelte` | La page secrète |
 | `src/lib/flux/maze.ts` | Générateur des traits néon « labyrinthe » des portails |
 | `src/lib/flux/quiz-data.ts` | **Données V1** : 25 questions (lettres par réponse), 45 flux (matrice dragon × dragon), citations |
@@ -63,7 +70,7 @@ Tests : `src/lib/flux/quiz.test.ts`, `src/lib/server/flux/discovery.test.ts`.
 - Les textes révélés quand on trouve une terre sont minimaux (« Irisia, la terre du sud. Elle tient son nom de l'iris. »).
 - Le nombre de sommets de Pestia (5), Chronos (6) et Aqua (7) a été déduit à l'œil pour les indices.
 - La force du bonus de race (×1,2) est un choix de Claude, à ajuster si besoin.
-- Le chemin secret (5 premières questions) et le texte de la page secrète sont des exemples provisoires de Claude ; les phrases des bulles ont été légèrement corrigées (« Prends cette porte et suis-moi », « ne te joue pas de moi »).
+- Le chemin secret (les 25 questions), la bonne porte (Éternelles) et le texte de la page secrète sont des exemples provisoires de Claude ; les phrases des bulles ont été légèrement corrigées (« Prends cette porte et suis-moi », « ne te joue pas de moi »).
 - Le défilement des stats du certificat dure 4 s au lieu des 8 s de la V1.
 
 ## Certificat (H2) : porté
