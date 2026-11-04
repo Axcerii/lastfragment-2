@@ -180,7 +180,7 @@
 
     .stage {
         position: relative;
-        width: min(100%, 46rem, calc((100svh - 9rem) * 1.1));
+        width: min(100%, 56rem, calc((100svh - 8rem) * 1.1));
     }
 
     .halo {

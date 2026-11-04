@@ -5,9 +5,12 @@
 
 	let { children, data } = $props();
 
-	// L'accueil occupe tout l'écran et sert lui-même de menu ; la table de jeu et sa vue OBS aussi.
+	// L'accueil occupe tout l'écran et sert lui-même de menu ; la table de jeu et sa vue OBS aussi,
+	// comme la découverte du don de flux.
 	let bare = $derived(
-		page.route.id === "/accueil" || (page.route.id ?? "").startsWith("/outils/table/[id]")
+		page.route.id === "/accueil" ||
+			page.route.id === "/flux" ||
+			(page.route.id ?? "").startsWith("/outils/table/[id]")
 	);
 </script>
 

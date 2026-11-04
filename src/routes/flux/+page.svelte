@@ -139,7 +139,6 @@
     const SUBTITLES: Record<string, string> = {
         constellation: "Les onze dragons attendent. Touche-les dans le bon ordre.",
         portals: "Trois portails. Un seul est le tien.",
-        journey: "Suis le fil. Réponds sans trop réfléchir.",
         result: "Ton don de flux.",
     };
 </script>
@@ -148,19 +147,26 @@
     <title>Don de flux : Last Fragment</title>
 </svelte:head>
 
-<main>
-    <header>
-        <h1>Don de flux</h1>
-        {#if ready}
-            {#key stage}
-                <p class="muted" in:fade={{ delay: 300 }}>
-                    {SUBTITLES[stage] ?? `Le monde s'ouvre à toi. ${knownCount} terres sur ${COUNTRIES.length} te sont connues.`}
-                </p>
-            {/key}
-        {/if}
-    </header>
+<main class:immersive={stage === "journey"}>
+    {#if stage !== "journey"}
+        <a class="home" href="/" transition:fade={{ duration: 300 }}>
+            <span class="logo" aria-hidden="true"></span>
+            <span>Last Fragment</span>
+        </a>
 
-    {#if stage === "portals" || stage === "journey" || stage === "result"}
+        <header transition:fade={{ duration: 300 }}>
+            <h1>Don de flux</h1>
+            {#if ready}
+                {#key stage}
+                    <p class="muted" in:fade={{ delay: 300 }}>
+                        {SUBTITLES[stage] ?? `Le monde s'ouvre à toi. ${knownCount} terres sur ${COUNTRIES.length} te sont connues.`}
+                    </p>
+                {/key}
+            {/if}
+        </header>
+    {/if}
+
+    {#if stage === "portals" || stage === "result"}
         <PatternBackground />
     {/if}
 
@@ -170,7 +176,7 @@
             <button class="btn btn-small" onclick={() => goTo("map")}>Revenir à la carte</button>
         </div>
     {:else if ready && stage === "journey" && race}
-        <div class="full" in:fade={{ duration: 800 }}>
+        <div in:fade={{ duration: 800 }}>
             <FluxJourney color={race.color} onFinish={finish} />
         </div>
     {:else if ready && stage === "result" && progress.result}
@@ -218,27 +224,73 @@
 {/each}
 
 <style>
+    /* Plein écran, sans le header du site : la découverte occupe toute la fenêtre. */
     main {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1.5rem;
-        width: min(100% - 2rem, 72rem);
-        margin: 2rem auto 4rem;
+        justify-content: center;
+        gap: 1.25rem;
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 100svh;
+        padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 2rem;
+    }
+
+    main.immersive {
+        padding: 0;
+    }
+
+    .home {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: var(--titleFont);
+        font-size: 0.95rem;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .home:hover,
+    .home:focus-visible {
+        color: var(--secondary);
+    }
+
+    .logo {
+        width: 1.6rem;
+        height: 1.6rem;
+        background-color: currentColor;
+        mask: url("/layout/Logo.svg") center / contain no-repeat;
     }
 
     header {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
-        min-height: 5rem;
+        gap: 0.35rem;
         text-align: center;
     }
 
     h1 {
-        font-size: 3rem;
+        font-size: clamp(2rem, 4vw, 2.6rem);
         color: var(--secondary);
+    }
+
+    @media (max-width: 700px) {
+        /* Le lien du site passe au-dessus du titre plutôt qu'à côté. */
+        main {
+            padding-top: 3.5rem;
+        }
+
+        .home span:not(.logo) {
+            display: none;
+        }
     }
 
     /* Les deux énigmes se superposent pendant le passage de l'une à l'autre. */
@@ -256,7 +308,10 @@
         align-items: start;
     }
 
+    /* La carte tient dans la hauteur de l'écran, titre et boutons compris. */
     .map-layer {
+        justify-self: center;
+        width: min(100%, calc((100svh - 14rem) * 16 / 9));
         opacity: 0;
         transition: opacity 1.2s ease;
         pointer-events: none;
