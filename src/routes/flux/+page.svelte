@@ -141,7 +141,8 @@
 
     function finish(answers: number[]) {
         fromTest = true;
-        progress.result = scoreAnswers(answers);
+        // Le peuple choisi rend certains dragons plus probables (aucun pour les humains).
+        progress.result = scoreAnswers(answers, Math.random, race?.favored);
         save();
         goTo("result");
     }

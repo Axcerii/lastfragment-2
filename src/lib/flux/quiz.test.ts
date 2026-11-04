@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STAT_KEYS, STATS, statPower, toScale, type StatBlock } from '$lib/game/stats';
 import { potential, revealFlux, scoreAnswers } from './quiz';
 import { FLUXES, QUESTIONS } from './quiz-data';
+import { RACES } from './races';
 
 // Indice de la réponse qui contient une lettre donnée, question par question.
 const answersWith = (letter: string) =>
@@ -54,5 +55,19 @@ describe('certificat de flux', () => {
 	it('pentagone : 60 partout vaut 100 sur chaque axe', () => {
 		const stats = Object.fromEntries(STAT_KEYS.map((k) => [k, 60 * STATS[k].scale])) as StatBlock;
 		expect(Object.values(potential(stats))).toEqual([100, 100, 100, 100, 100]);
+	});
+
+	it('la race rend ses dragons plus probables, les humains gardent les taux de la V1', () => {
+		// Hasard reproductible : mêmes réponses pour chaque race.
+		let seed = 42;
+		const random = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+		const sets = Array.from({ length: 1500 }, () => QUESTIONS.map((q) => Math.floor(random() * q.answers.length)));
+		const share = (favored: string[] | undefined, among: string[]) =>
+			sets.filter((a) => among.includes(scoreAnswers(a, random, favored).first)).length / sets.length;
+		for (const race of RACES.filter((r) => r.favored)) {
+			expect(share(race.favored, race.favored!)).toBeGreaterThan(share(undefined, race.favored!) + 0.1);
+		}
+		const human = RACES.find((r) => r.id === 'humain')!;
+		expect(human.favored).toBeUndefined();
 	});
 });

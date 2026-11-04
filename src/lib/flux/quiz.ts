@@ -19,6 +19,9 @@ const LETTER_DRAGON: Record<string, string> = {
 // Élémentaires ×2, Pestia ×1,8, rares ×1,6. Artrish, Yinva et les entités ne donnent pas de flux.
 const WEIGHTS: Record<string, number> = { A: 2, D: 2, E: 2, G: 2, I: 2, H: 1.8, C: 1.6, F: 1.6, J: 1.6 };
 
+// Dragons favorisés par la race (voir races.ts) : leur poids est multiplié d'autant.
+export const FAVORED_BONUS = 1.2;
+
 // Le second dragon ne compte que s'il est à 5 points ou moins du premier.
 const SECOND_GAP = 5;
 
@@ -26,8 +29,11 @@ export type FluxResult = { first: string; second: string; chaos?: boolean; stats
 
 const pick = <T>(list: T[], random: () => number) => list[Math.floor(random() * list.length)];
 
-/** Dragons de bénédiction pour les réponses données (indice de la réponse choisie, question par question). */
-export function scoreAnswers(answers: number[], random: () => number = Math.random): FluxResult {
+/**
+ * Dragons de bénédiction pour les réponses données (indice de la réponse choisie, question par
+ * question). `favored` : dragons que la race rend plus probables (leur poids × FAVORED_BONUS).
+ */
+export function scoreAnswers(answers: number[], random: () => number = Math.random, favored: readonly string[] = []): FluxResult {
 	const counts = countLetters(answers);
 
 	// Toujours la réponse la plus absurde : le Chaos répond.
@@ -35,7 +41,10 @@ export function scoreAnswers(answers: number[], random: () => number = Math.rand
 		return { first: 'Chaos', second: 'Chaos', chaos: true, stats: { ...CHAOS_STATS } };
 
 	const scores = Object.keys(WEIGHTS)
-		.map((letter) => ({ letter, score: Math.ceil((counts[letter] ?? 0) * WEIGHTS[letter]) }))
+		.map((letter) => {
+			const weight = WEIGHTS[letter] * (favored.includes(LETTER_DRAGON[letter]) ? FAVORED_BONUS : 1);
+			return { letter, score: Math.ceil((counts[letter] ?? 0) * weight) };
+		})
 		.sort((a, b) => b.score - a.score);
 
 	const top = scores[0].score;

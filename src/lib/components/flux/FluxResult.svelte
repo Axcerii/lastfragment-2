@@ -15,8 +15,9 @@
         type StatBlock,
     } from "$lib/game/stats";
 
-    // Fin du test, sur un seul écran : la citation du dragon naît devant soi et se dissipe,
-    // puis le certificat apparaît (flux, potentiel, stats qui défilent avant de se figer).
+    // Fin du test, sur un seul écran : la citation du dragon naît devant soi et se dissipe, puis
+    // le certificat apparaît. Les stats défilent puis se figent, le potentiel se déploie, et le
+    // flux ne se révèle qu'en dernier.
     let {
         result,
         race,
@@ -46,11 +47,14 @@
     // Certificat : les stats défilent au hasard (comme dans la V1), puis se figent sur les vraies.
     const ROLL_DELAY = 900;
     const ROLL_MS = 4000;
+    // Le flux se révèle une fois le pentagone déployé.
+    const REVEAL_DELAY = 1300;
 
     let phase = $state<"quote" | "leaving" | "sheet">("quote");
     let rolling = $state<StatBlock | null>(null);
     let shown = $derived(rolling ?? result.stats);
     let settled = $state(false);
+    let revealed = $state(false);
     // Le pentagone se déploie depuis son centre une fois les stats figées.
     let grow = $state(0);
 
@@ -72,6 +76,7 @@
             if (t < 1) frame = requestAnimationFrame(step);
         };
         frame = requestAnimationFrame(step);
+        later(REVEAL_DELAY, () => (revealed = true));
     }
 
     function showSheet() {
@@ -92,6 +97,7 @@
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
             phase = "sheet";
             settled = true;
+            revealed = true;
             grow = 1;
             return;
         }
@@ -136,7 +142,14 @@
         </div>
     {:else}
         <div class="sheet">
-            <div class="card" in:fly={{ y: 20, duration: 700 }}>
+            <div class="card" class:revealed in:fly={{ y: 20, duration: 700 }} aria-live="polite">
+                <!-- Tant que les stats défilent, le flux reste voilé (le contenu garde sa place). -->
+                {#if !revealed}
+                    <p class="veiled" out:fade={{ duration: 400 }}>
+                        <span class="orb" aria-hidden="true"></span>
+                        Ton flux s'éveille…
+                    </p>
+                {/if}
                 {#if flux.dragon !== "Chaos"}
                     <span class="emblem" style="--icon: url('/icones/dragons/{flux.dragon}.svg');" aria-hidden="true"></span>
                 {/if}
@@ -316,6 +329,9 @@
     .card {
         grid-area: card;
         position: relative;
+        transition:
+            border-color 1s ease,
+            box-shadow 1s ease;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -323,9 +339,111 @@
         gap: clamp(0.4rem, 1.2svh, 0.8rem);
         padding: clamp(1rem, 2.5svh, 1.6rem) 1.5rem;
         text-align: center;
-        border: 1px solid var(--d);
-        box-shadow: 0 0 30px color-mix(in srgb, var(--d) 25%, transparent);
+        /* Neutre tant que le flux est voilé : sa couleur arrive avec lui. */
+        border: 1px solid rgba(255, 255, 255, 0.12);
         overflow: hidden;
+    }
+
+    .card.revealed {
+        border-color: var(--d);
+        box-shadow: 0 0 30px color-mix(in srgb, var(--d) 25%, transparent);
+    }
+
+    /* Contenu du flux : invisible jusqu'à la révélation, puis il apparaît ligne à ligne. */
+    .card > :not(.veiled) {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .card.revealed > :not(.veiled) {
+        visibility: visible;
+        animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    }
+
+    .card.revealed h2 {
+        animation-delay: 0.1s;
+    }
+
+    .card.revealed .quote {
+        animation-delay: 0.25s;
+    }
+
+    .card.revealed .description,
+    .card.revealed .note,
+    .card.revealed .names {
+        animation-delay: 0.5s;
+    }
+
+    .card.revealed h2 {
+        animation-name: rise, glow;
+        animation-duration: 0.8s, 1.6s;
+    }
+
+    @keyframes rise {
+        from {
+            opacity: 0;
+            translate: 0 0.6rem;
+            filter: blur(6px);
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes glow {
+        0% {
+            text-shadow: 0 0 30px var(--d);
+        }
+        100% {
+            text-shadow: none;
+        }
+    }
+
+    .card.revealed > .emblem {
+        animation-name: emblem;
+    }
+
+    @keyframes emblem {
+        from {
+            opacity: 0;
+            scale: 0.6;
+        }
+        to {
+            opacity: 0.08;
+        }
+    }
+
+    .veiled {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        font-family: var(--titleFont);
+        font-size: 1.1rem;
+        font-style: italic;
+        color: var(--muted);
+    }
+
+    .orb {
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff 0%, var(--secondary) 35%, transparent 70%);
+        animation: breathe 1.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes breathe {
+        from {
+            scale: 0.7;
+            opacity: 0.5;
+        }
+        to {
+            scale: 1.15;
+            opacity: 1;
+        }
     }
 
     .emblem {
@@ -645,8 +763,18 @@
 
     @media (prefers-reduced-motion: reduce) {
         .quote-stage,
-        .burst {
+        .burst,
+        .orb,
+        .card.revealed > :not(.veiled) {
             animation: none;
+        }
+
+        .card.revealed > :not(.veiled) {
+            opacity: 1;
+        }
+
+        .card.revealed > .emblem {
+            opacity: 0.08;
         }
 
         .burst {

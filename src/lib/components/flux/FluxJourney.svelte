@@ -48,7 +48,22 @@
         absorb(): void;
         warp(ms: number, last: boolean): Promise<void>;
         progress(p: number): void;
+        /** Position du noyau à l'écran, en pixels. */
+        star(): { x: number; y: number };
+        /** Écran étroit : hauteur (px) de la bande réservée au noyau, sous la question. */
+        anchor(y: number): void;
     } | null = null;
+
+    // Écran étroit : les réponses occupent toute la largeur. Le noyau a sa bande à lui, entre la
+    // question et les réponses (BAND, part de la hauteur de l'écran), pour rester visible.
+    const BAND = 0.2;
+    $effect(() => {
+        // Lu avant tout : l'effet doit se relancer à chaque nouvelle question, scène prête ou non.
+        const qh = questionHeight;
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        // Même calcul que le haut de .orbit en CSS (écran étroit), plus la moitié de la bande.
+        scene3d?.anchor(rem * 3.6 + qh + 0.5 * BAND * innerHeight);
+    });
 
     const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? Math.min(ms, 150) : ms));
 
@@ -62,7 +77,9 @@
         if (phase !== "answers") return;
         answers.push(k);
         const r = el.getBoundingClientRect();
-        pull = { x: innerWidth / 2 - (r.left + r.width / 2), y: innerHeight / 2 - (r.top + r.height / 2) };
+        // La réponse est aspirée vers le noyau, où qu'il soit.
+        const target = scene3d?.star() ?? { x: innerWidth / 2, y: innerHeight / 2 };
+        pull = { x: target.x - (r.left + r.width / 2), y: target.y - (r.top + r.height / 2) };
         chosen = k;
         phase = "leaving";
         scene3d?.unfocus();
@@ -342,14 +359,26 @@
         const focusDir = new THREE.Vector2(0, 1);
         let focusTarget = 0;
         let flareTarget = 0;
-        // Un vol : de la distance actuelle à la suivante, en s'écartant de l'axe vers `angle`.
+        // Place du noyau à l'écran, d'une question à l'autre : jamais forcément au centre, mais
+        // toujours visible. `rest` donne un point dans [-1, 1]², ramené à chaque image dans la zone
+        // où le noyau tient entier (entre les colonnes de réponses sur grand écran).
+        const rest = (k: number) => ({ u: Math.sin(k * 2.4 + 0.5) * 0.9, v: Math.cos(k * 1.7) * 0.8 });
+        let from = rest(0);
+        let to = from;
+        // Un vol : de la distance actuelle à la suivante, en s'écartant vers `angle`.
         let warp: { start: number; ms: number; last: boolean; from: number; to: number; angle: number; done: () => void } | null = null;
         let flights = 0;
+        // Position à l'écran (coordonnées normalisées, -1 à 1) au moment du rendu.
+        const ndc = { x: 0, y: 0 };
+        // Écran étroit : hauteur visée dans la bande sous la question (px), suivie en douceur.
+        let anchorY = -1;
+        let anchorShown = -1;
         const pointer = new THREE.Vector2();
 
         scene3d = {
             focus(x, y) {
-                focusDir.set(x - width / 2, height / 2 - y).normalize();
+                const star = this.star();
+                focusDir.set(x - star.x, star.y - y).normalize();
                 focusTarget = 1;
             },
             unfocus() {
@@ -361,8 +390,18 @@
             warp(ms, last) {
                 // Angle d'or : chaque vol part d'un côté différent, sans motif visible.
                 const angle = flights++ * 2.39996 + Math.random() * 0.6;
-                const to = last ? 0.4 : distAt(charge);
-                return new Promise((done) => (warp = { start: performance.now(), ms, last, from: dist, to, angle, done }));
+                const target = last ? 0.4 : distAt(charge);
+                from = to;
+                // La plongée finale se fait au centre de l'écran.
+                to = last ? { u: 0, v: 0 } : rest(flights);
+                return new Promise((done) => (warp = { start: performance.now(), ms, last, from: dist, to: target, angle, done }));
+            },
+            star() {
+                return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height };
+            },
+            anchor(y) {
+                anchorY = y;
+                if (anchorShown < 0) anchorShown = y;
             },
             progress(p) {
                 charge = p;
@@ -408,11 +447,12 @@
             let s = 0;
             let swerve = 0;
             let angle = 0;
+            let e = 1;
 
             if (warp) {
                 const t = Math.min(1, (now - warp.start) / warp.ms);
                 // Un vol accélère puis ralentit à l'approche ; la dernière plongée ne ralentit pas.
-                const e = warp.last ? t * t * t : t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                e = warp.last ? t * t * t : t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
                 dist = warp.from + (warp.to - warp.from) * e;
                 s = warp.last ? Math.min(1, t * 1.4) : Math.pow(Math.sin(Math.PI * t), 2);
                 speed += (warp.last ? 200 : 70) * s;
@@ -438,8 +478,38 @@
             coreUniforms.uFlare.value = smooth(coreUniforms.uFlare.value, warp ? 1 : flareTarget, 6, dt);
             coreUniforms.uFocusAmt.value = smooth(coreUniforms.uFocusAmt.value, focusTarget, 8, dt);
             coreUniforms.uFocus.value.lerp(focusDir, 1 - Math.exp(-10 * dt)).normalize();
-            const off = dist * 0.3 * swerve;
-            core.position.set(Math.cos(angle) * off, Math.sin(angle) * off * 0.6, -dist);
+            // Ouverture du champ de vision, élargie pendant le vol.
+            const fov = FOV + s * (warp?.last ? 28 : 10);
+            if (Math.abs(camera.fov - fov) > 0.01) {
+                camera.fov = fov;
+                camera.updateProjectionMatrix();
+            }
+
+            // Où poser le noyau à l'écran : la zone sûre moins son rayon apparent.
+            const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+            const radiusY = (coreSize * 0.3) / (tanHalf * Math.max(dist, 0.01));
+            const radiusX = radiusY / camera.aspect;
+            const wide = width > 860;
+            const safeX = wide ? Math.min(0.34 * width, 440) / width : 0.6;
+            const safeY = 0.32;
+            const limX = Math.max(0, safeX - radiusX);
+            const limY = Math.max(0, safeY - radiusY);
+            let nx = (from.u + (to.u - from.u) * e) * limX;
+            let ny = (from.v + (to.v - from.v) * e) * limY;
+            if (!wide && anchorY > 0) {
+                // Écran étroit : le noyau reste dans sa bande, seul son côté change ; la plongée
+                // finale le ramène au centre.
+                anchorShown = smooth(anchorShown, anchorY, 4, dt);
+                ny = (1 - (2 * anchorShown) / height) * (warp?.last ? 1 - e : 1);
+            }
+            // En vol, la trajectoire s'écarte (pas en ligne droite), sans jamais quitter l'écran.
+            nx += Math.cos(angle) * 0.45 * swerve;
+            ny += Math.sin(angle) * 0.35 * swerve;
+            const edgeX = Math.max(0, 0.85 - radiusX);
+            const edgeY = Math.max(0, 0.8 - radiusY);
+            ndc.x = Math.max(-edgeX, Math.min(edgeX, nx));
+            ndc.y = Math.max(-edgeY, Math.min(edgeY, ny));
+            core.position.set(ndc.x * tanHalf * camera.aspect * dist, ndc.y * tanHalf * dist, -dist);
             core.scale.setScalar(coreSize * HALO);
             coreUniforms.uFar.value = Math.max(0, Math.min(1, (dist - NEAR_D) / (FAR_D - NEAR_D))) ** 0.6;
 
@@ -448,12 +518,7 @@
             camera.position.x = smooth(camera.position.x, pointer.x * 0.8 * sway, 2, dt);
             camera.position.y = smooth(camera.position.y, -pointer.y * 0.5 * sway, 2, dt);
             camera.lookAt(0, 0, -dist);
-            camera.rotation.z += s * (warp?.last ? 0.25 : 0.12) * Math.sign(Math.cos(angle) || 1);
-            const fov = FOV + s * (warp?.last ? 28 : 10);
-            if (Math.abs(camera.fov - fov) > 0.01) {
-                camera.fov = fov;
-                camera.updateProjectionMatrix();
-            }
+            camera.rotation.z += s * (warp?.last ? 0.25 : 0.08) * Math.sign(Math.cos(angle) || 1);
 
             renderer.render(scene, camera);
         }
@@ -837,9 +902,10 @@
             display: flex;
             flex-direction: column;
             align-items: stretch;
-            justify-content: safe center;
+            justify-content: flex-start;
             gap: 0.7rem;
-            padding: 0.5rem 1rem 1.5rem;
+            /* La bande du haut est celle du noyau (BAND dans le script). */
+            padding: calc(20svh + 0.5rem) 1rem 1.5rem;
             overflow-y: auto;
         }
 

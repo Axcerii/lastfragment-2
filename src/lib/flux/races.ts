@@ -16,6 +16,8 @@ export type Race = {
 	reveal: string;
 	/** Mot ajouté au résultat (les géants n'ont pas de flux) */
 	resultNote?: string;
+	/** Dragons plus probables au test pour ce peuple (poids × FAVORED_BONUS, dans quiz.ts) */
+	favored?: string[];
 };
 
 // À CONFIRMER : phrases provisoires.
@@ -35,6 +37,7 @@ export const RACES: Race[] = [
 		symbols: ['/icones/pays/Saxifra.svg', '/icones/pays/Irisia.svg'],
 		motto: 'Les peuples du Nord, dont la peau encaisse ce que le flux ne leur donne pas.',
 		reveal: 'Tu es né géant. Le flux ne coule pas en toi… mais il sait qui tu aurais pu être.',
+		favored: ['Pura', 'Drii', 'Aqua', 'Lada', 'Goliath'],
 		resultNote: "Les géants ne canalisent pas le flux : voici celui qui t'aurait été destiné."
 	},
 	{
@@ -43,7 +46,8 @@ export const RACES: Race[] = [
 		color: '#5fe0a0',
 		symbols: ['/icones/pays/Edenia.svg', '/icones/pays/Mudan.svg'],
 		motto: 'Ceux que le temps oublie, et qui ne vieillissent qu’à peine.',
-		reveal: 'Tu es né éternel. Tu auras tout le temps d’apprendre à maîtriser ton flux.'
+		reveal: 'Tu es né éternel. Tu auras tout le temps d’apprendre à maîtriser ton flux.',
+		favored: ['Guizamark', 'Shizari', 'Chronos', 'Pestia']
 	}
 ];
 
