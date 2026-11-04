@@ -38,13 +38,17 @@
 
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+    // La lumière de la porte ouverte, qui grandit jusqu'à couvrir l'écran : un élément à part,
+    // posé sur la porte puis agrandi. Le décor, lui, grandit peu et s'efface : l'agrandir autant
+    // forçait le navigateur à redessiner labyrinthes, ombres et flous à neuf fois leur taille.
+    let light = $state<{ left: number; top: number; width: number; height: number } | null>(null);
+
     async function cross() {
         const race = selected;
         if (!race || opening) return;
         opening = true;
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return onChoose(race);
         await wait(OPEN_MS);
-        // On avance vers la porte : tout le décor grandit autour d'elle, pas la porte seule.
         const door = section?.querySelector(".portal.selected .door")?.getBoundingClientRect();
         const box = section?.getBoundingClientRect();
         if (door && box) {
@@ -52,6 +56,11 @@
             const y = door.top + door.height / 2;
             origin = `${x - box.left}px ${y - box.top}px`;
             onApproach?.(x, y);
+            light = { left: door.left, top: door.top, width: door.width, height: door.height };
+            // Agrandie autour de son centre jusqu'à déborder de l'écran de tous côtés.
+            const k = 1.15 * Math.max((2 * Math.max(x, innerWidth - x)) / door.width, (2 * Math.max(y, innerHeight - y)) / door.height);
+            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+            light = { left: x - (door.width * k) / 2, top: y - (door.height * k) / 2, width: door.width * k, height: door.height * k };
         }
         entering = true;
         await wait(ENTER_MS);
@@ -169,6 +178,14 @@
     <p class="hint muted" class:hidden={selected}>Choisis le portail de ton peuple.</p>
 </section>
 
+{#if light && selected}
+    <div
+        class="light"
+        style="--c: {selected.color}; left: {light.left}px; top: {light.top}px; width: {light.width}px; height: {light.height}px;"
+        aria-hidden="true"
+    ></div>
+{/if}
+
 <svelte:window onkeydown={(e) => e.key === "Escape" && !opening && (selected = null)} />
 
 <!-- La phrase du portail, par-dessus les portes. -->
@@ -254,17 +271,36 @@
         width: var(--door-w);
     }
 
-    /* On entre : on avance vers la porte. Tout le décor grandit autour d'elle, les autres
-       portes filent hors de l'écran. Une seule couche, agrandie telle quelle. */
+    /* On entre : on avance vers la porte. Le décor grandit un peu autour d'elle et s'efface
+       derrière sa lumière (.light), qui couvre l'écran. */
     .portals.entering {
-        transform: scale(9);
+        transform: scale(2.2);
         transform-origin: var(--origin);
-        transition: transform 0.85s cubic-bezier(0.6, 0, 0.9, 0.5);
+        opacity: 0;
+        transition:
+            transform 0.85s cubic-bezier(0.6, 0, 0.9, 0.5),
+            opacity 0.5s ease 0.3s;
     }
 
-    /* Prête à grandir dès l'ouverture : ni ombres ni filtres recalculés à 9 fois la taille. */
-    .portals:has(.portal.open) {
-        will-change: transform;
+    /* Une seule couche, prête dès le choix d'une porte : rien n'est redessiné quand elle grandit. */
+    .portals:has(.portal.selected) {
+        will-change: transform, opacity;
+    }
+
+    /* Pendant que la porte s'ouvre, tout ce qui coûte cher à agrandir s'arrête ou s'en va :
+       les autres portes et la lueur s'effacent, les courants se figent, plus d'ombre portée. */
+    .portals:has(.portal.open) :is(.pulse, .swirl) {
+        animation-play-state: paused;
+    }
+
+    .portals:has(.portal.open) :is(.maze, .bridge) {
+        filter: none;
+    }
+
+    .portals:has(.portal.open) :is(.portal.dimmed, .bridge) {
+        opacity: 0;
+        filter: none;
+        transition: opacity 0.6s ease;
     }
 
     .portal.open .motto {
@@ -272,8 +308,21 @@
         transition: opacity 0.3s ease;
     }
 
-    .portal.entering .leaf {
-        display: none;
+    /* La lumière de l'autre côté : posée sur la porte ouverte, elle grandit jusqu'à déborder de
+       l'écran, son cadre passant de part et d'autre comme si l'on franchissait le seuil. */
+    .light {
+        position: fixed;
+        z-index: 30;
+        box-sizing: border-box;
+        border: 2px solid var(--c);
+        border-radius: 50% 50% 2% 2% / 31.6% 31.6% 1.3% 1.3%;
+        background: radial-gradient(ellipse at 50% 55%, #fff 0%, color-mix(in srgb, var(--c) 80%, #fff) 22%, var(--c) 45%, #050507 100%);
+        pointer-events: none;
+        transition:
+            left 0.85s cubic-bezier(0.6, 0, 0.9, 0.5),
+            top 0.85s cubic-bezier(0.6, 0, 0.9, 0.5),
+            width 0.85s cubic-bezier(0.6, 0, 0.9, 0.5),
+            height 0.85s cubic-bezier(0.6, 0, 0.9, 0.5);
     }
 
     .maze {

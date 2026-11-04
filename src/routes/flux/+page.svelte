@@ -406,8 +406,13 @@
         transition: opacity 0.4s ease;
     }
 
+    /* Couche à part dès les portails : rien à redessiner quand le fond grandit. */
+    main:has(:global(.portals)) :global(.pattern) {
+        will-change: transform;
+    }
+
     .approaching :global(.pattern) {
-        transform: scale(2.2);
+        transform: scale(1.4);
         transform-origin: var(--ox) var(--oy);
         transition: transform 0.85s cubic-bezier(0.6, 0, 0.9, 0.5);
     }

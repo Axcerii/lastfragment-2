@@ -4,14 +4,15 @@
     import { QUESTIONS } from "$lib/flux/quiz-data";
     import { secretComplete, secretTitle } from "$lib/flux/secret";
 
-    // Le test de flux, plein écran. Au loin brille le noyau du flux, petite étoile. Pour chaque
-    // question : la question apparaît seule au centre, puis monte, et les réponses flottent autour
-    // du noyau. Choisir une réponse la fait absorber, puis on vole vers lui, en courbe : à chaque
-    // réponse il est plus proche, plus grand. À la dernière, on entre dedans.
+    // Le test de flux, plein écran. Au loin brille le noyau du flux, étoile aux deux ailes de
+    // lumière. Pour chaque question : la question apparaît seule au centre, puis monte, et les
+    // réponses flottent autour du noyau. La réponse choisie rejoint le bout d'un chemin de lumière,
+    // qui s'allonge d'un pas vers l'étoile ; on avance le long du chemin. À la dernière réponse,
+    // le chemin atteint l'étoile, et on entre dedans.
     //
-    // La 3D se limite à deux choses peu coûteuses, animées dans les shaders : un champ d'étoiles
-    // (points + traînées) et le noyau (un plan). Chaque image ne change que quelques uniformes :
-    // pas de post-traitement, aucune géométrie recréée, aucun état Svelte touché pendant le rendu.
+    // La 3D reste peu coûteuse : un champ d'étoiles (points + traînées), le noyau (un plan), ses
+    // ailes (une texture dessinée une fois) et le chemin (un ruban, recalculé une fois par
+    // réponse). Pas de post-traitement, aucun état Svelte touché pendant le rendu.
     let {
         color,
         secret = false,
@@ -66,6 +67,8 @@
         progress(p: number): void;
         /** Position du noyau à l'écran, en pixels. */
         star(): { x: number; y: number };
+        /** Bout du chemin de lumière à l'écran, en pixels. */
+        head(): { x: number; y: number };
         /** Écran étroit : hauteur (px) de la bande réservée au noyau, sous la question. */
         anchor(y: number): void;
     } | null = null;
@@ -93,8 +96,8 @@
         if (phase !== "answers") return;
         answers.push(k);
         const r = el.getBoundingClientRect();
-        // La réponse est aspirée vers le noyau, où qu'il soit.
-        const target = scene3d?.star() ?? { x: innerWidth / 2, y: innerHeight / 2 };
+        // La réponse rejoint le bout du chemin, qui va s'allonger vers l'étoile.
+        const target = scene3d?.head() ?? { x: innerWidth / 2, y: innerHeight / 2 };
         pull = { x: target.x - (r.left + r.width / 2), y: target.y - (r.top + r.height / 2) };
         chosen = k;
         phase = "leaving";
@@ -112,8 +115,9 @@
         const found = secret && !!onSecret && secretComplete(answers);
         const last = found || index + 1 >= QUESTIONS.length;
         phase = last ? "ending" : "warp";
+        // Mouvement réduit : le chemin s'allonge quand même, sans vol (warp instantané).
         if (last) {
-            if (scene3d && !reduced) await scene3d.warp(WARP_MS * 1.4, true);
+            if (scene3d) await scene3d.warp(reduced ? 1 : WARP_MS * 1.6, true);
             else await wait(300);
             flash = true;
             await wait(800);
@@ -121,8 +125,8 @@
             else onFinish(answers);
             return;
         }
-        if (scene3d && !reduced) {
-            scene3d.warp(WARP_MS, false);
+        if (scene3d) {
+            scene3d.warp(reduced ? 1 : WARP_MS, false);
             await wait(WARP_MS * WARP_NEXT);
         } else await wait(250);
         chosen = null;
@@ -146,6 +150,105 @@
         if (phase !== "answers" || !(k >= 0 && k < question.answers.length)) return;
         const el = document.querySelector<HTMLElement>(`.journey [data-k="${k}"]`);
         if (el) choose(k, el);
+    }
+
+
+    // Une aile droite, plume par plume, en lumière blanche (la couleur vient du shader). L'épaule
+    // est à gauche (6 %, 60 % de la hauteur) ; le bras monte vers le poignet, d'où partent les
+    // grandes plumes ; les autres pendent le long du bras. Les plumes s'additionnent : l'aile est
+    // vive près du bras et s'efface vers ses pointes.
+    function drawWing() {
+        const S = 1024;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = S;
+        const g = canvas.getContext("2d")!;
+        g.globalCompositeOperation = "lighter";
+        g.lineCap = "round";
+        const shoulder = { x: 0.06 * S, y: 0.6 * S };
+        const elbow = { x: 0.34 * S, y: 0.2 * S };
+        const wrist = { x: 0.62 * S, y: 0.14 * S };
+        const bone = (t: number) => ({
+            x: (1 - t) * (1 - t) * shoulder.x + 2 * (1 - t) * t * elbow.x + t * t * wrist.x,
+            y: (1 - t) * (1 - t) * shoulder.y + 2 * (1 - t) * t * elbow.y + t * t * wrist.y,
+        });
+        const white = (a: number) => `rgba(255, 255, 255, ${a.toFixed(3)})`;
+
+        function feather(t: number, angle: number, len: number, alpha: number) {
+            const r = bone(t);
+            const dx = Math.cos(angle);
+            const dy = Math.sin(angle);
+            // Plume légèrement courbée vers l'arrière de l'aile.
+            const bend = len * 0.07;
+            const w = len * 0.12;
+            const mx = r.x + dx * len * 0.55 - dy * bend;
+            const my = r.y + dy * len * 0.55 + dx * bend;
+            const tx = r.x + dx * len;
+            const ty = r.y + dy * len;
+            const fill = g.createLinearGradient(r.x, r.y, tx, ty);
+            fill.addColorStop(0, white(alpha));
+            fill.addColorStop(0.6, white(alpha * 0.55));
+            fill.addColorStop(1, white(0));
+            g.beginPath();
+            g.moveTo(r.x - dy * w * 0.25, r.y + dx * w * 0.25);
+            g.quadraticCurveTo(mx - dy * w, my + dx * w, tx, ty);
+            g.quadraticCurveTo(mx + dy * w, my - dx * w, r.x + dy * w * 0.25, r.y - dx * w * 0.25);
+            g.closePath();
+            g.fillStyle = fill;
+            g.fill();
+            // Bord et tige, plus lumineux que la plume elle-même.
+            const edge = g.createLinearGradient(r.x, r.y, tx, ty);
+            edge.addColorStop(0, white(alpha * 1.6));
+            edge.addColorStop(1, white(0));
+            g.strokeStyle = edge;
+            g.lineWidth = 1.5;
+            g.stroke();
+            g.beginPath();
+            g.moveTo(r.x, r.y);
+            g.quadraticCurveTo(mx, my, r.x + dx * len * 0.92 - dy * bend * 0.4, r.y + dy * len * 0.92 + dx * bend * 0.4);
+            g.lineWidth = 2.2;
+            g.stroke();
+        }
+
+        // Grandes plumes, au poignet : elles s'ouvrent en éventail et forment la pointe, relevée.
+        for (let i = 0; i < 8; i++) {
+            const u = i / 7;
+            feather(0.84 + 0.16 * u, 0.5 - 1.05 * u, S * (0.36 - 0.12 * u * u), 0.2);
+        }
+        // Plumes du bras : elles pendent, de plus en plus inclinées vers le poignet.
+        for (let i = 0; i < 14; i++) {
+            const u = i / 13;
+            feather(0.06 + 0.8 * u, 1.45 - 0.85 * Math.pow(u, 1.2), S * (0.3 + 0.07 * u), 0.17);
+        }
+        // Couvertures : deux rangs plus courts, plus serrés, contre le bras.
+        for (let i = 0; i < 16; i++) {
+            const u = i / 15;
+            feather(0.04 + 0.92 * u, 1.3 - 0.95 * u, S * 0.16, 0.16);
+        }
+        for (let i = 0; i < 20; i++) {
+            const u = i / 19;
+            feather(0.02 + 0.96 * u, 1.15 - 0.9 * u, S * 0.075, 0.18);
+        }
+        // Le bras de l'aile, son bord d'attaque, d'un trait vif.
+        g.beginPath();
+        g.moveTo(shoulder.x, shoulder.y);
+        g.quadraticCurveTo(elbow.x, elbow.y, wrist.x, wrist.y);
+        g.strokeStyle = white(0.7);
+        g.lineWidth = 4;
+        g.shadowColor = white(1);
+        g.shadowBlur = 14;
+        g.stroke();
+        g.shadowBlur = 0;
+
+        // Halo : l'aile, floutée, ajoutée à elle-même.
+        const glow = document.createElement("canvas");
+        glow.width = glow.height = S;
+        const h = glow.getContext("2d")!;
+        h.filter = "blur(10px)";
+        h.drawImage(canvas, 0, 0);
+        h.filter = "none";
+        h.globalCompositeOperation = "lighter";
+        h.drawImage(canvas, 0, 0);
+        return glow;
     }
 
     onMount(() => {
@@ -359,6 +462,298 @@
         core.position.z = -dist;
         scene.add(core);
 
+        // ---- Ailes : deux ailes de lumière, comme un ange, déployées de part et d'autre du noyau.
+        // Les plumes sont dessinées une fois dans une texture (aile droite) ; l'aile gauche en est le
+        // miroir. Elles battent lentement, et se lèvent quand le noyau s'embrase.
+        const wingMap = new THREE.CanvasTexture(drawWing());
+        // Unités du noyau (p, comme dans son shader : le cœur fait environ 0,4, le plan ±HALO).
+        const WING = 2.7;
+        const SHOULDER = { x: 0.2, y: -0.04 };
+        const WING_UV = { x: 0.06, y: 0.4 };
+        const wx0 = SHOULDER.x - WING_UV.x * WING;
+        const wy0 = SHOULDER.y - WING_UV.y * WING;
+        const wingGeometry = new THREE.BufferGeometry();
+        const wingCorners = [
+            [wx0, wy0, 0, 0],
+            [wx0 + WING, wy0, 1, 0],
+            [wx0 + WING, wy0 + WING, 1, 1],
+            [wx0, wy0 + WING, 0, 1],
+        ];
+        const wingPos: number[] = [];
+        const wingUv: number[] = [];
+        const wingSide: number[] = [];
+        for (const side of [-1, 1])
+            for (const [x, y, u, v] of wingCorners) {
+                wingPos.push(x, y, 0);
+                wingUv.push(u, v);
+                wingSide.push(side);
+            }
+        wingGeometry.setAttribute("position", new THREE.Float32BufferAttribute(wingPos, 3));
+        wingGeometry.setAttribute("uv", new THREE.Float32BufferAttribute(wingUv, 2));
+        wingGeometry.setAttribute("aSide", new THREE.Float32BufferAttribute(wingSide, 1));
+        wingGeometry.setIndex([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7]);
+        const wingMaterial = new THREE.ShaderMaterial({
+            uniforms: { ...coreUniforms, uMap: { value: wingMap } },
+            vertexShader: /* glsl */ `
+                uniform float uTime, uFlare;
+                attribute float aSide;
+                varying vec2 vUv;
+                const vec2 SHOULDER = vec2(${SHOULDER.x.toFixed(3)}, ${SHOULDER.y.toFixed(3)});
+                void main() {
+                    vUv = uv;
+                    // Battement lent, autour de l'épaule ; l'embrasement lève les ailes.
+                    float a = 0.07 * sin(uTime * 1.1) + uFlare * 0.14;
+                    vec2 q = position.xy - SHOULDER;
+                    q = mat2(cos(a), sin(a), -sin(a), cos(a)) * q;
+                    vec2 p = SHOULDER + q;
+                    p.x *= aSide;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 0.0, 1.0);
+                }
+            `,
+            fragmentShader: /* glsl */ `
+                uniform sampler2D uMap;
+                uniform vec3 uColor;
+                uniform float uTime, uFade, uCharge, uFar, uFlare;
+                varying vec2 vUv;
+                void main() {
+                    float m = texture2D(uMap, vUv).a;
+                    // Une lueur parcourt les plumes, de l'épaule vers leur pointe.
+                    float d = length(vUv - vec2(${WING_UV.x.toFixed(2)}, ${WING_UV.y.toFixed(2)}));
+                    float sweep = 0.72 + 0.28 * sin(d * 9.0 - uTime * 1.6);
+                    float a = m * sweep * (0.5 + uCharge * 0.25 + uFar * 0.35 + uFlare * 0.45) * (1.0 - uFade);
+                    vec3 col = mix(uColor, vec3(1.0), 0.4 + m * 0.4);
+                    gl_FragColor = vec4(col * a, min(a, 1.0));
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+        });
+        const wings = new THREE.Mesh(wingGeometry, wingMaterial);
+        // Enfant du noyau : il en suit la place et la taille (le plan du noyau couvre ±HALO).
+        wings.scale.setScalar(1 / (2 * HALO));
+        wings.frustumCulled = false;
+        core.add(wings);
+
+        // ---- Chemin de lumière : un ruban qui passe par un point par réponse donnée. On avance
+        // dessus (la caméra se tient un peu au-dessus) ; il s'allonge vers l'étoile à chaque
+        // réponse, et l'atteint à la dernière.
+        // Hauteur de la caméra au-dessus du chemin, et avance minimale du bout du chemin sur elle.
+        const RIDE = 2.2;
+        const LEAD = 6;
+        const PER_SEGMENT = 20;
+        const MAX_NODES = QUESTIONS.length + 2;
+        const MAX_SAMPLES = (MAX_NODES - 1) * PER_SEGMENT + 1;
+        const nodes: THREE.Vector3[] = [new THREE.Vector3(0, 0, 2)];
+        // Points du ruban (pour suivre le chemin depuis le CPU) et longueur parcourue à chacun.
+        const sx = new Float32Array(MAX_SAMPLES);
+        const sy = new Float32Array(MAX_SAMPLES);
+        const sz = new Float32Array(MAX_SAMPLES);
+        const sl = new Float32Array(MAX_SAMPLES);
+        let samples = 0;
+        let nodeLength: number[] = [0];
+
+        const pathPositions = new Float32Array(MAX_SAMPLES * 6);
+        const pathNext = new Float32Array(MAX_SAMPLES * 6);
+        const pathSide = new Float32Array(MAX_SAMPLES * 2);
+        const pathLength = new Float32Array(MAX_SAMPLES * 2);
+        const pathIndex: number[] = [];
+        for (let i = 0; i < MAX_SAMPLES; i++) {
+            pathSide[i * 2] = -1;
+            pathSide[i * 2 + 1] = 1;
+            if (i < MAX_SAMPLES - 1) {
+                const v = i * 2;
+                pathIndex.push(v, v + 1, v + 2, v + 2, v + 1, v + 3);
+            }
+        }
+        const pathGeometry = new THREE.BufferGeometry();
+        const pathPositionAttr = new THREE.BufferAttribute(pathPositions, 3);
+        const pathNextAttr = new THREE.BufferAttribute(pathNext, 3);
+        const pathLengthAttr = new THREE.BufferAttribute(pathLength, 1);
+        pathGeometry.setAttribute("position", pathPositionAttr);
+        pathGeometry.setAttribute("aNext", pathNextAttr);
+        pathGeometry.setAttribute("aSide", new THREE.BufferAttribute(pathSide, 1));
+        pathGeometry.setAttribute("aS", pathLengthAttr);
+        pathGeometry.setIndex(pathIndex);
+        pathGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e4);
+
+        const pathUniforms = {
+            uTime: uniforms.uTime,
+            uColor: uniforms.uColor,
+            uHead: { value: 0 },
+            // Demi-taille de l'écran (px CSS) et focale (px par unité, à une unité de distance).
+            uRes: { value: new THREE.Vector2(1, 1) },
+            uFocal: { value: 1 },
+        };
+        const pathMaterial = new THREE.ShaderMaterial({
+            uniforms: pathUniforms,
+            vertexShader: /* glsl */ `
+                uniform vec2 uRes;
+                uniform float uFocal;
+                attribute vec3 aNext;
+                attribute float aSide, aS;
+                varying float vSide, vS, vDepth, vBehind;
+                // Un point derrière l'objectif est ramené juste devant : le ruban reste calculable.
+                vec4 clipOf(vec3 p) {
+                    vec4 mv = modelViewMatrix * vec4(p, 1.0);
+                    mv.z = min(mv.z, -0.06);
+                    return projectionMatrix * mv;
+                }
+                void main() {
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    vDepth = -mv.z;
+                    vBehind = step(-0.06, mv.z);
+                    vec4 a = clipOf(position);
+                    vec4 b = clipOf(aNext);
+                    // Largeur tenue à l'écran, en pixels : fine au loin, jamais énorme de près.
+                    vec2 dir = normalize((b.xy / b.w - a.xy / a.w) * uRes + vec2(1e-6, 0.0));
+                    float w = clamp(0.09 * uFocal / max(vDepth, 0.06), 2.0, 18.0);
+                    a.xy += vec2(-dir.y, dir.x) * aSide * w / uRes * a.w;
+                    gl_Position = a;
+                    vSide = aSide;
+                    vS = aS;
+                }
+            `,
+            fragmentShader: /* glsl */ `
+                uniform vec3 uColor;
+                uniform float uTime, uHead;
+                varying float vSide, vS, vDepth, vBehind;
+                void main() {
+                    float ahead = uHead - vS;
+                    if (ahead < 0.0) discard;
+                    float x = abs(vSide);
+                    float core = exp(-x * x * 16.0);
+                    float glow = exp(-x * 3.0) * 0.35;
+                    // Plus vif vers le bout, et parcouru de pulsations qui montent vers l'étoile.
+                    float tip = exp(-ahead * 0.9);
+                    float pulse = 0.65 + 0.35 * sin(vS * 1.4 - uTime * 4.0);
+                    float fog = (1.0 - smoothstep(25.0, 90.0, vDepth)) * (1.0 - vBehind);
+                    float a = (core * pulse + glow) * (0.75 + tip * 1.5) * fog;
+                    vec3 col = mix(uColor, vec3(1.0), core * 0.55 + tip * 0.3);
+                    gl_FragColor = vec4(col * a, min(a, 1.0));
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            // Le sens des triangles dépend du virage : le ruban se voit des deux côtés.
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+        });
+        const path = new THREE.Mesh(pathGeometry, pathMaterial);
+        path.frustumCulled = false;
+        scene.add(path);
+
+        // Une perle à chaque pas du chemin (une réponse donnée), et une étincelle à son bout.
+        const beadPositions = new Float32Array(MAX_NODES * 3);
+        const beadLength = new Float32Array(MAX_NODES);
+        const beadGeometry = new THREE.BufferGeometry();
+        const beadPositionAttr = new THREE.BufferAttribute(beadPositions, 3);
+        const beadLengthAttr = new THREE.BufferAttribute(beadLength, 1);
+        beadGeometry.setAttribute("position", beadPositionAttr);
+        beadGeometry.setAttribute("aS", beadLengthAttr);
+        beadGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e4);
+        beadGeometry.setDrawRange(0, 0);
+        const beadMaterial = new THREE.ShaderMaterial({
+            uniforms: { ...pathUniforms, uPixel: uniforms.uPixel, uSize: { value: 1 } },
+            vertexShader: /* glsl */ `
+                uniform float uHead, uPixel, uSize, uFocal;
+                attribute float aS;
+                varying float vOn;
+                void main() {
+                    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                    gl_Position = projectionMatrix * mv;
+                    // La perle éclot quand le bout du chemin la dépasse.
+                    vOn = smoothstep(-0.05, 0.8, uHead - aS) * step(mv.z, -0.1);
+                    gl_PointSize = clamp(uSize * 0.22 * uFocal / -mv.z, 3.0, 26.0) * uPixel * vOn;
+                }
+            `,
+            fragmentShader: /* glsl */ `
+                uniform vec3 uColor;
+                uniform float uTime;
+                varying float vOn;
+                void main() {
+                    float d = length(gl_PointCoord - 0.5) * 2.0;
+                    float a = (exp(-d * d * 6.0) + exp(-d * 2.5) * 0.4) * (1.0 - smoothstep(0.7, 1.0, d)) * vOn;
+                    gl_FragColor = vec4(mix(uColor, vec3(1.0), 0.6) * a, min(a, 1.0));
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+        });
+        const beads = new THREE.Points(beadGeometry, beadMaterial);
+        beads.frustumCulled = false;
+        // L'étincelle : une perle plus grosse, toujours allumée, posée au bout du chemin.
+        const sparkGeometry = new THREE.BufferGeometry();
+        sparkGeometry.setAttribute("position", new THREE.Float32BufferAttribute([0, 0, 0], 3));
+        sparkGeometry.setAttribute("aS", new THREE.Float32BufferAttribute([-10], 1));
+        const sparkMaterial = beadMaterial.clone();
+        sparkMaterial.uniforms = { ...beadMaterial.uniforms, uSize: { value: 2.2 } };
+        const spark = new THREE.Points(sparkGeometry, sparkMaterial);
+        spark.frustumCulled = false;
+        scene.add(beads, spark);
+
+        // Recalcule le ruban quand un point s'ajoute : une fois par réponse.
+        function rebuild() {
+            if (nodes.length < 2) return;
+            const curve = new THREE.CatmullRomCurve3(nodes, false, "centripetal");
+            samples = (nodes.length - 1) * PER_SEGMENT + 1;
+            const points = curve.getPoints(samples - 1);
+            let length = 0;
+            for (let i = 0; i < samples; i++) {
+                const p = points[i];
+                if (i > 0) length += p.distanceTo(points[i - 1]);
+                sx[i] = p.x;
+                sy[i] = p.y;
+                sz[i] = p.z;
+                sl[i] = length;
+                const n = i < samples - 1 ? points[i + 1] : p.clone().multiplyScalar(2).sub(points[i - 1]);
+                for (let j = 0; j < 2; j++) {
+                    const v = i * 2 + j;
+                    pathPositions.set([p.x, p.y, p.z], v * 3);
+                    pathNext.set([n.x, n.y, n.z], v * 3);
+                    pathLength[v] = length;
+                }
+            }
+            pathPositionAttr.needsUpdate = pathNextAttr.needsUpdate = pathLengthAttr.needsUpdate = true;
+            pathGeometry.setDrawRange(0, (samples - 1) * 6);
+            nodeLength = nodes.map((_, k) => sl[k * PER_SEGMENT]);
+            // Une perle par réponse : les deux premiers points sont le départ du chemin.
+            const count = Math.max(0, nodes.length - 2);
+            for (let k = 0; k < count; k++) {
+                beadPositions.set([nodes[k + 2].x, nodes[k + 2].y, nodes[k + 2].z], k * 3);
+                beadLength[k] = nodeLength[k + 2];
+            }
+            beadPositionAttr.needsUpdate = beadLengthAttr.needsUpdate = true;
+            beadGeometry.setDrawRange(0, count);
+        }
+
+        // Point du chemin à la profondeur z (le chemin ne revient jamais en arrière).
+        const along = new THREE.Vector3();
+        function pathAt(z: number) {
+            if (samples === 0 || z >= sz[0]) return along.set(sx[0] ?? 0, sy[0] ?? 0, z);
+            let lo = 0;
+            let hi = samples - 1;
+            if (z <= sz[hi]) return along.set(sx[hi], sy[hi], z);
+            while (hi - lo > 1) {
+                const mid = (lo + hi) >> 1;
+                if (sz[mid] > z) lo = mid;
+                else hi = mid;
+            }
+            const t = (z - sz[lo]) / (sz[hi] - sz[lo] || 1);
+            return along.set(sx[lo] + (sx[hi] - sx[lo]) * t, sy[lo] + (sy[hi] - sy[lo]) * t, z);
+        }
+
+        // Point du chemin à la longueur s : le bout visible du chemin.
+        const headPoint = new THREE.Vector3();
+        function pointAt(s: number) {
+            let i = 1;
+            while (i < samples - 1 && sl[i] < s) i++;
+            const t = Math.max(0, Math.min(1, (s - sl[i - 1]) / (sl[i] - sl[i - 1] || 1)));
+            return headPoint.set(sx[i - 1] + (sx[i] - sx[i - 1]) * t, sy[i - 1] + (sy[i] - sy[i - 1]) * t, sz[i - 1] + (sz[i] - sz[i - 1]) * t);
+        }
+
         // ---- Taille : arrivé tout près (NEAR_D), le noyau occupe la même part de l'écran quel
         // que soit son format, entre les deux colonnes de réponses.
         let coreSize = 8;
@@ -383,20 +778,64 @@
         let focusTarget = 0;
         let flareTarget = 0;
         // Place du noyau à l'écran, d'une question à l'autre : jamais forcément au centre, mais
-        // toujours visible. `rest` donne un point dans [-1, 1]², ramené à chaque image dans la zone
-        // où le noyau tient entier (entre les colonnes de réponses sur grand écran).
+        // toujours visible. `rest` donne un point dans [-1, 1]², ramené dans la zone où le noyau
+        // tient entier (entre les colonnes de réponses sur grand écran).
         const rest = (k: number) => ({ u: Math.sin(k * 2.4 + 0.5) * 0.9, v: Math.cos(k * 1.7) * 0.8 });
         let from = rest(0);
         let to = from;
-        // Un vol : de la distance actuelle à la suivante, en s'écartant vers `angle`.
-        let warp: { start: number; ms: number; last: boolean; from: number; to: number; angle: number; done: () => void } | null = null;
+        // Un vol : de la distance actuelle à la suivante, pendant que le chemin s'allonge (de
+        // `grow0` à `grow1`). Le dernier plonge dans l'étoile, posée en `dive`.
+        let warp: { start: number; ms: number; last: boolean; from: number; to: number; z0: number; grow0: number; grow1: number; done: () => void } | null = null;
+        let dive: THREE.Vector3 | null = null;
         let flights = 0;
-        // Position à l'écran (coordonnées normalisées, -1 à 1) au moment du rendu.
+        // Position du noyau à l'écran (coordonnées normalisées, -1 à 1) au moment du rendu.
         const ndc = { x: 0, y: 0 };
         // Écran étroit : hauteur visée dans la bande sous la question (px), suivie en douceur.
         let anchorY = -1;
         let anchorShown = -1;
         const pointer = new THREE.Vector2();
+        // La caméra, posée sur le chemin (sans le balancement du pointeur).
+        const base = new THREE.Vector3(0, RIDE, 0);
+        let headLength = 0;
+
+        // Où poser le noyau à l'écran, pour une place (u, v) visée à la distance d.
+        function place(u: number, v: number, d: number, fov: number, anchor: number) {
+            const tanHalf = Math.tan(THREE.MathUtils.degToRad(fov / 2));
+            const radiusY = (coreSize * 0.3) / (tanHalf * Math.max(d, 0.01));
+            const radiusX = radiusY / camera.aspect;
+            const wide = width > 860;
+            const safeX = wide ? Math.min(0.34 * width, 440) / width : 0.6;
+            let x = u * Math.max(0, safeX - radiusX);
+            let y = v * Math.max(0, 0.32 - radiusY);
+            // Écran étroit : le noyau reste dans sa bande, seul son côté change.
+            if (!wide && anchor > 0) y = 1 - (2 * anchor) / height;
+            const edgeX = Math.max(0, 0.85 - radiusX);
+            const edgeY = Math.max(0, 0.8 - radiusY);
+            return { x: Math.max(-edgeX, Math.min(edgeX, x)), y: Math.max(-edgeY, Math.min(edgeY, y)), tanHalf };
+        }
+
+        // Le noyau en coordonnées du monde, vu d'une caméra posée en `cam`.
+        function starFrom(cam: THREE.Vector3, u: number, v: number, d: number, fov: number, anchor: number) {
+            const n = place(u, v, d, fov, anchor);
+            return new THREE.Vector3(cam.x + n.x * n.tanHalf * camera.aspect * d, cam.y + n.y * n.tanHalf * d, cam.z - d);
+        }
+
+        // Prochain pas du chemin : vers l'étoile telle qu'on la verra une fois arrivé, assez loin
+        // devant la caméra pour que le chemin déjà tracé reste visible, de plus en plus long.
+        function step(p: number, d: number, u: number, v: number) {
+            const camZ = -(FAR_D - d);
+            const cam = pathAt(camZ).clone();
+            cam.y += RIDE;
+            const star = starFrom(cam, u, v, d, FOV, anchorY);
+            const headZ = camZ - Math.max(LEAD, d * Math.pow(p, 0.9));
+            const last = nodes[nodes.length - 1];
+            const f = (last.z - headZ) / (last.z - star.z || 1);
+            nodes.push(last.clone().lerp(star, Math.max(0.05, Math.min(1, f))));
+            rebuild();
+        }
+
+        // Départ : un premier bout de chemin, tourné vers l'étoile.
+        step(0, FAR_D, from.u, from.v);
 
         scene3d = {
             focus(x, y) {
@@ -411,16 +850,27 @@
                 flareTarget = 1;
             },
             warp(ms, last) {
-                // Angle d'or : chaque vol part d'un côté différent, sans motif visible.
-                const angle = flights++ * 2.39996 + Math.random() * 0.6;
-                const target = last ? 0.4 : distAt(charge);
+                const grow0 = headLength;
                 from = to;
-                // La plongée finale se fait au centre de l'écran.
-                to = last ? { u: 0, v: 0 } : rest(flights);
-                return new Promise((done) => (warp = { start: performance.now(), ms, last, from: dist, to: target, angle, done }));
+                if (last) {
+                    // Le chemin rejoint l'étoile là où elle brille, puis on le suit jusqu'en elle.
+                    dive = core.position.clone();
+                    nodes.push(dive.clone());
+                    rebuild();
+                } else {
+                    to = rest(++flights);
+                    step(charge, distAt(charge), to.u, to.v);
+                }
+                const target = last ? 0.4 : distAt(charge);
+                const grow1 = nodeLength[nodeLength.length - 1];
+                return new Promise((done) => (warp = { start: performance.now(), ms, last, from: dist, to: target, z0: base.z, grow0, grow1, done }));
             },
             star() {
                 return { x: ((ndc.x + 1) / 2) * width, y: ((1 - ndc.y) / 2) * height };
+            },
+            head() {
+                const p = pointAt(headLength).clone().project(camera);
+                return { x: ((p.x + 1) / 2) * width, y: ((1 - p.y) / 2) * height };
             },
             anchor(y) {
                 anchorY = y;
@@ -439,6 +889,10 @@
         let last = performance.now();
         let slow = 0;
         let sampled = 0;
+        let swayX = 0;
+        let swayY = 0;
+        let bank = 0;
+        const look = new THREE.Vector3();
         const smooth = (from: number, to: number, rate: number, dt: number) => from + (to - from) * (1 - Math.exp(-rate * dt));
 
         function loop(now: number) {
@@ -468,35 +922,50 @@
             }
             let speed = reduced ? 0.4 : 1.6;
             let s = 0;
-            let swerve = 0;
-            let angle = 0;
             let e = 1;
+            const lastX = base.x;
 
             if (warp) {
                 const t = Math.min(1, (now - warp.start) / warp.ms);
                 // Un vol accélère puis ralentit à l'approche ; la dernière plongée ne ralentit pas.
                 e = warp.last ? t * t * t : t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-                dist = warp.from + (warp.to - warp.from) * e;
+                // Le chemin s'allonge d'abord, vite : la caméra ne le rattrape jamais.
+                const g = Math.min(1, t / (warp.last ? 0.7 : 0.55));
+                headLength = warp.grow0 + (warp.grow1 - warp.grow0) * (1 - Math.pow(1 - g, 3));
+                if (warp.last && dive) {
+                    base.z = warp.z0 + (dive.z + warp.to - warp.z0) * e;
+                    dist = base.z - dive.z;
+                } else {
+                    dist = warp.from + (warp.to - warp.from) * e;
+                    base.z = -(FAR_D - dist);
+                }
                 s = warp.last ? Math.min(1, t * 1.4) : Math.pow(Math.sin(Math.PI * t), 2);
                 speed += (warp.last ? 200 : 70) * s;
-                // Pas en ligne droite : la trajectoire s'écarte puis revient face au noyau.
-                swerve = warp.last ? 0 : Math.sin(Math.PI * t);
-                angle = warp.angle;
                 if (t >= 1) {
                     const done = warp.done;
                     warp = null;
                     flareTarget = 0;
+                    from = to;
                     done();
                 }
             } else {
-                // Sans vol (mouvement réduit) : le noyau se rapproche en douceur.
-                dist = smooth(dist, distAt(charge), 2, dt);
+                // Au repos (et au départ) : le chemin finit de pousser jusqu'à son dernier point.
+                headLength = smooth(headLength, nodeLength[nodeLength.length - 1], 2.5, dt);
+                if (!dive) base.z = -(FAR_D - dist);
             }
+            const diving = warp?.last ? e : dive ? 1 : 0;
+
+            // La caméra suit le chemin, un peu au-dessus ; elle s'y pose en plongeant dans l'étoile.
+            const on = pathAt(base.z);
+            base.x = on.x;
+            base.y = on.y + RIDE * (1 - diving);
 
             uniforms.uTravel.value += speed * dt;
             uniforms.uStretch.value = (warp?.last ? 18 : 10) * s;
             uniforms.uStreak.value = s;
             lines.visible = s > 0.01;
+            points.position.copy(base);
+            lines.position.copy(base);
 
             coreUniforms.uFlare.value = smooth(coreUniforms.uFlare.value, warp ? 1 : flareTarget, 6, dt);
             coreUniforms.uFocusAmt.value = smooth(coreUniforms.uFocusAmt.value, focusTarget, 8, dt);
@@ -508,40 +977,39 @@
                 camera.updateProjectionMatrix();
             }
 
-            // Où poser le noyau à l'écran : la zone sûre moins son rayon apparent.
-            const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-            const radiusY = (coreSize * 0.3) / (tanHalf * Math.max(dist, 0.01));
-            const radiusX = radiusY / camera.aspect;
-            const wide = width > 860;
-            const safeX = wide ? Math.min(0.34 * width, 440) / width : 0.6;
-            const safeY = 0.32;
-            const limX = Math.max(0, safeX - radiusX);
-            const limY = Math.max(0, safeY - radiusY);
-            let nx = (from.u + (to.u - from.u) * e) * limX;
-            let ny = (from.v + (to.v - from.v) * e) * limY;
-            if (!wide && anchorY > 0) {
-                // Écran étroit : le noyau reste dans sa bande, seul son côté change ; la plongée
-                // finale le ramène au centre.
-                anchorShown = smooth(anchorShown, anchorY, 4, dt);
-                ny = (1 - (2 * anchorShown) / height) * (warp?.last ? 1 - e : 1);
+            if (dive) {
+                core.position.copy(dive);
+                const p = dive.clone().sub(base);
+                const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+                ndc.x = p.x / (Math.max(dist, 0.01) * tanHalf * camera.aspect);
+                ndc.y = p.y / (Math.max(dist, 0.01) * tanHalf);
+            } else {
+                if (anchorY > 0) anchorShown = smooth(anchorShown, anchorY, 4, dt);
+                const n = place(from.u + (to.u - from.u) * e, from.v + (to.v - from.v) * e, dist, camera.fov, anchorShown);
+                ndc.x = n.x;
+                ndc.y = n.y;
+                core.position.set(base.x + n.x * n.tanHalf * camera.aspect * dist, base.y + n.y * n.tanHalf * dist, base.z - dist);
             }
-            // En vol, la trajectoire s'écarte (pas en ligne droite), sans jamais quitter l'écran.
-            nx += Math.cos(angle) * 0.45 * swerve;
-            ny += Math.sin(angle) * 0.35 * swerve;
-            const edgeX = Math.max(0, 0.85 - radiusX);
-            const edgeY = Math.max(0, 0.8 - radiusY);
-            ndc.x = Math.max(-edgeX, Math.min(edgeX, nx));
-            ndc.y = Math.max(-edgeY, Math.min(edgeY, ny));
-            core.position.set(ndc.x * tanHalf * camera.aspect * dist, ndc.y * tanHalf * dist, -dist);
             core.scale.setScalar(coreSize * HALO);
             coreUniforms.uFar.value = Math.max(0, Math.min(1, (dist - NEAR_D) / (FAR_D - NEAR_D))) ** 0.6;
 
-            // La caméra suit doucement le pointeur, s'élargit et tourne un peu pendant la plongée.
-            const sway = reduced ? 0 : 1;
-            camera.position.x = smooth(camera.position.x, pointer.x * 0.8 * sway, 2, dt);
-            camera.position.y = smooth(camera.position.y, -pointer.y * 0.5 * sway, 2, dt);
-            camera.lookAt(0, 0, -dist);
-            camera.rotation.z += s * (warp?.last ? 0.25 : 0.08) * Math.sign(Math.cos(angle) || 1);
+            // Le bout du chemin et son étincelle.
+            pathUniforms.uHead.value = headLength;
+            spark.position.copy(pointAt(headLength));
+            pathUniforms.uRes.value.set(width / 2, height / 2);
+            pathUniforms.uFocal.value = height / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+
+            // La caméra suit doucement le pointeur, s'incline dans les virages du chemin et tourne
+            // un peu pendant la plongée.
+            const sway = reduced ? 0 : 1 - diving;
+            swayX = smooth(swayX, pointer.x * 0.8 * sway, 2, dt);
+            swayY = smooth(swayY, -pointer.y * 0.5 * sway, 2, dt);
+            camera.position.set(base.x + swayX, base.y + swayY, base.z);
+            look.set(base.x, base.y, base.z - Math.max(dist, 1));
+            if (dive) look.lerp(dive, diving);
+            camera.lookAt(look);
+            bank = smooth(bank, Math.max(-0.2, Math.min(0.2, ((base.x - lastX) / Math.max(dt, 0.001)) * -0.02)), 3, dt);
+            camera.rotation.z += bank + s * (warp?.last ? 0.25 : 0.06) * Math.sign(bank || 1);
 
             renderer.render(scene, camera);
         }
@@ -551,7 +1019,11 @@
             cancelAnimationFrame(frame);
             observer.disconnect();
             window.removeEventListener("pointermove", onPointer);
-            for (const d of [pointsGeometry, linesGeometry, coreGeometry, pointsMaterial, linesMaterial, coreMaterial]) d.dispose();
+            for (const d of [
+                pointsGeometry, linesGeometry, coreGeometry, wingGeometry, pathGeometry, beadGeometry, sparkGeometry,
+                pointsMaterial, linesMaterial, coreMaterial, wingMaterial, pathMaterial, beadMaterial, sparkMaterial, wingMap,
+            ])
+                d.dispose();
             renderer.dispose();
             scene3d = null;
         };
