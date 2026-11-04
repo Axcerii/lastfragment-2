@@ -12,10 +12,12 @@
     // pas de post-traitement, aucune géométrie recréée, aucun état Svelte touché pendant le rendu.
     let { color, onFinish }: { color: string; onFinish: (answers: number[]) => void } = $props();
 
-    // Durées des étapes d'une question (ms).
-    const QUESTION_MS = 1300;
-    const ABSORB_MS = 650;
-    const WARP_MS = 1500;
+    // Durées des étapes d'une question (ms). La question suivante naît pendant que la plongée
+    // ralentit (WARP_NEXT) : les étapes se chevauchent pour garder le rythme sur 25 questions.
+    const QUESTION_MS = 650;
+    const ABSORB_MS = 380;
+    const WARP_MS = 1000;
+    const WARP_NEXT = 0.55;
 
     type Phase = "question" | "answers" | "leaving" | "warp" | "ending";
     let index = $state(0);
@@ -26,6 +28,9 @@
     // Hauteur de la question : les réponses commencent juste en dessous.
     let questionHeight = $state(0);
     let answers: number[] = [];
+    let answered = $state(0);
+    // Segment de la barre qui vient de s'allumer.
+    let lit = $state(-1);
 
     let question = $derived(QUESTIONS[index]);
     // Les réponses se partagent les deux côtés du noyau.
@@ -41,6 +46,7 @@
         unfocus(): void;
         absorb(): void;
         warp(ms: number, last: boolean): Promise<void>;
+        progress(p: number): void;
     } | null = null;
 
     const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? Math.min(ms, 150) : ms));
@@ -62,17 +68,25 @@
         scene3d?.absorb();
         await wait(ABSORB_MS);
 
+        // Le flux grandit : un segment de plus s'allume, le noyau et le ciel se densifient.
+        lit = answered;
+        answered++;
+        scene3d?.progress(answered / QUESTIONS.length);
+
         const last = index + 1 >= QUESTIONS.length;
         phase = last ? "ending" : "warp";
-        if (scene3d && !reduced) await scene3d.warp(last ? WARP_MS * 1.3 : WARP_MS, last);
-        else await wait(300);
-
         if (last) {
+            if (scene3d && !reduced) await scene3d.warp(WARP_MS * 1.4, true);
+            else await wait(300);
             flash = true;
-            await wait(900);
+            await wait(800);
             onFinish(answers);
             return;
         }
+        if (scene3d && !reduced) {
+            scene3d.warp(WARP_MS, false);
+            await wait(WARP_MS * WARP_NEXT);
+        } else await wait(250);
         chosen = null;
         index++;
         present();
@@ -129,6 +143,10 @@
             starData[i * 4 + 3] = Math.random();
         }
 
+        // Avancée dans le test, de 0 à 1 : plus d'étoiles, un noyau plus grand et plus vif.
+        let charge = 0;
+        let chargeShown = 0;
+
         const uniforms = {
             uTravel: { value: 0 },
             uTime: { value: 0 },
@@ -171,7 +189,7 @@
         pointsGeometry.setAttribute("aTail", new THREE.BufferAttribute(new Float32Array(STARS), 1));
         // Positions calculées dans le shader : la sphère englobante serait fausse.
         pointsGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e4);
-        pointsGeometry.setDrawRange(0, STARS);
+        pointsGeometry.setDrawRange(0, Math.round(STARS * 0.3));
         const pointsMaterial = starMaterial(/* glsl */ `
             uniform vec3 uColor;
             varying float vAlpha;
@@ -198,7 +216,7 @@
         const linesGeometry = new THREE.BufferGeometry();
         linesGeometry.setAttribute("aStar", new THREE.BufferAttribute(lineData, 4));
         linesGeometry.setAttribute("aTail", new THREE.BufferAttribute(tails, 1));
-        linesGeometry.setDrawRange(0, STARS * 2);
+        linesGeometry.setDrawRange(0, Math.round(STARS * 0.3) * 2);
         const linesMaterial = starMaterial(/* glsl */ `
             uniform vec3 uColor;
             uniform float uStreak;
@@ -222,6 +240,7 @@
             uFocus: { value: new THREE.Vector2(0, 1) },
             uFocusAmt: { value: 0 },
             uFade: { value: 0 },
+            uCharge: { value: 0 },
         };
         const coreMaterial = new THREE.ShaderMaterial({
             uniforms: coreUniforms,
@@ -233,7 +252,7 @@
                 }
             `,
             fragmentShader: /* glsl */ `
-                uniform float uTime, uFlare, uFocusAmt, uFade;
+                uniform float uTime, uFlare, uFocusAmt, uFade, uCharge;
                 uniform vec2 uFocus;
                 uniform vec3 uColor;
                 varying vec2 vUv;
@@ -262,11 +281,11 @@
                     float c = cos(r * 3.0 - t * 0.5), s = sin(r * 3.0 - t * 0.5);
                     vec2 q = mat2(c, -s, s, c) * p;
                     float wisps = pow(fbm(q * 3.0 - t * 0.2), 3.0) * 2.2 * smoothstep(1.0, 0.25, r);
-                    float heart = exp(-r * r * (22.0 - uFlare * 12.0)) * (0.7 + uFlare * 2.5);
+                    float heart = exp(-r * r * (22.0 - uFlare * 12.0)) * (0.55 + uCharge * 0.6 + uFlare * 2.5);
                     // Rayon vers la réponse survolée.
                     float da = 1.0 - dot(dir, uFocus);
                     float ray = exp(-da * 60.0) * smoothstep(1.0, 0.3, r) * smoothstep(0.12, 0.38, r) * uFocusAmt;
-                    float v = ring * (1.0 + uFlare * 1.5) + wisps * 0.45 + heart + ray * (0.7 + n);
+                    float v = ring * (0.8 + uCharge * 0.6 + uFlare * 1.5) + wisps * (0.3 + uCharge * 0.4) + heart + ray * (0.7 + n);
                     v *= smoothstep(1.0, 0.7, r) * (1.0 - uFade);
                     vec3 col = mix(uColor, vec3(1.0), clamp(heart * 0.5 + ring * 0.2, 0.0, 1.0));
                     gl_FragColor = vec4(col * v, min(v, 1.0));
@@ -320,6 +339,9 @@
             warp(ms, last) {
                 return new Promise((done) => (warp = { start: performance.now(), ms, last, done }));
             },
+            progress(p) {
+                charge = p;
+            },
         };
 
         const onPointer = (e: PointerEvent) => pointer.set(e.clientX / width - 0.5, e.clientY / height - 0.5);
@@ -350,6 +372,13 @@
             }
 
             uniforms.uTime.value = now / 1000;
+            if (Math.abs(chargeShown - charge) > 0.001) {
+                chargeShown = smooth(chargeShown, charge, 3, dt);
+                coreUniforms.uCharge.value = chargeShown;
+                const visible = Math.round(STARS * (0.3 + 0.7 * chargeShown));
+                pointsGeometry.setDrawRange(0, visible);
+                linesGeometry.setDrawRange(0, visible * 2);
+            }
             let speed = reduced ? 0.4 : 1.6;
             let s = 0;
             let scale = 1;
@@ -387,7 +416,7 @@
             coreUniforms.uFocusAmt.value = smooth(coreUniforms.uFocusAmt.value, focusTarget, 8, dt);
             coreUniforms.uFocus.value.lerp(focusDir, 1 - Math.exp(-10 * dt)).normalize();
             coreUniforms.uFade.value = fade;
-            core.scale.setScalar(coreSize * scale);
+            core.scale.setScalar(coreSize * scale * (0.78 + chargeShown * 0.32));
 
             // La caméra suit doucement le pointeur, s'élargit et tourne un peu pendant la plongée.
             const sway = reduced ? 0 : 1;
@@ -421,9 +450,14 @@
 <div class="journey" style="--c: {color};" data-phase={phase}>
     <canvas bind:this={canvas} aria-hidden="true"></canvas>
 
+    <!-- Avancée : un segment par question, allumé une fois la réponse donnée. -->
     <div class="hud" aria-hidden="true">
-        <span>{Math.min(index + 1, QUESTIONS.length)} / {QUESTIONS.length}</span>
-        <div class="bar"><div style="width: {(answers.length / QUESTIONS.length) * 100}%;"></div></div>
+        <ol class="track">
+            {#each QUESTIONS as _, i (i)}
+                <li class:done={i < answered} class:current={i === index && i >= answered} class:lit={i === lit}></li>
+            {/each}
+        </ol>
+        <span class="step"><b>{Math.min(index + 1, QUESTIONS.length)}</b> / {QUESTIONS.length}</span>
     </div>
 
     {#key index}
@@ -494,7 +528,7 @@
         position: absolute;
         top: 1.1rem;
         left: 50%;
-        width: min(60%, 26rem);
+        width: min(88%, 40rem);
         transform: translateX(-50%);
         display: flex;
         align-items: center;
@@ -505,17 +539,65 @@
         pointer-events: none;
     }
 
-    .bar {
+    .track {
         flex: 1;
-        height: 2px;
-        background: rgba(255, 255, 255, 0.12);
+        display: flex;
+        gap: 3px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
     }
 
-    .bar div {
-        height: 100%;
+    .track li {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.12);
+        transition:
+            background-color 0.4s ease,
+            box-shadow 0.4s ease;
+    }
+
+    .track li.done {
         background: var(--c);
-        box-shadow: 0 0 8px var(--c);
-        transition: width 0.8s ease;
+        box-shadow: 0 0 6px var(--c);
+    }
+
+    .track li.current {
+        background: color-mix(in srgb, var(--c) 45%, transparent);
+        animation: blink 1.2s ease-in-out infinite alternate;
+    }
+
+    /* Le segment qui vient de s'allumer jaillit un instant. */
+    .track li.lit {
+        animation: lit 0.7s ease-out;
+    }
+
+    .step {
+        min-width: 3.6rem;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .step b {
+        font-size: 1.15rem;
+        font-weight: normal;
+        color: var(--c);
+        text-shadow: 0 0 8px var(--c);
+    }
+
+    @keyframes blink {
+        to {
+            opacity: 0.45;
+        }
+    }
+
+    @keyframes lit {
+        0% {
+            background: #fff;
+            box-shadow: 0 0 14px 3px var(--c);
+            transform: scaleY(2.5);
+        }
     }
 
     /* La question naît seule au centre, puis monte laisser la place aux réponses. */
@@ -530,8 +612,8 @@
         gap: 0.6rem;
         text-align: center;
         transform: translate(-50%, calc(50svh - 50%));
-        transition: transform 1s cubic-bezier(0.65, 0, 0.35, 1);
-        animation: appear 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+        transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+        animation: appear 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
         pointer-events: none;
     }
 
@@ -545,9 +627,9 @@
         filter: blur(8px);
         transform: translate(-50%, 3.6rem) scale(1.15);
         transition:
-            opacity 0.5s ease,
-            filter 0.5s ease,
-            transform 0.5s ease;
+            opacity 0.3s ease,
+            filter 0.3s ease,
+            transform 0.3s ease;
     }
 
     .count {
@@ -630,7 +712,7 @@
         border-radius: 2px 14px 2px 14px;
         background: linear-gradient(135deg, rgba(14, 14, 20, 0.82), rgba(6, 6, 9, 0.7));
         rotate: var(--tilt);
-        animation: arrive 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i) * 110ms) backwards;
+        animation: arrive 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i) * 60ms) backwards;
         transition:
             border-color 0.25s ease,
             box-shadow 0.25s ease,
@@ -682,10 +764,10 @@
         filter: blur(4px);
         box-shadow: 0 0 30px var(--c);
         transition:
-            translate 0.65s cubic-bezier(0.55, 0, 0.9, 0.4),
-            scale 0.65s cubic-bezier(0.55, 0, 0.9, 0.4),
-            opacity 0.4s ease 0.3s,
-            filter 0.65s ease;
+            translate 0.4s cubic-bezier(0.55, 0, 0.9, 0.4),
+            scale 0.4s cubic-bezier(0.55, 0, 0.9, 0.4),
+            opacity 0.25s ease 0.18s,
+            filter 0.4s ease;
     }
 
     .fragment.gone {
@@ -693,9 +775,9 @@
         filter: blur(8px);
         translate: calc(var(--dir, -1) * 4rem) 0;
         transition:
-            opacity 0.45s ease,
-            filter 0.45s ease,
-            translate 0.6s ease-in;
+            opacity 0.3s ease,
+            filter 0.3s ease,
+            translate 0.4s ease-in;
     }
 
     .right .fragment {
@@ -755,7 +837,9 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .slot {
+        .slot,
+        .track li.current,
+        .track li.lit {
             animation: none;
         }
     }

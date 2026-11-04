@@ -8,9 +8,9 @@ Branche : `feat/flux-decouverte`. Pas encore fusionnée. Suite du travail (plein
 
 1. **Constellation** : toucher les 11 dragons dans l'ordre de la Genèse. Le serveur vérifie chaque clic ; après un premier échec, des indices apparaissent un à un.
 2. **Voyage** : à la réussite, les icônes des dragons volent jusqu'à leur symbole sur la carte du monde.
-3. **Carte** : Augeaime et Vulcain sont donnés ; il faut deviner Saxifra, Irisia, Mudan, Edenia, Amari, chacun d'après une fleur.
-4. **Portails** (une fois les 7 terres connues) : Humain, Géant, Éternelle. Un clic dévoile une phrase avec « Revenir en arrière » / « Franchir le portail ».
-5. **Test de flux en 3D**, plein écran : la question apparaît seule au centre puis monte ; les réponses flottent en arc de part et d'autre d'un noyau de flux (le noyau tend un rayon vers la réponse survolée). La réponse choisie est aspirée par le noyau, puis on plonge à travers lui (étoiles en traînées) jusqu'à la question suivante. Touches 1 à 6 pour répondre.
+3. **Carte**, plein écran (titre et boutons flottent par-dessus) : Augeaime et Vulcain sont donnés ; il faut deviner Saxifra, Irisia, Mudan, Edenia, Amari, chacun d'après une fleur. En paysage, la carte tient entière dans l'écran ; en portrait, elle garde de la hauteur et défile de côté, et la fiche d'un pays monte du bas de l'écran sur téléphone.
+4. **Portails** (une fois les 7 terres connues) : Humain, Géant, Éternelle, le symbole du peuple en filigrane sur toute la porte. Un clic ouvre, par-dessus les portes, une phrase avec « Revenir en arrière » / « Franchir le portail ». Franchir : les deux battants pivotent vers l'intérieur, la lumière se découvre, puis le portail grandit jusqu'à remplir l'écran.
+5. **Test de flux en 3D**, plein écran : la question apparaît seule au centre puis monte ; les réponses flottent en arc de part et d'autre d'un noyau de flux (le noyau tend un rayon vers la réponse survolée). La réponse choisie est aspirée par le noyau, puis on plonge à travers lui (étoiles en traînées) ; la question suivante naît pendant que la plongée ralentit (environ 1,8 s entre deux questions). Avancée : une barre de 25 segments (le dernier allumé jaillit), et le flux grandit à chaque réponse (plus d'étoiles, noyau plus grand et plus vif). Touches 1 à 6 pour répondre.
 6. **Résultat (certificat)** : citation du dragon, flux, description, prénoms possibles (et une note pour les géants), puis les 13 stats qui défilent 4 s avant de se figer, le pentagone de potentiel et la puissance totale.
 
 La page `/flux` est affichée sans le header du site (`src/routes/+layout.svelte`, comme l'accueil) ; un lien « Last Fragment » en haut à gauche ramène au site, sauf pendant le test.
@@ -38,7 +38,7 @@ Tests : `src/lib/flux/quiz.test.ts`, `src/lib/server/flux/discovery.test.ts`.
 ## Décisions du porteur du projet à respecter
 
 - **Carte** : Saxifra au nord, Irisia au sud, Mudan à l'est, Augeaime au centre, Vulcain au milieu de ces quatre (l'ovale), Edenia (= Paradis) au nord-ouest, Amari au sud-ouest. La bande au sud d'Augeaime est un territoire neutre de montagnes, sans dragon.
-- **Dragons sur la carte** : Artrish et Yinva hors des terres, Drii et Chronos à Augeaime (Chronos au sud-ouest), Lada et Pestia à Mudan, Goliath à Saxifra, Guizamark et Shizari à Edenia, Pura à Amari, Aqua dans l'océan entre Augeaime et Edenia.
+- **Dragons sur la carte** : Artrish et Yinva hors des terres, Drii et Chronos à Augeaime (Chronos au sud-ouest), Lada et Pestia à Mudan, Goliath à Saxifra (le point de Saxifra est sur la même terre que son symbole, au nord-ouest du continent central), Guizamark et Shizari à Edenia, Pura à Amari, Aqua dans l'océan entre Augeaime et Edenia.
 - **Énigmes** : chaque terre à deviner porte le nom d'une fleur (Iris, Amaryllis, Saxifrage, Oiseau de paradis, Pivoine = mǔdān). Le nom de la fleur comme celui de la terre sont acceptés, avec des variantes (Irys, Irysia…). Les indices sont pensés pour des gens qui **ne connaissent pas** le monde.
 - **Constellation** : chaque icône de dragon a autant de sommets que son rang dans la Genèse ; les indices poussent à compter.
 - **Vulcain** n'est pas une nation : pas de symbole, rempli du motif de fond des pages Personnages.

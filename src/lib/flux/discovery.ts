@@ -99,8 +99,9 @@ export const COUNTRIES: Country[] = [
 	{
 		id: 'saxifra',
 		name: 'Saxifra',
-		x: 77,
-		y: 35,
+		// Sur la même terre que le symbole de Goliath (le nord-ouest du continent central).
+		x: 59,
+		y: 36,
 		icon: 'Saxifra',
 		riddle: 'Ici, une petite fleur pousse dans les fissures des rochers. Son nom veut dire « qui brise la pierre ».'
 	},

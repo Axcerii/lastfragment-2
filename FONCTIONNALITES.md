@@ -307,7 +307,7 @@ Projet SvelteKit séparé (Svelte 5 + Tailwind 4, plus récent que ce dépôt) a
 
 **Décidé :** intégré sous `/flux`, réécrit en CSS scopé. Les réponses des énigmes sont vérifiées par le serveur (`/flux/essai`) ; toute la progression reste dans le navigateur (localStorage), rien en base. Données : `src/lib/flux/discovery.ts`, `src/lib/server/flux/discovery.ts`.
 
-Après la carte : trois portails (Humain, Géant, Éternelle) puis le test de flux de la V1 (H1, mêmes 25 questions et même calcul, `src/lib/flux/quiz.ts`) en plein écran : la question seule, puis les réponses qui flottent autour d'un noyau de flux (three.js), et une plongée à travers lui après chaque choix. Le certificat (H2) est complet : citation, flux, stats tirées (règles V1), pentagone de potentiel, puissance totale. Toute la page `/flux` est affichée sans le header du site.
+La carte occupe tout l'écran (défilable de côté en portrait). Après la carte : trois portails (Humain, Géant, Éternelle) dont la porte s'ouvre et s'agrandit quand on la franchit, puis le test de flux de la V1 (H1, mêmes 25 questions et même calcul, `src/lib/flux/quiz.ts`) en plein écran : la question seule, puis les réponses qui flottent autour d'un noyau de flux (three.js), et une plongée rapide à travers lui après chaque choix, avec une barre d'avancée en 25 segments et un flux qui grandit au fil des réponses. Le certificat (H2) est complet : citation, flux, stats tirées (règles V1), pentagone de potentiel, puissance totale. Toute la page `/flux` est affichée sans le header du site.
 
 - [x] K1 · [x] K2
 

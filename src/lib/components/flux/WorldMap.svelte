@@ -1,6 +1,6 @@
 <script lang="ts">
     import { tick } from "svelte";
-    import { fade, scale } from "svelte/transition";
+    import { fade, fly, scale } from "svelte/transition";
     import { MediaQuery } from "svelte/reactivity";
     import { COUNTRIES, MAP_SYMBOL_SIZE, NEUTRAL_MASK, type Country } from "$lib/flux/discovery";
 
@@ -16,7 +16,8 @@
         mapEl?: HTMLElement | null;
     } = $props();
 
-    // Sur téléphone, la carte défile de côté et la fiche du pays s'affiche dessous.
+    // La carte remplit l'écran. En portrait, elle garde la hauteur et défile de côté ; sur
+    // téléphone, la fiche du pays monte du bas de l'écran.
     const narrow = new MediaQuery("max-width: 760px");
 
     let selectedId = $state<string | null>(null);
@@ -31,9 +32,21 @@
     let selected = $derived(COUNTRIES.find((c) => c.id === selectedId) ?? null);
     const descriptionOf = (c: Country) => c.description ?? found[c.id] ?? null;
 
-    // Point de départ du défilement sur téléphone : le milieu de la carte.
+    // Quand la carte déborde (écran en portrait), on part de son milieu, recentré si l'écran tourne.
     $effect(() => {
-        if (narrow.current && scroller) scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+        if (!scroller) return;
+        const el = scroller;
+        let lastWidth = 0;
+        const center = () => {
+            if (el.scrollWidth === lastWidth) return;
+            lastWidth = el.scrollWidth;
+            el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+            el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+        };
+        center();
+        const observer = new ResizeObserver(center);
+        observer.observe(el);
+        return () => observer.disconnect();
     });
 
     async function select(country: Country) {
@@ -161,35 +174,47 @@
     </div>
 
     {#if selected && narrow.current}
-        <div class="panel-below" transition:fade={{ duration: 180 }}>
+        <div class="panel-below" transition:fly={{ y: 40, duration: 220 }}>
+            <button class="close" aria-label="Fermer" onclick={() => (selectedId = null)}>×</button>
             {@render sheet(selected)}
         </div>
     {/if}
 </div>
 
 <style>
+    /* Toute la place du parent (l'écran) : la carte y tient en entier, centrée. */
     .world {
-        width: 100%;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        position: absolute;
+        inset: 0;
     }
 
     .scroller {
         width: 100%;
-        overflow-x: auto;
-        border: 1px solid rgba(210, 182, 116, 0.25);
-        border-radius: var(--radius);
-        background: radial-gradient(ellipse at center, rgba(210, 182, 116, 0.08), rgba(0, 0, 0, 0.35) 75%);
+        height: 100%;
+        display: flex;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(210, 182, 116, 0.35) transparent;
+        background: radial-gradient(ellipse at center, rgba(210, 182, 116, 0.1), rgba(0, 0, 0, 0.45) 75%);
     }
 
     .map {
         position: relative;
-        width: 100%;
-        min-width: 720px;
+        flex-shrink: 0;
+        /* margin auto : centrée quand elle tient, défilable sans être rognée quand elle déborde. */
+        margin: auto;
+        width: min(100vw, 100svh * 16 / 9);
         aspect-ratio: 16 / 9;
         user-select: none;
+    }
+
+    /* Portrait : la carte garde de la hauteur et défile de côté (deux à trois écrans). */
+    @media (max-aspect-ratio: 1 / 1) {
+        .map {
+            width: auto;
+            height: min(100svh, 145vw);
+        }
     }
 
     .neutral {
@@ -320,6 +345,32 @@
         border-radius: var(--radius);
         background: rgba(15, 15, 15, 0.96);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Téléphone : la fiche monte du bas de l'écran, par-dessus la carte et ses boutons. */
+    .panel-below {
+        position: fixed;
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
+        z-index: 10;
+        max-height: 60svh;
+        overflow-y: auto;
+        padding-right: 2.75rem;
+    }
+
+    .close {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        font-size: 1.4rem;
+        line-height: 1;
+        color: var(--muted);
+        background: none;
+        border: none;
     }
 
     .popup {

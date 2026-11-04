@@ -35,6 +35,11 @@
     let mapShown = $state(false);
     let mapEl = $state<HTMLElement | null>(null);
 
+    // Carte et voyage : la carte occupe tout l'écran, titre et boutons flottent par-dessus.
+    let fullMap = $derived(stage === "travel" || stage === "map");
+    // Hauteur du titre, posé en haut de l'écran : le contenu des autres étapes commence dessous.
+    let headHeight = $state(0);
+
     let knownCount = $derived(COUNTRIES.filter((c) => c.description || progress.found[c.id]).length);
     let allKnown = $derived(knownCount === COUNTRIES.length);
 
@@ -124,7 +129,8 @@
         progress.race = chosen.id;
         save();
         veil = chosen.color;
-        await wait(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900);
+        // Le portail a déjà ouvert ses battants et grandi : le voile n'a plus qu'à couvrir l'écran.
+        await wait(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500);
         goTo("journey");
         await wait(300);
         veil = null;
@@ -147,14 +153,14 @@
     <title>Don de flux : Last Fragment</title>
 </svelte:head>
 
-<main class:immersive={stage === "journey"}>
+<main class:immersive={stage === "journey"} class:full-map={fullMap} style="--head: {headHeight}px;">
     {#if stage !== "journey"}
         <a class="home" href="/" transition:fade={{ duration: 300 }}>
             <span class="logo" aria-hidden="true"></span>
             <span>Last Fragment</span>
         </a>
 
-        <header transition:fade={{ duration: 300 }}>
+        <header transition:fade={{ duration: 300 }} bind:clientHeight={headHeight}>
             <h1>Don de flux</h1>
             {#if ready}
                 {#key stage}
@@ -190,7 +196,7 @@
                     <Constellation onComplete={travel} />
                 </div>
             {/if}
-            {#if stage === "travel" || stage === "map"}
+            {#if fullMap}
                 <div class="layer map-layer" class:shown={mapShown}>
                     <WorldMap found={progress.found} onFound={found} bind:mapEl />
                 </div>
@@ -198,7 +204,7 @@
         </div>
 
         {#if stage === "map"}
-            <footer in:fade={{ delay: 300 }}>
+            <footer class="map-footer" in:fade={{ delay: 300 }}>
                 {#if allKnown}
                     <p class="ending" in:fade>Toutes les terres te sont connues. Les portails t'attendent.</p>
                     <button class="btn portals-btn" in:fade onclick={() => goTo("portals")}>Franchir les portails</button>
@@ -235,7 +241,11 @@
         box-sizing: border-box;
         width: 100%;
         min-height: 100svh;
-        padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 2rem;
+        /* Le titre est posé en haut de l'écran : le contenu commence juste dessous. */
+        padding: calc(var(--head) + 1.5rem) clamp(1rem, 3vw, 2.5rem) 2rem;
+        /* Labyrinthes des portails et portail qu'on franchit (il grandit jusqu'à couvrir l'écran) :
+           rien ne déborde de la page ni ne la fait défiler. */
+        overflow: clip;
     }
 
     main.immersive {
@@ -270,6 +280,12 @@
     }
 
     header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 4;
+        padding: 1.1rem 4rem 1.5rem;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -282,14 +298,29 @@
         color: var(--secondary);
     }
 
-    @media (max-width: 700px) {
-        /* Le lien du site passe au-dessus du titre plutôt qu'à côté. */
-        main {
-            padding-top: 3.5rem;
-        }
+    /* Sur la carte, le titre flotte au-dessus, sur un fondu qui le garde lisible. */
+    .full-map header {
+        position: fixed;
+        pointer-events: none;
+        background: linear-gradient(to bottom, rgba(10, 10, 12, 0.88), rgba(10, 10, 12, 0.55) 60%, transparent);
+    }
 
+    .full-map header p {
+        text-shadow: 0 0 6px #000;
+    }
+
+    .full-map .home {
+        position: fixed;
+    }
+
+    @media (max-width: 700px) {
+        /* Téléphone : seul le logo du site reste, le titre a besoin de la largeur. */
         .home span:not(.logo) {
             display: none;
+        }
+
+        header {
+            padding: 1rem 3rem 1.25rem;
         }
     }
 
@@ -308,10 +339,11 @@
         align-items: start;
     }
 
-    /* La carte tient dans la hauteur de l'écran, titre et boutons compris. */
+    /* La carte occupe tout l'écran, sous le titre et les boutons. */
     .map-layer {
-        justify-self: center;
-        width: min(100%, calc((100svh - 14rem) * 16 / 9));
+        position: fixed;
+        inset: 0;
+        z-index: 1;
         opacity: 0;
         transition: opacity 1.2s ease;
         pointer-events: none;
@@ -322,12 +354,60 @@
         pointer-events: auto;
     }
 
+    /* Fiche d'un pays ouverte : la carte passe au-dessus du titre et des boutons. */
+    .map-layer:has(:global(.popup, .panel-below)) {
+        z-index: 5;
+    }
+
     footer {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 1rem;
         text-align: center;
+    }
+
+    .map-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 4;
+        gap: 0.75rem;
+        padding: 2.5rem 1rem max(1rem, env(safe-area-inset-bottom));
+        background: linear-gradient(to top, rgba(10, 10, 12, 0.85), transparent);
+        pointer-events: none;
+    }
+
+    .map-footer > * {
+        pointer-events: auto;
+    }
+
+    .map-footer .ending {
+        text-shadow: 0 0 8px #000;
+    }
+
+    /* Écran bas (téléphone couché) : titre et boutons réduits à une ligne chacun. */
+    @media (max-height: 560px) {
+        .full-map header {
+            padding: 0.6rem 4rem 1rem;
+        }
+
+        .full-map h1 {
+            font-size: 1.5rem;
+        }
+
+        .full-map header p,
+        .map-footer .ending {
+            display: none;
+        }
+
+        .map-footer {
+            flex-direction: row;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding-top: 1.5rem;
+        }
     }
 
     .ending {
