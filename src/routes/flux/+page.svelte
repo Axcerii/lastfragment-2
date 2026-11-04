@@ -31,6 +31,13 @@
 
     // Voile de couleur quand on franchit un portail.
     let veil = $state<string | null>(null);
+    // On avance vers la porte choisie : tout le décor grandit autour d'elle (point en px).
+    let approach = $state<{ x: number; y: number } | null>(null);
+
+    // Tout recommencer : un premier clic demande confirmation, le second efface la progression.
+    let confirmReset = $state(false);
+    let confirmTimer = 0;
+    let hasProgress = $derived(progress.constellation || Object.keys(progress.found).length > 0 || !!progress.result);
 
     // Voyage des dragons de la constellation vers leur symbole sur la carte.
     type Flyer = { name: DragonName; x: number; y: number; size: number; delay: number };
@@ -126,7 +133,25 @@
     function goTo(next: typeof stage) {
         stage = next;
         mapShown = next === "map";
+        approach = null;
         window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Efface toute la progression (constellation, carte, race, résultat) : on repart du début.
+    // Le secret reste éveillé si l'on est arrivé par l'accueil : c'est ce qui permet de le
+    // trouver après avoir déjà fini le test.
+    function reset() {
+        clearTimeout(confirmTimer);
+        if (!confirmReset) {
+            confirmReset = true;
+            confirmTimer = window.setTimeout(() => (confirmReset = false), 4000);
+            return;
+        }
+        confirmReset = false;
+        progress = { constellation: false, found: {} };
+        save();
+        fromTest = false;
+        goTo("constellation");
     }
 
     // Le portail s'ouvre : un voile de sa couleur couvre l'écran, et le test commence derrière.
@@ -172,13 +197,30 @@
     <title>Don de flux : Last Fragment</title>
 </svelte:head>
 
-<main class:immersive={stage === "journey"} class:full-map={fullMap} style="--head: {headHeight}px;">
+<main
+    class:immersive={stage === "journey"}
+    class:full-map={fullMap}
+    class:approaching={approach}
+    style="--head: {headHeight}px; --ox: {approach?.x ?? 0}px; --oy: {approach?.y ?? 0}px;"
+>
     {#if stage !== "journey"}
         <a class="home" href="/" transition:fade={{ duration: 300 }}>
             <span class="logo" aria-hidden="true"></span>
             <span>Last Fragment</span>
         </a>
 
+        {#if ready && hasProgress}
+            <button
+                class="reset"
+                class:confirm={confirmReset}
+                transition:fade={{ duration: 300 }}
+                onclick={reset}
+                aria-label={confirmReset ? "Confirmer : tout effacer et recommencer" : "Tout recommencer"}
+            >
+                <span class="reset-icon" aria-hidden="true">↺</span>
+                <span class="reset-text">{confirmReset ? "Tout effacer ?" : "Recommencer"}</span>
+            </button>
+        {/if}
     {/if}
     <!-- Le certificat a son propre titre : le nom du flux. -->
     {#if stage !== "journey" && stage !== "result"}
@@ -200,7 +242,7 @@
 
     {#if ready && stage === "portals"}
         <div class="full" in:fade={{ duration: 600 }}>
-            <Portals onChoose={enter} doorTitle={secret ? SECRET_TITLES.door : undefined} />
+            <Portals onChoose={enter} onApproach={(x, y) => (approach = { x, y })} doorTitle={secret ? SECRET_TITLES.door : undefined} />
             <button class="btn btn-small" onclick={() => goTo("map")}>Revenir à la carte</button>
         </div>
     {:else if ready && stage === "journey" && race}
@@ -294,6 +336,62 @@
         color: var(--secondary);
     }
 
+    /* Tout recommencer, en haut à droite, face au lien du site. */
+    .reset {
+        position: absolute;
+        top: 0.85rem;
+        right: 1rem;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+        background: rgba(10, 10, 12, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius);
+        transition:
+            color 0.2s ease,
+            border-color 0.2s ease;
+    }
+
+    .reset:hover,
+    .reset:focus-visible {
+        color: var(--secondary);
+        border-color: var(--secondary);
+    }
+
+    .reset.confirm {
+        color: var(--danger);
+        border-color: var(--danger);
+    }
+
+    .reset-icon {
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .full-map .reset {
+        position: fixed;
+    }
+
+    /* On avance vers la porte : le titre et les boutons s'effacent, le fond grandit moins vite
+       que les portes (il est plus loin). */
+    .approaching header,
+    .approaching .home,
+    .approaching .reset,
+    .approaching .full > .btn {
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+
+    .approaching :global(.pattern) {
+        transform: scale(2.2);
+        transform-origin: var(--ox) var(--oy);
+        transition: transform 0.85s cubic-bezier(0.6, 0, 0.9, 0.5);
+    }
+
     .logo {
         width: 1.6rem;
         height: 1.6rem;
@@ -337,7 +435,8 @@
 
     @media (max-width: 700px) {
         /* Téléphone : seul le logo du site reste, le titre a besoin de la largeur. */
-        .home span:not(.logo) {
+        .home span:not(.logo),
+        .reset:not(.confirm) .reset-text {
             display: none;
         }
 
@@ -444,6 +543,15 @@
         align-items: center;
         gap: 1.5rem;
         width: 100%;
+    }
+
+    /* Portails : la place gagnée en bas va aux portes. */
+    main:has(:global(.portals)) {
+        padding-bottom: 0.8rem;
+    }
+
+    .full:has(:global(.portals)) {
+        gap: 0.8rem;
     }
 
     .portals-btn {

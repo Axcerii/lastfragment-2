@@ -10,16 +10,23 @@
     // Les portes ne portent pas le nom de leur peuple : leurs phrases sont les seuls indices.
     let {
         onChoose,
+        onApproach,
         doorTitle,
     }: {
         onChoose: (race: Race) => void;
+        /** On commence à avancer vers la porte, dont le centre est à (x, y) à l'écran. */
+        onApproach?: (x: number, y: number) => void;
         /** Bulle au survol des portes (le secret, voir secret.ts). */
         doorTitle?: string;
     } = $props();
 
-    // Durées de l'ouverture des battants, puis de l'entrée dans le portail (ms).
+    // Durées de l'ouverture des battants, puis de l'avancée vers la porte (ms).
     const OPEN_MS = 900;
-    const ENTER_MS = 750;
+    const ENTER_MS = 850;
+
+    let section = $state<HTMLElement | null>(null);
+    // Centre de la porte choisie, dans le repère des portails : c'est vers lui qu'on avance.
+    let origin = $state("50% 50%");
 
     // Repère du labyrinthe autour d'un portail : la porte occupe le centre.
     const VIEW = { width: 260, height: 200 };
@@ -37,6 +44,15 @@
         opening = true;
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return onChoose(race);
         await wait(OPEN_MS);
+        // On avance vers la porte : tout le décor grandit autour d'elle, pas la porte seule.
+        const door = section?.querySelector(".portal.selected .door")?.getBoundingClientRect();
+        const box = section?.getBoundingClientRect();
+        if (door && box) {
+            const x = door.left + door.width / 2;
+            const y = door.top + door.height / 2;
+            origin = `${x - box.left}px ${y - box.top}px`;
+            onApproach?.(x, y);
+        }
         entering = true;
         await wait(ENTER_MS);
         onChoose(race);
@@ -134,7 +150,7 @@
     </svg>
 {/snippet}
 
-<section class="portals">
+<section class="portals" class:entering bind:this={section} style="--origin: {origin};">
     <div class="row">
         <div class="duo">
             {@render portal(RACES[0])}
@@ -181,8 +197,10 @@
 <style>
     /* Tout tient sur un écran : la taille des portes suit la hauteur disponible. */
     .portals {
-        --door-h: clamp(8rem, calc(100svh - 23rem), 19rem);
-        --door-w: calc(var(--door-h) * 0.632);
+        /* Aussi grandes que l'écran le permet : en hauteur (titre et phrases sous les portes
+           compris) comme en largeur (trois portes, la lueur et l'écart des Éternelles). */
+        --door-w: clamp(5rem, min(calc((100svh - 17.6rem) * 0.632), calc((100vw - 11rem) / 4)), 22rem);
+        --door-h: calc(var(--door-w) / 0.632);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -211,6 +229,7 @@
         flex-direction: column;
         align-items: center;
         gap: clamp(0.5rem, 2svh, 1rem);
+        flex-shrink: 0;
         width: var(--door-w);
         transition:
             opacity 0.5s ease,
@@ -232,18 +251,16 @@
         width: var(--door-w);
     }
 
-    /* On entre : la porte grandit autour de son centre jusqu'à remplir l'écran. */
-    .portal.entering {
-        z-index: 5;
-    }
-
-    .portal.entering .frame {
+    /* On entre : on avance vers la porte. Tout le décor grandit autour d'elle, les autres
+       portes filent hors de l'écran. Une seule couche, agrandie telle quelle. */
+    .portals.entering {
         transform: scale(9);
-        transition: transform 0.75s cubic-bezier(0.6, 0, 0.9, 0.5);
+        transform-origin: var(--origin);
+        transition: transform 0.85s cubic-bezier(0.6, 0, 0.9, 0.5);
     }
 
-    /* Une seule couche, agrandie telle quelle : ni ombres ni filtres recalculés à 9 fois la taille. */
-    .portal.open .frame {
+    /* Prête à grandir dès l'ouverture : ni ombres ni filtres recalculés à 9 fois la taille. */
+    .portals:has(.portal.open) {
         will-change: transform;
     }
 
@@ -252,13 +269,8 @@
         transition: opacity 0.3s ease;
     }
 
-    .portal.entering .maze,
     .portal.entering .leaf {
         display: none;
-    }
-
-    .portal.entering .door {
-        box-shadow: none;
     }
 
     .maze {
@@ -502,6 +514,13 @@
         transition: opacity 0.3s ease;
     }
 
+    /* Le sous-titre suffit : la place va aux portes. */
+    @media (min-width: 861px) {
+        .hint {
+            display: none;
+        }
+    }
+
     .hint.hidden {
         opacity: 0;
     }
@@ -588,6 +607,7 @@
     @media (max-width: 860px) {
         .portals {
             --door-h: clamp(5rem, calc((100svh - 17rem) / 3 - 0.8rem), 11rem);
+            --door-w: calc(var(--door-h) * 0.632);
             --row-gap: clamp(0.4rem, 2svh, 1.2rem);
         }
 
