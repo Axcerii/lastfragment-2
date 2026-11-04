@@ -4,6 +4,7 @@
 import { UNIQUE_RARITY, type CopyView, type OwnedCard, type TemplateView } from '$lib/cards/types';
 import { prisma } from '../prisma';
 import { CardError } from './settings';
+import { backReader, forReader, ownedForReader, READ_ALL, type Viewer } from './secrets';
 import {
 	COLLECTOR_SELECT,
 	collectorView,
@@ -47,9 +48,14 @@ export interface Collection {
 	album: AlbumSet[];
 }
 
-export async function collectionOf(playerId: number): Promise<Collection> {
+/**
+ * Collection de `playerId` vue par `viewer` : le verso des cartes que `viewer` n'a jamais eues
+ * est scellé (voir secrets.ts). Sa propre collection se lit entièrement.
+ */
+export async function collectionOf(playerId: number, viewer: Viewer | null): Promise<Collection> {
 	const owner = await prisma.player.findUnique({ where: { id: playerId }, select: COLLECTOR_SELECT });
 	if (!owner) throw new CardError('Ce joueur n’existe pas.', 404);
+	const canRead = viewer?.id === playerId ? READ_ALL : await backReader(viewer);
 
 	const [cards, totals, sets] = await Promise.all([
 		prisma.card.findMany({
@@ -73,7 +79,7 @@ export async function collectionOf(playerId: number): Promise<Collection> {
 	const templates: Record<number, TemplateView> = {};
 	const counts = new Map<number, number>();
 	for (const card of cards) {
-		templates[card.templateId] ??= templateView(card.template, totals);
+		templates[card.templateId] ??= forReader(templateView(card.template, totals), canRead);
 		counts.set(card.templateId, (counts.get(card.templateId) ?? 0) + 1);
 	}
 
@@ -116,21 +122,23 @@ export async function togglePin(cardId: number, playerId: number) {
 /**
  * Vitrines de joueurs : leurs cartes épinglées (six au plus chacun), pour leur profil et la fiche
  * publique de leur personnage. Aux pages appelantes de vérifier que le jeu est visible du visiteur.
+ * Le verso des cartes que `viewer` n'a jamais eues est scellé.
  */
-export async function showcaseOf(playerIds: number[]): Promise<Map<number, OwnedCard[]>> {
+export async function showcaseOf(playerIds: number[], viewer: Viewer | null): Promise<Map<number, OwnedCard[]>> {
 	const result = new Map<number, OwnedCard[]>();
 	if (playerIds.length === 0) return result;
-	const [cards, totals] = await Promise.all([
+	const [cards, totals, canRead] = await Promise.all([
 		prisma.card.findMany({
 			where: { ownerId: { in: playerIds }, pinned: true },
 			orderBy: { id: 'asc' },
 			include: COPY_INCLUDE
 		}),
-		setTotals()
+		setTotals(),
+		backReader(viewer)
 	]);
 	for (const card of cards) {
 		const list = result.get(card.ownerId!) ?? [];
-		if (list.length < MAX_PINNED) list.push(ownedView(card, totals));
+		if (list.length < MAX_PINNED) list.push(ownedForReader(ownedView(card, totals), canRead));
 		result.set(card.ownerId!, list);
 	}
 	return result;

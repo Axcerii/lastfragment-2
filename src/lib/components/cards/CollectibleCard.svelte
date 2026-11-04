@@ -516,7 +516,9 @@
         border-radius: calc(var(--radius) - var(--b) * 0.6);
     }
 
+    /* L'illustration est posée sur le cadre (voir .ring) : son propre arrondi dessine celui de la fenêtre. */
     .art {
+        z-index: 1;
         overflow: hidden;
         background: #151515;
     }
@@ -610,26 +612,15 @@
 
     /* ─── Cadre ───────────────────────────────────────────────────────── */
 
+    /* Le cadre couvre toute la carte, sous l'illustration. Un calque troué posé par-dessus avait un trou
+       moins arrondi que l'illustration (carré en Vintage) : le fond noir ressortait dans les coins. */
     .ring {
         position: absolute;
         inset: 0;
-        z-index: 2;
+        z-index: 0;
         border-radius: var(--radius);
-        padding: var(--b);
         background: var(--frame);
         pointer-events: none;
-        -webkit-mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-        mask-composite: exclude;
-    }
-
-    .frame-vintage .ring {
-        padding: var(--art-top) var(--art-side) var(--art-bottom);
     }
 
     /* Bordure claire en carton ; les finitions Or, Reverse et Éclat y posent leur propre fond. */
