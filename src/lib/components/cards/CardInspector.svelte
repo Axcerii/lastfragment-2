@@ -2,7 +2,8 @@
     // Vue détaillée d'une carte, en plein écran : on la manipule au doigt (ou au gyroscope sur
     // téléphone), on la retourne, et on passe d'un exemplaire à l'autre quand on en a plusieurs.
     import type { Snippet } from "svelte";
-    import { onDestroy } from "svelte";
+    import { onMount } from "svelte";
+    import { lockScroll } from "$lib/scrollLock";
     import { formatSerial, formatWear, rarityLabel, wearTier, type CopyView, type TemplateView } from "$lib/cards/types";
     import CollectibleCard from "./CollectibleCard.svelte";
 
@@ -45,14 +46,8 @@
         gyro = true;
     }
 
-    let overflow = "";
-    if (typeof document !== "undefined") {
-        overflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-    }
-    onDestroy(() => {
-        if (typeof document !== "undefined") document.body.style.overflow = overflow;
-    });
+    // La page derrière ne défile pas tant que la fenêtre est ouverte.
+    onMount(() => lockScroll());
 </script>
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onclose()} />

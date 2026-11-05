@@ -8,7 +8,8 @@
     // Le tirage est fait par le serveur dès le choix du paquet (`onstart`) : l'animation ne décide
     // de rien. On peut fermer à tout moment, les cartes sont déjà dans la collection ; le booster
     // reste alors « pas vu » et sera reproposé (`onseen` n'est appelé qu'au récapitulatif).
-    import { onDestroy, onMount } from "svelte";
+    import { onMount } from "svelte";
+    import { lockScroll } from "$lib/scrollLock";
     import { isGodPack } from "$lib/cards/booster";
     import type { OwnedCard, PackView } from "$lib/cards/types";
     import CollectibleCard from "./CollectibleCard.svelte";
@@ -106,14 +107,7 @@
     }
 
     // La page derrière ne défile pas pendant l'ouverture.
-    let overflow = "";
-    onMount(() => {
-        overflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-    });
-    onDestroy(() => {
-        if (typeof document !== "undefined") document.body.style.overflow = overflow;
-    });
+    onMount(() => lockScroll());
 </script>
 
 <svelte:window {onkeydown} />

@@ -1,15 +1,11 @@
 <script lang="ts">
+    import { lockScroll } from "$lib/scrollLock";
     // Écran de censure d'une fiche « teaser » : tout est brouillé sous le header,
     // avec la citation du personnage en grand au centre.
     let { quote, name }: { quote?: string | null; name: string } = $props();
 
     // La fiche ne doit pas défiler derrière le brouillage.
-    $effect(() => {
-        document.body.style.overflow = "hidden";
-        return () => {
-            document.body.style.overflow = "";
-        };
-    });
+    $effect(() => lockScroll());
 </script>
 
 <div class="censor" role="region" aria-label="Fiche de {name} censurée">
