@@ -2,11 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { cardDamage, damageMask } from './patterns';
 
 describe('dégâts d’usure', () => {
-	it('une carte peu usée n’a ni pli, ni coin, ni déchirure', () => {
+	it('une carte peu usée n’a ni pli, ni coin', () => {
 		const d = cardDamage(12, 0.2);
 		expect(d.folds).toHaveLength(0);
 		expect(d.corners).toHaveLength(0);
-		expect(d.tears).toHaveLength(0);
 		expect(d.flap).toBeNull();
 		expect(damageMask(d)).toBeNull();
 	});
@@ -14,13 +13,10 @@ describe('dégâts d’usure', () => {
 	it('les dégâts s’accumulent avec l’usure', () => {
 		expect(cardDamage(3, 0.5).folds).toHaveLength(1);
 		expect(cardDamage(3, 0.7).folds).toHaveLength(2);
-		expect(cardDamage(3, 0.79).tears).toHaveLength(1);
 		const ruined = cardDamage(3, 0.95);
 		expect(ruined.folds).toHaveLength(3);
-		expect(ruined.tears).toHaveLength(2);
 		expect(ruined.flap).not.toBeNull();
-		expect(ruined.notchEdge).not.toBeNull();
-		expect(ruined.cuts).toHaveLength(2);
+		expect(ruined.cuts).toHaveLength(1);
 		expect(damageMask(ruined)).toContain('evenodd');
 	});
 
@@ -35,6 +31,6 @@ describe('dégâts d’usure', () => {
 		expect(back.flap).toBeNull();
 		expect(back.folds).toHaveLength(front.folds.length);
 		const firstX = (d: string) => Number(d.match(/^M(-?[\d.]+)/)![1]);
-		expect(firstX(back.tears[0].d)).toBeCloseTo(63 - firstX(front.tears[0].d), 1);
+		expect(firstX(back.corners[0].line)).toBeCloseTo(63 - firstX(front.corners[0].line), 1);
 	});
 });

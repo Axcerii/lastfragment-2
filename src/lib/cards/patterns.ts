@@ -91,12 +91,13 @@ export function glitter(seed: number, count = 160): string {
 	return svgUri(body, 100, 140);
 }
 
-// ─── Dégâts : plis, coins, déchirures ────────────────────────────────────
+// ─── Dégâts : plis et coins ──────────────────────────────────────────────
 //
 // Contrairement aux rayures, ce sont des dégâts du carton : ils traversent la carte, donc on les
 // retrouve au même endroit au verso (vu en miroir). Seuils d'usure :
 //   0,38  un coin corné          0,45  un pli         0,62  deux plis      0,75  trois coins cornés
-//   0,78  une déchirure          0,85  un coin replié  0,92  deux déchirures  0,93  un morceau arraché
+//   0,8   trois plis             0,85  un coin replié
+// Pas de déchirure : le rendu a été jugé trop laid et retiré (2026-11-05).
 
 type Point = [number, number];
 
@@ -107,15 +108,10 @@ export interface Damage {
 	corners: { line: string; shade: string }[];
 	/** Coin replié sur le recto : le rabat (dos de la carte) et son ombre. Absent au verso. */
 	flap: { flap: string; shadow: string } | null;
-	tears: { d: string; width: number }[];
-	/** Bord du morceau arraché, en fibres claires. */
-	notchEdge: string | null;
-	/** Zones retirées de la carte (coin replié, morceau arraché), pour le masque. */
+	/** Zones retirées de la carte (coin replié), pour le masque. */
 	cuts: string[];
 	/** Encre craquelée le long des plis et des coins cornés : éclats clairs (un seul tracé). */
 	cracks: string;
-	/** Fils de carton qui dépassent des déchirures et du morceau arraché (un seul tracé). */
-	fibers: string;
 }
 
 const W = 63;
@@ -142,13 +138,13 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export function cardDamage(seed: number, wear: number, mirror = false): Damage {
 	const rand = seeded(seed * 13 + 5);
-	// Les détails (éclats, fibres) ont leur propre tirage : ajoutés après coup, ils ne déplacent pas
-	// les plis et les déchirures des exemplaires existants.
+	// Les éclats d'encre ont leur propre tirage : ajoutés après coup, ils ne déplacent pas les plis
+	// des exemplaires existants.
 	const detail = seeded(seed * 17 + 11);
 	const p = ([x, y]: Point): string => `${r1(mirror ? W - x : x)} ${r1(y)}`;
 	const q = ([x, y]: Point): string => `${r2(mirror ? W - x : x)} ${r2(y)}`;
 	const poly = (points: Point[]) => `M${points.map(p).join('L')}Z`;
-	const damage: Damage = { folds: [], corners: [], flap: null, tears: [], notchEdge: null, cuts: [], cracks: '', fibers: '' };
+	const damage: Damage = { folds: [], corners: [], flap: null, cuts: [], cracks: '' };
 
 	/**
 	 * Éclats d'encre le long d'un pli : par grappes (là où le pli a le plus travaillé), de longueurs
@@ -180,29 +176,6 @@ export function cardDamage(seed: number, wear: number, mirror = false): Damage {
 				damage.cracks += path;
 			}
 			travelled += length;
-		}
-	}
-
-	/** Fils de carton des deux côtés d'une déchirure : courts, de biais, plus nombreux près du bord. */
-	function fray(points: Point[], width: number) {
-		for (let i = 1; i < points.length; i++) {
-			const [x0, y0] = points[i - 1];
-			const [x1, y1] = points[i];
-			const length = Math.hypot(x1 - x0, y1 - y0);
-			const ux = (x1 - x0) / length;
-			const uy = (y1 - y0) / length;
-			for (let t = 0; t < length; t += 0.22) {
-				for (const side of [-1, 1]) {
-					if (detail() < 0.35) continue;
-					const nx = -uy * side;
-					const ny = ux * side;
-					const sx = x0 + ux * t + nx * width * 0.5;
-					const sy = y0 + uy * t + ny * width * 0.5;
-					const angle = Math.atan2(ny, nx) + (detail() - 0.5) * 1.4;
-					const l = 0.15 + detail() * 0.75;
-					damage.fibers += `M${q([sx, sy])}L${q([sx + Math.cos(angle) * l, sy + Math.sin(angle) * l])}`;
-				}
-			}
 		}
 	}
 
@@ -250,48 +223,10 @@ export function cardDamage(seed: number, wear: number, mirror = false): Damage {
 		}
 	}
 
-	// Déchirures : partent d'un bord et s'enfoncent en zigzag.
-	const tears = wear >= 0.92 ? 2 : wear >= 0.78 ? 1 : 0;
-	for (let i = 0; i < tears; i++) {
-		const edge = Math.floor(rand() * 4);
-		const start: Point =
-			edge === 0 ? [8 + rand() * 47, 0] : edge === 1 ? [8 + rand() * 47, H] : edge === 2 ? [0, 10 + rand() * 68] : [W, 10 + rand() * 68];
-		const inward: Point = edge === 0 ? [0, 1] : edge === 1 ? [0, -1] : edge === 2 ? [1, 0] : [-1, 0];
-		const base = Math.atan2(inward[1], inward[0]) + (rand() - 0.5) * 0.9;
-		const points: Point[] = [start];
-		let [x, y] = start;
-		const steps = 5 + Math.floor(rand() * 5);
-		for (let k = 0; k < steps; k++) {
-			const angle = base + (rand() - 0.5) * 1.3;
-			const length = 1.4 + rand() * 2.2;
-			x += Math.cos(angle) * length;
-			y += Math.sin(angle) * length;
-			points.push([x, y]);
-		}
-		const width = 0.35 + rand() * 0.35;
-		damage.tears.push({ d: `M${points.map(p).join('L')}`, width });
-		fray(points, width);
-
-		// La première déchirure des cartes les plus abîmées a perdu un morceau sur le bord.
-		if (i === 0 && wear >= 0.93) {
-			const tangent: Point = [Math.abs(inward[1]), Math.abs(inward[0])];
-			const half = 2 + rand() * 2.5;
-			const depth = 2 + rand() * 2.5;
-			const at = (t: number, n: number): Point => [
-				start[0] + tangent[0] * t + inward[0] * n,
-				start[1] + tangent[1] * t + inward[1] * n
-			];
-			const inner: Point[] = [];
-			for (let k = 0; k <= 4; k++) inner.push(at(-half + (k * 2 * half) / 4, k === 0 || k === 4 ? 0 : depth * (0.5 + rand() * 0.7)));
-			damage.cuts.push(poly([at(-half, -2), ...inner, at(half, -2)]));
-			damage.notchEdge = `M${inner.map(p).join('L')}`;
-			fray(inner, 0.2);
-		}
-	}
 	return damage;
 }
 
-/** Masque CSS qui retire de la carte le coin replié et le morceau arraché, ou null. */
+/** Masque CSS qui retire de la carte le coin replié, ou null. */
 export function damageMask(damage: Damage): string | null {
 	if (damage.cuts.length === 0) return null;
 	const body = `<path fill='#fff' fill-rule='evenodd' d='M-2 -2H${W + 2}V${H + 2}H-2Z${damage.cuts.join('')}'/>`;

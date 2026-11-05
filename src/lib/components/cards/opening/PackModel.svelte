@@ -2,6 +2,11 @@
     // Un paquet de booster en volume : face avant illustrée et bombée, dos imprimé, tranches qui
     // s'amincissent vers les bords sertis, ombre portée au sol. Au repos il pivote doucement sur
     // lui-même (le reflet suit sa rotation) ; avec `follow`, il s'incline vers le doigt.
+    //
+    // Performances : rien de ce qui bouge ne se repeint. La rotation au repos n'anime que des
+    // `transform` / `translate` (joués par la carte graphique, même avec plusieurs paquets à l'écran),
+    // et les reflets sont des calques plus larges que le paquet qu'on fait glisser, au lieu de
+    // dégradés dont on déplacerait la position (ce qui obligeait à tout repeindre à chaque image).
     // Découpé (`split`), il se sépare en deux au niveau du pointillé : la bande du haut et le corps.
     import type { Snippet } from "svelte";
     import type { PackView } from "$lib/cards/types";
@@ -90,10 +95,10 @@
     {#if pack.image}
         <!-- Le design du MJ couvre toute la face ; le site n'ajoute que le volume et les reflets
              (l'aluminium dessous ne se voit qu'à travers les zones transparentes). -->
-        <div class="foil"></div>
+        <div class="foil"><i></i></div>
         <img class="artwork" src={pack.image} alt="" loading="lazy" decoding="async" />
     {:else}
-        <div class="foil"></div>
+        <div class="foil"><i></i></div>
         <div class="crimp top"></div>
         <div class="crimp bottom"></div>
         <div class="window">
@@ -117,7 +122,7 @@
     {/if}
     <div class="wrinkles"></div>
     <div class="pillow"></div>
-    <div class="sheen"></div>
+    <div class="sheen"><i></i></div>
 {/snippet}
 
 {#snippet back()}
@@ -145,6 +150,7 @@
 >
     <div class="shadow"></div>
     <div class="turntable">
+      <div class="float">
         <div class="box">
             {#if !split}
                 <div class="face front" style="clip-path: {fullClip}">
@@ -172,6 +178,7 @@
                 </div>
             {/if}
         </div>
+      </div>
     </div>
 </div>
 
@@ -189,6 +196,7 @@
     /* ─── Volume ──────────────────────────────────────────────── */
 
     .turntable,
+    .float,
     .box,
     .group {
         position: absolute;
@@ -200,7 +208,7 @@
         transform: rotateY(var(--angle));
     }
 
-    .idle .turntable {
+    .idle .float {
         animation: idle 7s ease-in-out var(--delay) infinite;
     }
 
@@ -252,8 +260,7 @@
         bottom: -7%;
         height: 7%;
         border-radius: 50%;
-        background: radial-gradient(closest-side, rgba(0, 0, 0, 0.6), transparent);
-        filter: blur(3px);
+        background: radial-gradient(closest-side, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.25) 60%, transparent);
     }
 
     .idle .shadow {
@@ -265,9 +272,20 @@
     .foil {
         position: absolute;
         inset: 0;
-        background:
-            repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.07) 0 2px, transparent 2px 7px),
-            linear-gradient(
+        overflow: hidden;
+        background: repeating-linear-gradient(-55deg, rgba(255, 255, 255, 0.07) 0 2px, transparent 2px 7px);
+    }
+
+    /* Le reflet de l'aluminium : un calque 2,2 fois plus large, décalé selon le doigt (transform)
+       et selon la rotation au repos (translate), sans jamais être repeint. */
+    .foil > i {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 220%;
+        z-index: -1;
+        background: linear-gradient(
                 115deg,
                 color-mix(in srgb, var(--c) 35%, #000) 0%,
                 var(--c) 22%,
@@ -275,12 +293,13 @@
                 var(--c) 58%,
                 color-mix(in srgb, var(--c) 30%, #000) 100%
             );
-        background-size:
-            auto,
-            220% 100%;
-        background-position:
-            0 0,
-            calc(var(--px) * 1% + var(--idle) * 25%) 0;
+        transform: translateX(calc(var(--px) * -0.5455%));
+        transition: transform 0.25s ease-out;
+        will-change: transform;
+    }
+
+    .idle .foil > i {
+        animation: foil-idle 7s ease-in-out var(--delay) infinite;
     }
 
     .foil.dark {
@@ -431,14 +450,26 @@
     .sheen {
         position: absolute;
         inset: 0;
-        background: linear-gradient(
-            105deg,
-            transparent calc(var(--px) * 1% - var(--idle) * 30% - 22%),
-            rgba(255, 255, 255, 0.5) calc(var(--px) * 1% - var(--idle) * 30%),
-            transparent calc(var(--px) * 1% - var(--idle) * 30% + 22%)
-        );
+        overflow: hidden;
         mix-blend-mode: overlay;
         pointer-events: none;
+    }
+
+    /* Bande de lumière : un calque trois fois plus large, centré sur le doigt. */
+    .sheen > i {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -100%;
+        width: 300%;
+        background: linear-gradient(105deg, transparent 42.7%, rgba(255, 255, 255, 0.5) 50%, transparent 57.3%);
+        transform: translateX(calc((var(--px) - 50) * 0.3333%));
+        transition: transform 0.25s ease-out;
+        will-change: transform;
+    }
+
+    .idle .sheen > i {
+        animation: sheen-idle 7s ease-in-out var(--delay) infinite;
     }
 
     .back-text {
@@ -495,20 +526,36 @@
         animation: drop 0.85s cubic-bezier(0.55, 0, 0.8, 0.35) forwards;
     }
 
+    /* Rotation au repos : -16° → +16°, et le paquet monte un peu au milieu (2,5 % de sa hauteur). */
     @keyframes idle {
         0%,
         100% {
-            --idle: -1;
-            translate: 0 0;
+            transform: translateY(0) rotateY(-16deg) rotateZ(1.5deg);
         }
         50% {
-            --idle: 1;
-            translate: 0 calc(var(--w) * -0.04);
+            transform: translateY(-2.5%) rotateY(16deg) rotateZ(-1.5deg);
         }
     }
 
-    .idle .turntable {
-        transform: rotateY(calc(var(--angle) + var(--idle) * 16deg)) rotateZ(calc(var(--idle) * -1.5deg));
+    /* Les reflets glissent avec la rotation (en % de leur propre largeur). */
+    @keyframes foil-idle {
+        0%,
+        100% {
+            translate: 13.6% 0;
+        }
+        50% {
+            translate: -13.6% 0;
+        }
+    }
+
+    @keyframes sheen-idle {
+        0%,
+        100% {
+            translate: 10% 0;
+        }
+        50% {
+            translate: -10% 0;
+        }
     }
 
     @keyframes shadow {
@@ -538,8 +585,10 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .idle .turntable,
-        .idle .shadow {
+        .idle .float,
+        .idle .shadow,
+        .idle .foil > i,
+        .idle .sheen > i {
             animation: none;
         }
     }

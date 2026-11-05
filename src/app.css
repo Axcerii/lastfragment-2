@@ -422,10 +422,3 @@ button {
 	inherits: false;
 	initial-value: 0deg;
 }
-
-/* Rotation lente des paquets de booster au repos : le reflet de l'aluminium la suit. */
-@property --idle {
-	syntax: '<number>';
-	inherits: true;
-	initial-value: 0;
-}
