@@ -6,7 +6,7 @@
     //   carte. Chaque exemplaire décale et retourne les textures à sa façon : deux cartes ne s'usent
     //   jamais pareil ;
     // · les dégâts du carton, dessinés (cardDamage) : plis à l'encre craquelée, coins cornés, coin
-    //   replié, déchirures aux bords fibreux, reportés en miroir au verso.
+    //   replié, reportés en miroir au verso.
     //
     // Toujours les mêmes pour un exemplaire donné (graine = id de l'exemplaire).
     import { cardDamage, seeded } from "$lib/cards/patterns";
@@ -74,11 +74,6 @@
         <svg viewBox="0 0 63 88" preserveAspectRatio="none">
             {#if surface}
                 <defs>
-                    <!-- Bords fibreux : le tracé est déformé par un bruit fin, comme du carton arraché. -->
-                    <filter id="fray-{uid}" x="-5%" y="-5%" width="110%" height="110%">
-                        <feTurbulence type="fractalNoise" baseFrequency="2.2" numOctaves="2" seed={seed % 97} />
-                        <feDisplacementMap in="SourceGraphic" scale="0.7" xChannelSelector="R" yChannelSelector="G" />
-                    </filter>
                     <!-- Pli : arête et creux adoucis. -->
                     <filter id="soft-{uid}" x="-5%" y="-5%" width="110%" height="110%">
                         <feGaussianBlur stdDeviation="0.35" />
@@ -104,20 +99,6 @@
             {/each}
             {#if damage.cracks}
                 <path class="cracks" d={damage.cracks} />
-            {/if}
-
-            {#each damage.tears as tear, i (i)}
-                <g filter={surface ? `url(#fray-${uid})` : undefined}>
-                    <path class="tear-core" d={tear.d} stroke-width={tear.width + 0.7} />
-                    <path class="tear-gap" d={tear.d} stroke-width={tear.width} />
-                </g>
-                <path class="tear-lip" d={tear.d} stroke-width={tear.width * 0.5} transform="translate(0.35 0.2)" />
-            {/each}
-            {#if damage.notchEdge}
-                <path class="tear-core" d={damage.notchEdge} stroke-width="0.8" filter={surface ? `url(#fray-${uid})` : undefined} />
-            {/if}
-            {#if surface && damage.fibers}
-                <path class="fibers" d={damage.fibers} />
             {/if}
 
             {#if damage.flap}
@@ -226,17 +207,19 @@
         stroke-linejoin: round;
     }
 
-    /* Pli : une ombre d'un côté, une arête éclairée de l'autre (plus vive sous la lumière),
+    /* Pli : une ombre d'un côté, une arête éclairée de l'autre,
        le creux net au milieu, et l'encre qui s'est craquelée le long du pli. */
     .fold-shadow {
         stroke: rgba(0, 0, 0, 0.32);
         stroke-width: 1.1;
     }
 
+    /* Opacité fixe : liée à la lumière, elle obligeait à repeindre tout le dessin (et ses flous)
+       à chaque image. */
     .fold-light {
         stroke: rgba(255, 255, 255, 1);
         stroke-width: 0.9;
-        opacity: calc(0.18 + var(--active) * 0.3);
+        opacity: 0.3;
     }
 
     .crease-dark {
@@ -257,26 +240,6 @@
 
     .corner-shade {
         fill: rgba(255, 255, 255, 0.12);
-    }
-
-    /* Déchirure : l'âme claire du carton de part et d'autre, la fente sombre au milieu, un bord
-       légèrement soulevé, et des fils de carton qui dépassent. */
-    .tear-core {
-        stroke: #ebe3d1;
-    }
-
-    .tear-gap {
-        stroke: rgba(12, 9, 6, 0.9);
-    }
-
-    .tear-lip {
-        stroke: rgba(255, 255, 255, 0.35);
-    }
-
-    .fibers {
-        stroke: #f2ead9;
-        stroke-width: 0.07;
-        opacity: 0.9;
     }
 
     .flap-shadow {

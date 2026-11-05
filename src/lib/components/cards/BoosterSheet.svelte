@@ -98,8 +98,9 @@
         position: fixed;
         inset: 0;
         z-index: 10000;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(4px);
+        /* Pas de flou d'arrière-plan : en plein écran, sous un paquet qui tourne, il coûtait cher
+           sur téléphone. */
+        background: rgba(0, 0, 0, 0.82);
     }
 
     .sheet {

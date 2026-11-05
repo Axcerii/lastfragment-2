@@ -59,10 +59,15 @@
     let phase = $state<Phase>("intro");
     let pack = $state<PackView | null>(null);
     let opened = $state(false);
+    /** Rareté de la carte sur le dessus de la pile (0 : à l'envers, encore secrète). */
+    let shown = $state<number | null>(null);
 
     // God Pack : reconnu à ses raretés (Légendaires et au moins une Unique), annoncé à la révélation.
     let god = $derived(!!cards && isGodPack(cards.map((c) => c.template.rarity)));
     let best = $derived(cards ? Math.max(1, ...cards.map((c) => c.template.rarity)) : 1);
+    // Halo de fond : la couleur de la carte visible, de plus en plus vive avec la rareté ; au
+    // récapitulatif, celle de la meilleure carte.
+    let aura = $derived(phase === "reveal" ? shown : phase === "summary" && cards?.length ? best : null);
 
     function choose(chosen: PackView) {
         pack = chosen;
@@ -120,6 +125,8 @@
     aria-modal="true"
     aria-label="Ouverture d’un booster {title}"
 >
+    <div class="aura" class:on={aura !== null} data-level={aura ?? 0} aria-hidden="true"></div>
+
     <button
         type="button"
         class="close btn btn-small"
@@ -153,6 +160,7 @@
                         {fresh}
                         inPack={phase === "intro"}
                         active={phase === "reveal"}
+                        bind:shown
                         ondone={() => (phase = "summary")}
                     />
                 </div>
@@ -232,6 +240,71 @@
         user-select: none;
         -webkit-user-select: none;
         animation: fade-in 0.3s ease-out;
+    }
+
+    /* ─── Halo de rareté ──────────────────────────────────────────
+       Une lueur ronde derrière la carte, de la couleur de sa rareté : à peine visible pour une
+       Commune, de plus en plus large et vive jusqu'à l'Unique. Une carte à l'envers garde une
+       lueur blanche qui ne dit rien. Couleur, force et taille passent d'une carte à l'autre en
+       fondu ; le dégradé est un masque fixe, seuls la couleur et l'opacité changent. */
+    .aura {
+        --size: 0.6;
+        --strength: 0;
+        position: fixed;
+        inset: 0;
+        /* Sous tout le contenu, au-dessus du fond de .opening (qui crée son propre contexte). */
+        z-index: -1;
+        pointer-events: none;
+        background-color: #fff;
+        -webkit-mask-image: radial-gradient(circle at 50% 42%, #000 0%, rgba(0, 0, 0, 0.55) 22%, rgba(0, 0, 0, 0.18) 45%, transparent 70%);
+        mask-image: radial-gradient(circle at 50% 42%, #000 0%, rgba(0, 0, 0, 0.55) 22%, rgba(0, 0, 0, 0.18) 45%, transparent 70%);
+        opacity: 0;
+        transform: scale(var(--size));
+        transform-origin: 50% 42%;
+        transition:
+            background-color 0.7s ease,
+            opacity 0.7s ease,
+            transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .aura.on {
+        opacity: var(--strength);
+    }
+
+    .aura[data-level="0"] {
+        --strength: 0.16;
+        --size: 0.85;
+        background-color: #f4f1ff;
+    }
+
+    .aura[data-level="1"] {
+        --strength: 0.1;
+        --size: 0.7;
+        background-color: var(--rarity-1);
+    }
+
+    .aura[data-level="2"] {
+        --strength: 0.18;
+        --size: 0.8;
+        background-color: var(--rarity-2);
+    }
+
+    .aura[data-level="3"] {
+        --strength: 0.32;
+        --size: 0.95;
+        background-color: var(--rarity-3);
+    }
+
+    .aura[data-level="4"] {
+        --strength: 0.48;
+        --size: 1.1;
+        background-color: var(--rarity-4);
+    }
+
+    .aura[data-level="5"] {
+        --strength: 0.62;
+        --size: 1.25;
+        background-color: var(--rarity-5);
     }
 
     .close {
