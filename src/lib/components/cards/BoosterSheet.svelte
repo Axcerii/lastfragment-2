@@ -2,7 +2,8 @@
     // Fiche d'un booster, ouverte depuis la vitrine : le paquet en grand (il s'incline vers le doigt),
     // son nom, sa description, l'avancement de l'album et le bouton pour l'ouvrir.
     // En bas de l'écran sur téléphone, au centre sur ordinateur.
-    import { onDestroy } from "svelte";
+    import { onMount } from "svelte";
+    import { lockScroll } from "$lib/scrollLock";
     import { fade, fly } from "svelte/transition";
     import { cubicOut } from "svelte/easing";
     import type { PackView } from "$lib/cards/types";
@@ -43,14 +44,8 @@
 
     let percent = $derived(progress?.total ? Math.floor((progress.owned / progress.total) * 100) : 0);
 
-    let overflow = "";
-    if (typeof document !== "undefined") {
-        overflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-    }
-    onDestroy(() => {
-        if (typeof document !== "undefined") document.body.style.overflow = overflow;
-    });
+    // La page derrière ne défile pas tant que la fenêtre est ouverte.
+    onMount(() => lockScroll());
 </script>
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onclose()} />
