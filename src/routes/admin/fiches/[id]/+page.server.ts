@@ -7,12 +7,12 @@ import type { Actions, PageServerLoad } from './$types';
 
 // Tout /admin est déjà réservé au MJ par hooks.server.ts.
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
 	const id = Number(params.id) || 0;
 	const [sheet, items, showcase] = await Promise.all([
 		loadSheet(id),
 		prisma.item.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
-		showcaseOf([id])
+		showcaseOf([id], locals.user)
 	]);
 	return { sheet, items, showcase: showcase.get(id) ?? [] };
 };

@@ -325,3 +325,16 @@ export async function giftBoosters(playerIds: number[], amount: number) {
 		}
 	}
 }
+
+/**
+ * Le MJ fixe la réserve d'un joueur à `stock` boosters (0 à 99) ; le compteur du prochain booster
+ * repart de maintenant. Crée la réserve si le joueur n'est jamais venu (sans boosters de départ en plus).
+ */
+export async function setBoosterStock(playerId: number, stock: number) {
+	if (!Number.isInteger(stock) || stock < 0 || stock > 99) throw new CardError('Réserve entre 0 et 99 boosters.');
+	if (!(await prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) {
+		throw new CardError('Joueur introuvable.', 404);
+	}
+	const since = new Date();
+	await prisma.cardWallet.upsert({ where: { playerId }, create: { playerId, stock, since }, update: { stock, since } });
+}

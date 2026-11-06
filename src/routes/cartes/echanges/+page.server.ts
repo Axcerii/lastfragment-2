@@ -9,7 +9,7 @@ const responses = new RateLimiter(30, 60_000);
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = requireUser(locals);
-	return { trades: await tradesOf(user.id), me: user.id };
+	return { trades: await tradesOf(user), me: user.id };
 };
 
 function respond(run: (tradeId: number, userId: number) => Promise<void>, done: string): Actions[string] {

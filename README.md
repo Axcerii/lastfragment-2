@@ -27,9 +27,48 @@ docker compose logs -f app
 Le site répond sur `http://localhost:3010` (réglable avec `APP_PORT`). Au démarrage, le conteneur met la base au niveau du schéma Prisma, crée le compte MJ décrit par `ADMIN_LOGIN` / `ADMIN_PASSWORD` s'il n'existe pas, puis lance le site.
 
 - La base MySQL et les images envoyées vivent dans deux volumes (`lastfragment2_db_data`, `lastfragment2_uploads`) : `docker compose down` les conserve, `docker compose down -v` les supprime.
-- La base n'est pas exposée sur la machine. Pour une sauvegarde : `docker compose exec db sh -c 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' > sauvegarde.sql`.
+- La base n'est pas exposée sur la machine : pour la sauvegarder, voir « Sauvegardes de la base » ci-dessous.
 - Derrière un reverse proxy en HTTPS, mettre l'adresse publique dans `ORIGIN` (`https://…`) : c'est elle qui autorise les formulaires et qui réserve le cookie de session au HTTPS.
 - Après une modification du code : `docker compose up -d --build`.
+
+## Sauvegardes de la base
+
+`docker/backup-db.sh` copie la base dans `backups/db/` (compressée, vérifiée, avec son empreinte SHA-256). Le dump est fait dans le conteneur de la base avec les identifiants qu'il connaît déjà : aucun mot de passe sur la machine, aucun port ouvert, et le site n'est pas bloqué pendant la copie.
+
+**Mise en place sur le serveur** (avec un compte qui a le droit d'utiliser Docker) :
+
+```sh
+chmod +x docker/backup-db.sh docker/restore-db.sh
+docker/backup-db.sh          # premier essai à la main
+crontab -e
+```
+
+puis ajouter la ligne (chemin du projet à adapter) :
+
+```
+17 3 * * * /srv/lastfragment2/docker/backup-db.sh >> /var/log/lastfragment2-sauvegarde.log 2>&1
+```
+
+- **Rotation** : les 14 dernières sauvegardes quotidiennes, une par semaine sur 8 semaines, une par mois sur 12 mois. Réglable devant la commande : `KEEP_DAILY=30 KEEP_WEEKLY=8 KEEP_MONTHLY=24 /srv/…/backup-db.sh`.
+- **Ailleurs** : `BACKUP_DIR=/mnt/sauvegardes/lastfragment2` change le dossier. Une sauvegarde restée sur le même serveur ne protège pas d'une panne de disque : copier aussi `backups/db/` hors du serveur (rclone, rsync, stockage objet…).
+- **Échec** : le script s'arrête avec un code d'erreur (base arrêtée, dump incomplet, archive corrompue) ; cron l'envoie par mail si `MAILTO=` est réglé en tête de la crontab.
+- Les images envoyées (volume `lastfragment2_uploads`) ne sont pas dans ce dump.
+
+**Vérifier une sauvegarde** sans toucher au site, par exemple une fois par mois :
+
+```sh
+docker/restore-db.sh --verifier backups/db/quotidien/lastfragment-2026-11-04_031700.sql.gz
+```
+
+Elle est chargée dans une base jetable, quelques tables sont comptées, puis la base jetable est supprimée.
+
+**Restaurer** (remplace la vraie base) :
+
+```sh
+docker/restore-db.sh backups/db/quotidien/lastfragment-2026-11-04_031700.sql.gz
+```
+
+Le script demande de taper le nom de la base, sauvegarde d'abord l'état actuel dans `backups/avant-restauration/`, arrête le site pendant le chargement puis le relance.
 
 ## Automatisations avec n8n (facultatif)
 

@@ -68,6 +68,7 @@
                 {#if s.id}
                     <span class="badge b-{status(s)}">{status(s)}</span>
                     <span class="muted small">{s.published} publiée{s.published > 1 ? "s" : ""} / {s.cards} carte{s.cards > 1 ? "s" : ""}</span>
+                    {#if s.cards}<a class="numbers btn btn-small" href="/admin/cartes/series/{s.id}/numeros">Numéros des cartes</a>{/if}
                 {/if}
             </header>
             <div class="fields">
@@ -144,6 +145,10 @@
         align-items: center;
         gap: 0.75rem;
         flex-wrap: wrap;
+    }
+
+    header .numbers {
+        margin-left: auto;
     }
 
     h2 {

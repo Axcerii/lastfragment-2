@@ -55,7 +55,14 @@
         </dl>
     </div>
 
-    {#if face.bars.length}
+    {#if card.sealed}
+        <!-- Le serveur n'a rien envoyé du verso : on ne le lit qu'en ayant eu la carte en main. -->
+        <div class="sealed" role="note">
+            <span class="seal" aria-hidden="true"><Icon src="/layout/Logo.svg" color="#f3e6c8" size="9cqw" /></span>
+            <strong>Verso scellé</strong>
+            <span class="hint">Ses secrets se découvrent en obtenant la carte.</span>
+        </div>
+    {:else if face.bars.length}
         <div class="bars">
             {#each face.bars as bar, i (i)}
                 <div class="bar" style="--c: {bar.dragon ? `var(--${bar.dragon})` : face.accent}">
@@ -67,10 +74,10 @@
         </div>
     {/if}
 
-    {#if face.flavor}
+    {#if face.flavor && !card.sealed}
         <p class="flavor">« {face.flavor} »</p>
     {/if}
-    {#if face.text}
+    {#if face.text && !card.sealed}
         <p class="text" style="--size: {(face.textSize ?? 100) / 100}">{face.text}</p>
     {/if}
 
@@ -250,6 +257,45 @@
         text-align: right;
         font-variant-numeric: tabular-nums;
         font-weight: 700;
+    }
+
+    .sealed {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.4cqw;
+        padding: 3cqw;
+        border: 0.4cqw dashed color-mix(in srgb, var(--accent) 55%, #2b2620);
+        border-radius: 2cqw;
+        background: repeating-linear-gradient(-45deg, rgba(43, 38, 32, 0.05) 0 1.2cqw, transparent 1.2cqw 2.4cqw);
+        text-align: center;
+    }
+
+    .seal {
+        display: grid;
+        place-items: center;
+        width: 17cqw;
+        height: 17cqw;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #b8454f, #7a1f2a 70%);
+        box-shadow:
+            0 0 0 1cqw rgba(122, 31, 42, 0.35),
+            inset 0 -0.8cqw 1.2cqw rgba(0, 0, 0, 0.35);
+    }
+
+    .sealed strong {
+        font-family: var(--titleFont);
+        font-size: 4.6cqw;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .sealed .hint {
+        font-size: 3cqw;
+        opacity: 0.8;
     }
 
     .flavor {

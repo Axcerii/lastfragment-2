@@ -4,6 +4,7 @@ import { requireAdmin, requireUser } from '$lib/server/auth';
 import { togglePin } from '$lib/server/cards/collection';
 import { moveCard, removeCard } from '$lib/server/cards/copies';
 import { CardError } from '$lib/server/cards/settings';
+import { backReader, ownedForReader, READ_ALL } from '$lib/server/cards/secrets';
 import { COLLECTOR_SELECT, collectorName, COPY_INCLUDE, ownedView, setTotals } from '$lib/server/cards/views';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -19,7 +20,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	// Un brouillon n'a pas d'exemplaire ; on vérifie quand même qu'il ne fuite pas.
 	if (!card || (card.template.status === 'brouillon' && !user.isAdmin)) error(404, 'Carte introuvable.');
 
-	const [events, totals, circulating, players] = await Promise.all([
+	// Verso scellé pour qui n'a jamais eu cette carte : le lien d'un exemplaire ne doit pas suffire à le lire.
+	const [events, totals, circulating, players, canRead] = await Promise.all([
 		prisma.cardEvent.findMany({
 			where: { cardId: id },
 			orderBy: { id: 'asc' },
@@ -27,11 +29,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		}),
 		setTotals(),
 		prisma.card.count({ where: { templateId: card.templateId, ownerId: { not: null } } }),
-		user.isAdmin ? prisma.player.findMany({ select: { id: true, login: true }, orderBy: { login: 'asc' } }) : []
+		user.isAdmin ? prisma.player.findMany({ select: { id: true, login: true }, orderBy: { login: 'asc' } }) : [],
+		card.ownerId === user.id ? READ_ALL : backReader(user)
 	]);
 
 	return {
-		card: ownedView(card, totals),
+		card: ownedForReader(ownedView(card, totals), canRead),
 		mine: card.ownerId === user.id,
 		isAdmin: user.isAdmin,
 		circulating,

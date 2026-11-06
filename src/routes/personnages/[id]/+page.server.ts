@@ -22,7 +22,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const showcases: { id: number; cards: OwnedCard[] }[] = [];
 	if ((!character.censored || isAdmin) && (await cardsVisibleTo(locals.user))) {
 		const players = await prisma.player.findMany({ where: { characterId: character.id }, select: { id: true } });
-		const pinned = await showcaseOf(players.map((p) => p.id));
+		const pinned = await showcaseOf(
+			players.map((p) => p.id),
+			locals.user
+		);
 		for (const p of players) {
 			const cards = pinned.get(p.id);
 			if (cards?.length) showcases.push({ id: p.id, cards });

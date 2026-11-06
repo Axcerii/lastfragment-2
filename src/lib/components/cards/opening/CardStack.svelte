@@ -2,8 +2,10 @@
     // Les cartes d'un booster, en pile, de la moins rare à la plus rare. Pas de dos factice : la
     // carte du dessus est la vraie, celles d'en dessous sont déjà là (on les aperçoit quand on
     // retourne la première). On fait tourner la carte en glissant sur le côté ; un toucher, ou un
-    // glissé vers le haut, la jette et passe à la suivante. Comme dans les paquets de cartes de sport, une Unique est
-    // glissée à l'envers : on lit d'abord son nom et son texte au verso, puis on la retourne.
+    // glissé vers le haut, la jette et passe à la suivante. Comme dans les paquets de cartes de sport,
+    // une Légendaire ou une Unique est glissée à l'envers : on lit d'abord son verso, puis on la
+    // retourne. Tant qu'elle est à l'envers, rien ne trahit sa rareté (ni halo, ni couleur) : les
+    // deux arrivent pareil, et la couleur n'éclate qu'au retournement.
     import { untrack } from "svelte";
     import { formatSerial, formatWear, rarityLabel, wearTier, type OwnedCard } from "$lib/cards/types";
     import CollectibleCard from "../CollectibleCard.svelte";
@@ -14,6 +16,7 @@
         fresh = [],
         inPack = false,
         active = true,
+        shown = $bindable(null),
         ondone,
     }: {
         cards: OwnedCard[];
@@ -22,29 +25,36 @@
         inPack?: boolean;
         /** Révélation en cours : la carte du dessus se manipule et sa légende s'affiche. */
         active?: boolean;
+        /** Rareté de la carte visible sur le dessus (fond de l'écran) ; 0 = à l'envers, encore secrète. */
+        shown?: number | null;
         ondone: () => void;
     } = $props();
 
-    const UNIQUE = 5;
+    /** À partir de cette rareté (Légendaire), la carte arrive à l'envers. */
+    const REVERSED = 4;
     let index = $state(0);
-    // Face visible de chaque exemplaire (vrai = verso) ; les Uniques arrivent à l'envers.
+    // Face visible de chaque exemplaire (vrai = verso) ; Légendaires et Uniques arrivent à l'envers.
     let backs = $state<Record<number, boolean>>(
-        untrack(() => Object.fromEntries(cards.map((c) => [c.copy.id, c.template.rarity === UNIQUE]))),
+        untrack(() => Object.fromEntries(cards.map((c) => [c.copy.id, c.template.rarity >= REVERSED]))),
     );
     let seenFront = $state<Record<number, boolean>>({});
     let leaving = $state<number | null>(null);
 
     let visible = $derived(cards.slice(index, index + 3));
     let top = $derived(cards[index]);
-    let reversed = $derived(top.template.rarity === UNIQUE && backs[top.copy.id] && !seenFront[top.copy.id]);
+    let reversed = $derived(top.template.rarity >= REVERSED && backs[top.copy.id] && !seenFront[top.copy.id]);
 
     $effect(() => {
         if (top && !backs[top.copy.id]) seenFront[top.copy.id] = true;
     });
 
     $effect(() => {
-        // Une carte rare arrive sur le dessus de la pile.
-        if (!active) return;
+        shown = active ? (reversed ? 0 : top.template.rarity) : null;
+    });
+
+    $effect(() => {
+        // Une carte rare arrive sur le dessus de la pile, ou vient d'être retournée.
+        if (!active || reversed) return;
         const rarity = top.template.rarity;
         if (rarity >= 3) untrack(() => vibrate(rarity >= 4 ? [30, 40, 60] : 30));
     });
@@ -62,7 +72,7 @@
         setTimeout(next, 280);
     }
 
-    /** Toucher la carte : une Unique encore à l'envers se retourne, les autres laissent place à la suivante. */
+    /** Toucher la carte : une carte encore à l'envers se retourne, les autres laissent place à la suivante. */
     function tapTop() {
         if (reversed) turnTop();
         else throwTop();
@@ -102,12 +112,12 @@
                     bind:flipped={backs[card.copy.id]}
                     tilt={k === 0 && active ? "full" : "none"}
                     lite={k >= 2}
-                    glow={k === 0 && active && card.template.rarity >= 3}
+                    glow={k === 0 && active && !reversed && card.template.rarity >= 3}
                     onswipeup={k === 0 && active ? next : undefined}
                     ontap={k === 0 && active ? tapTop : undefined}
                     label={card.template.name}
                 />
-                {#if k === 0 && active && card.template.rarity >= 3}
+                {#if k === 0 && active && !reversed && card.template.rarity >= 3}
                     <div class="ring r{card.template.rarity}"></div>
                 {/if}
             </div>
@@ -118,7 +128,7 @@
         <span class="counter">{index + 1} / {cards.length}</span>
         {#if reversed}
             <strong>Une carte à l’envers…</strong>
-            <span class="rarity" style="color: var(--rarity-{UNIQUE})">Touche-la pour la retourner</span>
+            <span class="rarity mystery">Touche-la pour la retourner</span>
         {:else}
             {#if fresh.includes(top.template.id)}<span class="new">Nouvelle !</span>{/if}
             <strong>{top.template.name}</strong>
@@ -231,6 +241,18 @@
         font-size: 0.8rem;
         letter-spacing: 0.15em;
         text-transform: uppercase;
+    }
+
+    .mystery {
+        color: #fff;
+        text-shadow: 0 0 0.6rem rgba(255, 255, 255, 0.7);
+        animation: mystery 1.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes mystery {
+        from {
+            opacity: 0.55;
+        }
     }
 
     .details {

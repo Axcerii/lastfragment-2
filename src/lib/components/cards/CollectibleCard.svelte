@@ -3,6 +3,11 @@
     // le doigt ou le gyroscope du téléphone : leur position passe par des variables CSS mises à jour
     // directement sur l'élément, une fois par image, sans repasser par Svelte.
     //
+    // Performances : quand la carte bouge, seuls les calques de lumière (reflet, finition, ombre)
+    // sont repeints. L'illustration, l'usure dessinée et le reste de la face sont posés une fois
+    // pour toutes dans leurs propres calques (voir « Calques » en bas des styles) : avant, chaque
+    // image repeignait toute la carte, filtres des images compris, d'où les saccades.
+    //
     //   tilt="none"   carte figée (grilles sur téléphone, aperçus)
     //   tilt="hover"  s'incline au survol de la souris seulement : le doigt fait défiler la page
     //   tilt="full"   se manipule au doigt ; glisser sur le côté la fait tourner sur elle-même,
@@ -332,6 +337,7 @@
     onpointercancel={oncancel}
 >
     <div bind:this={cardEl} class="card" class:dragging class:flung style="--spin: {angle}deg">
+        <div class="drop" aria-hidden="true"></div>
         <div class="face front frame-{face.frame} finish-{finish} r{card.rarity}" style={maskStyle(frontMask)}>
             <div class="art">
                 {#if face.background}
@@ -470,9 +476,7 @@
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
         transform: translateZ(0.1px);
-        box-shadow:
-            0 calc(1cqw + var(--active) * 3cqw) calc(3cqw + var(--active) * 6cqw) rgba(0, 0, 0, 0.55),
-            0 0 0 0.25cqw rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 0 0.25cqw rgba(255, 255, 255, 0.08);
         background: #111;
     }
 
@@ -480,10 +484,23 @@
         transform: rotateY(180deg) translateZ(0.1px);
     }
 
-    .glow .face {
+    /* Ombre portée (et halo de rareté) : dessinée une fois à sa taille « soulevée », elle ne fait
+       que s'éclaircir ou s'assombrir avec l'inclinaison. Une ombre dont le flou changeait à chaque
+       image forçait à repeindre toute la face. */
+    .drop {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--radius);
+        box-shadow: 0 3.5cqw 8cqw rgba(0, 0, 0, 0.6);
+        opacity: calc(0.55 + var(--active) * 0.45);
+        pointer-events: none;
+    }
+
+    .glow .drop {
         box-shadow:
-            0 0 calc(4cqw + var(--active) * 6cqw) color-mix(in srgb, var(--rarity) 55%, transparent),
-            0 calc(2cqw + var(--active) * 3cqw) calc(5cqw + var(--active) * 6cqw) rgba(0, 0, 0, 0.6);
+            0 0 9cqw color-mix(in srgb, var(--rarity) 60%, transparent),
+            0 4cqw 10cqw rgba(0, 0, 0, 0.6);
+        opacity: calc(0.6 + var(--active) * 0.4);
     }
 
     /* ─── Illustration ────────────────────────────────────────────────── */
@@ -516,7 +533,9 @@
         border-radius: calc(var(--radius) - var(--b) * 0.6);
     }
 
+    /* L'illustration est posée sur le cadre (voir .ring) : son propre arrondi dessine celui de la fenêtre. */
     .art {
+        z-index: 1;
         overflow: hidden;
         background: #151515;
     }
@@ -610,26 +629,15 @@
 
     /* ─── Cadre ───────────────────────────────────────────────────────── */
 
+    /* Le cadre couvre toute la carte, sous l'illustration. Un calque troué posé par-dessus avait un trou
+       moins arrondi que l'illustration (carré en Vintage) : le fond noir ressortait dans les coins. */
     .ring {
         position: absolute;
         inset: 0;
-        z-index: 2;
+        z-index: 0;
         border-radius: var(--radius);
-        padding: var(--b);
         background: var(--frame);
         pointer-events: none;
-        -webkit-mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-        mask-composite: exclude;
-    }
-
-    .frame-vintage .ring {
-        padding: var(--art-top) var(--art-side) var(--art-bottom);
     }
 
     /* Bordure claire en carton ; les finitions Or, Reverse et Éclat y posent leur propre fond. */
@@ -653,12 +661,12 @@
         gap: 1.2cqw;
         padding: 0.8cqw 2.2cqw 0.8cqw 1.6cqw;
         border-radius: 5cqw;
-        background: rgba(0, 0, 0, 0.55);
+        /* Pas de flou d'arrière-plan : sur une carte qui tourne, il était recalculé à chaque image. */
+        background: rgba(0, 0, 0, 0.62);
         color: #fff;
         font-size: 3cqw;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        backdrop-filter: blur(2px);
     }
 
     .stamps {
@@ -1039,6 +1047,25 @@
             #e5b8cc 80%,
             #ffffff
         );
+    }
+
+    /* ─── Calques ─────────────────────────────────────────────────────── */
+
+    /* Carte manipulable : ce qui ne bouge pas est rendu une fois dans son calque (l'illustration et
+       ses filtres, le sujet qui déborde, l'usure dessinée), ce qui suit la lumière dans le sien. Ainsi
+       une inclinaison ne repeint que les reflets. Les cartes figées (grilles) n'en ont pas besoin. */
+    .scene:not(.tilt-none) .art,
+    .scene:not(.tilt-none) .pop,
+    .scene:not(.tilt-none) .face > :global(.wear > svg) {
+        will-change: transform;
+    }
+
+    .scene:not(.tilt-none) .shine,
+    .scene:not(.tilt-none) .glare,
+    .scene:not(.tilt-none) .cracks,
+    .scene:not(.tilt-none) .drop,
+    .scene:not(.tilt-none) .face > :global(.wear > .lit) {
+        will-change: opacity;
     }
 
     @media (prefers-reduced-motion: reduce) {

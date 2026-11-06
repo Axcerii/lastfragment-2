@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { lockScroll } from '$lib/scrollLock';
 
 	import { env } from '$env/dynamic/public';
 
@@ -10,12 +11,10 @@
 
 	onMount(() => {
         // La page tient sur un seul écran : on bloque le défilement tant qu'elle est affichée.
-        document.body.style.overflow = 'hidden';
+        const release = lockScroll();
         hoverFragment();
 
-        return () => {
-            document.body.style.overflow = '';
-        };
+        return release;
     });
 
     let altFragment = $state('Représentation d\'un morceau de verre brisé en 6');

@@ -66,6 +66,7 @@
             <a class="btn btn-accent" href="/admin/cartes/nouvelle">Nouvelle carte</a>
             <button type="button" class="btn btn-players" onclick={() => (bulkOpen = true)}>Créer en lot</button>
             <a class="btn" href="/admin/cartes/series">Séries</a>
+            <a class="btn" href="/admin/cartes/joueurs">Joueurs</a>
             <a class="btn" href="/admin/cartes/reglages">Réglages et boosters</a>
             <a class="btn" href="/cartes">Côté joueur</a>
         </div>

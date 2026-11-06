@@ -32,12 +32,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
 	let partner;
 	try {
-		partner = await collectionOf(partnerId);
+		partner = await collectionOf(partnerId, user);
 	} catch (e) {
 		if (e instanceof CardError) error(e.status, e.message);
 		throw e;
 	}
-	const mine = await collectionOf(user.id);
+	const mine = await collectionOf(user.id, user);
 	return {
 		step: 'cartes' as const,
 		mine: { templates: mine.templates, copies: mine.copies },
