@@ -379,23 +379,37 @@ button {
 }
 
 /* Variables des reflets des cartes à collectionner, déclarées pour pouvoir être animées
-   (balayage de lumière à la révélation d'une carte). */
+   (balayage de lumière à la révélation d'une carte). Non héritées : elles sont posées sur les seuls
+   calques éclairés (classe `light`), pour qu'une inclinaison ne recalcule pas le style de toute la carte. */
 @property --mx {
 	syntax: '<number>';
-	inherits: true;
+	inherits: false;
 	initial-value: 32;
 }
 
 @property --my {
 	syntax: '<number>';
-	inherits: true;
+	inherits: false;
 	initial-value: 26;
 }
 
 @property --active {
 	syntax: '<number>';
-	inherits: true;
+	inherits: false;
 	initial-value: 0;
+}
+
+/* Inclinaison de la carte, posée sur la carte seule. */
+@property --rx {
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
+}
+
+@property --ry {
+	syntax: '<angle>';
+	inherits: false;
+	initial-value: 0deg;
 }
 
 /* Retournement et lancer des cartes : déclarées pour que seule la rotation soit animée. */

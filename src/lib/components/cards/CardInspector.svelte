@@ -1,8 +1,10 @@
 <script lang="ts">
-    // Vue détaillée d'une carte, en plein écran : on la manipule au doigt (ou au gyroscope sur
-    // téléphone), on la retourne, et on passe d'un exemplaire à l'autre quand on en a plusieurs.
+    // Vue détaillée d'une carte, en plein écran : on la manipule au doigt (ou en inclinant le
+    // téléphone), un toucher ou un glissé sur le côté la retourne, et on passe d'un exemplaire à
+    // l'autre quand on en a plusieurs. Pas de bouton pour ce que les gestes font déjà.
     import type { Snippet } from "svelte";
     import { onMount } from "svelte";
+    import { requestGyro } from "$lib/cards/gyro.svelte";
     import { lockScroll } from "$lib/scrollLock";
     import { formatSerial, formatWear, rarityLabel, wearTier, type CopyView, type TemplateView } from "$lib/cards/types";
     import CollectibleCard from "./CollectibleCard.svelte";
@@ -21,33 +23,21 @@
         actions?: Snippet<[CopyView]>;
     } = $props();
 
-    let flipped = $state(false);
-    let gyro = $state(false);
     let copy = $derived(copies[selected] ?? copies[0] ?? null);
 
-    // Le gyroscope n'existe que sur téléphone ; iOS demande une autorisation, accordée d'un toucher.
-    const canGyro =
-        typeof window !== "undefined" && "DeviceOrientationEvent" in window && navigator.maxTouchPoints > 0;
-
-    async function toggleGyro() {
-        if (gyro) {
-            gyro = false;
-            return;
-        }
-        const request = (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> })
-            .requestPermission;
-        if (typeof request === "function") {
-            try {
-                if ((await request()) !== "granted") return;
-            } catch {
-                return;
-            }
-        }
-        gyro = true;
-    }
-
-    // La page derrière ne défile pas tant que la fenêtre est ouverte.
-    onMount(() => lockScroll());
+    // La page derrière ne défile pas tant que la fenêtre est ouverte. Une fois la fenêtre apparue,
+    // elle n'est plus dessinée du tout (le fond la couvre déjà) : ses cartes, ses calques et ses
+    // animations sans fin étaient sinon réassemblés à chaque image de la carte qu'on manipule.
+    onMount(() => {
+        const unlock = lockScroll();
+        const root = document.documentElement;
+        const hide = setTimeout(() => root.classList.add("card-inspecting"), 260);
+        return () => {
+            unlock();
+            clearTimeout(hide);
+            root.classList.remove("card-inspecting");
+        };
+    });
 </script>
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onclose()} />
@@ -61,11 +51,12 @@
     tabindex="-1"
     style="--rarity: var(--rarity-{template.rarity})"
     onclick={(e) => e.target === e.currentTarget && onclose()}
+    onpointerdowncapture={requestGyro}
 >
     <button type="button" class="close btn btn-small" onclick={onclose} aria-label="Fermer">✕</button>
 
     <div class="card">
-        <CollectibleCard card={template} {copy} bind:flipped tilt="full" {gyro} glow={template.rarity >= 3} label={template.name} />
+        <CollectibleCard card={template} {copy} tilt="full" glow={template.rarity >= 3} label={template.name} />
     </div>
 
     <div class="info">
@@ -90,20 +81,11 @@
     {/if}
 
     <div class="tools">
-        <button type="button" class="btn btn-small" onclick={() => (flipped = !flipped)}>
-            {flipped ? "Recto" : "Verso"}
-        </button>
-        {#if canGyro}
-            <button type="button" class="btn btn-small" class:on={gyro} onclick={toggleGyro}>
-                {gyro ? "Inclinaison activée" : "Incliner le téléphone"}
-            </button>
-        {/if}
         {#if copy}
             <a class="btn btn-small" href="/cartes/carte/{copy.id}">Historique</a>
             {@render actions?.(copy)}
         {/if}
     </div>
-    <p class="hint muted">Glisse sur le côté pour la retourner · le reflet suit ton doigt</p>
 </div>
 
 <style>
@@ -119,9 +101,18 @@
         padding: 1rem;
         background:
             radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rarity) 22%, transparent), transparent 60%),
-            rgba(8, 8, 10, 0.96);
+            rgb(8, 8, 10);
         overflow: auto;
         animation: appear 0.25s ease-out;
+    }
+
+    /* Page masquée sous la fenêtre ouverte (voir onMount) ; la fenêtre reste visible. */
+    :global(html.card-inspecting body) {
+        visibility: hidden;
+    }
+
+    .inspector {
+        visibility: visible;
     }
 
     .close {
@@ -196,15 +187,6 @@
         flex-wrap: wrap;
         justify-content: center;
         gap: 0.4rem;
-    }
-
-    .tools .on {
-        border-color: var(--accent);
-        color: var(--accent);
-    }
-
-    .hint {
-        font-size: 0.7rem;
     }
 
     @keyframes appear {

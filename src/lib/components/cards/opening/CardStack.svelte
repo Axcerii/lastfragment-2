@@ -137,9 +137,6 @@
                 {formatSerial(top.copy.serial, top.template.maxPrints)} · {wearTier(top.copy.wear).label} · {formatWear(top.copy.wear)}
             </span>
         {/if}
-        {#if !reversed}
-            <span class="hint muted">Touche la carte pour la suivante · glisse sur le côté pour la retourner</span>
-        {/if}
         <span class="buttons">
             <button type="button" class="btn btn-small" onclick={turnTop}>Retourner</button>
             <button type="button" class="btn btn-small btn-accent" onclick={throwTop}>
@@ -185,7 +182,8 @@
         pointer-events: none;
     }
 
-    .layer.top :global(.scene) {
+    /* Balayage de lumière à l'arrivée : sur les calques éclairés de la carte (variables non héritées). */
+    .layer.top :global(.scene .light) {
         animation: sweep 1.8s ease-out 0.15s;
     }
 
@@ -270,11 +268,6 @@
         text-transform: uppercase;
     }
 
-    .hint {
-        margin-top: 0.3rem;
-        font-size: 0.72rem;
-    }
-
     .buttons {
         display: flex;
         gap: 0.4rem;
@@ -317,7 +310,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .layer.top :global(.scene),
+        .layer.top :global(.scene .light),
         .stack {
             animation: none;
             transition: none;

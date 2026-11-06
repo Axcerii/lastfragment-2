@@ -62,9 +62,9 @@
         <div class="tex dust" style="{layers.dust.style} opacity: {layers.dust.alpha}"></div>
         <div class="tex edge" style="{layers.edge.style} --edge: {layers.edge.width}cqw; opacity: {layers.edge.alpha}"></div>
         {#if surface}
-            <div class="tex fine lit" style="{layers.fine.style} --k: {layers.fine.alpha}"></div>
+            <div class="tex fine lit light" style="{layers.fine.style} --k: {layers.fine.alpha}"></div>
             {#if layers.scuff.alpha > 0}
-                <div class="tex scuff lit" style="{layers.scuff.style} --k: {layers.scuff.alpha}"></div>
+                <div class="tex scuff lit light" style="{layers.scuff.style} --k: {layers.scuff.alpha}"></div>
             {/if}
         {/if}
         {#if layers.stain.show}
@@ -164,7 +164,8 @@
         background-image: url("/cartes/usure/rayures-frottement.webp");
     }
 
-    /* Rayures : presque invisibles hors de la lumière, vives là où passe le reflet. */
+    /* Rayures : presque invisibles hors de la lumière, vives là où passe le reflet (la classe `light`
+       leur fait recevoir la position du reflet, voir CollectibleCard). */
     .lit {
         mix-blend-mode: screen;
         opacity: calc(var(--k) * (0.35 + var(--active) * 0.9));

@@ -8,6 +8,7 @@
     import { fade } from "svelte/transition";
     import { matches } from "$lib/components/table/MediaPicker.svelte";
     import { CARD_TYPES, padNumber, RARITIES, UNIQUE_RARITY, type CopyView, type TemplateView } from "$lib/cards/types";
+    import { requestGyro } from "$lib/cards/gyro.svelte";
     import CardInspector from "./CardInspector.svelte";
     import CollectibleCard from "./CollectibleCard.svelte";
 
@@ -138,6 +139,8 @@
     function inspect(templateId: number, copyId?: number) {
         const stack = stackOf.get(templateId);
         if (!stack) return;
+        // Le toucher qui ouvre la carte sert aussi à demander le gyroscope (iOS).
+        requestGyro();
         inspected = { templateId, index: Math.max(0, stack.copies.findIndex((c) => c.id === copyId)) };
     }
 
@@ -251,7 +254,7 @@
                                         tilt="hover"
                                         glow={slot.rarity >= UNIQUE_RARITY}
                                     />
-                                    {#if slot.rarity >= UNIQUE_RARITY}<span class="unique-tag">Unique</span>{/if}
+                                    {#if slot.rarity >= UNIQUE_RARITY}<span class="aura" aria-hidden="true"></span><span class="unique-tag">Unique</span>{/if}
                                     {#if slot.owned > 1}<span class="count">×{slot.owned}</span>{/if}
                                 </button>
                             {:else}
@@ -585,6 +588,7 @@
         display: flex;
         flex-direction: column;
         gap: 0.6rem;
+        min-width: 0;
     }
 
     .album-head {
@@ -612,6 +616,7 @@
 
     .album-head h2 {
         margin: 0;
+        overflow-wrap: anywhere;
         font-size: 1.6rem;
         line-height: 1.1;
     }
@@ -671,14 +676,19 @@
         font-size: 0.85rem;
     }
 
+    /* Colonnes « minmax(0, 1fr) » : une colonne 1fr ne descend pas sous la largeur minimale de son
+       contenu, or une case pas encore dessinée (content-visibility) annonce 140 px. Sur téléphone,
+       trois cases de 140 px ne tiennent pas : l'album débordait de l'écran. */
     .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
         gap: 1rem 0.8rem;
+        min-width: 0;
     }
 
     .tile {
         position: relative;
+        min-width: 0;
         padding: 0;
         border: none;
         background: none;
@@ -699,16 +709,31 @@
         animation: reveal 0.7s cubic-bezier(0.34, 1.4, 0.5, 1);
     }
 
-    .tile.unique::before {
-        content: "";
+    /* Halo tournant : un disque dégradé qui pivote (transform, sans repeindre), découpé au contour de
+       la carte puis flouté. Animer l'angle du dégradé (--spin) repeignait le halo et son flou à
+       chaque image, sans fin, tant que la case était à l'écran. */
+    .aura {
         position: absolute;
         inset: -4px;
+        z-index: -1;
+        overflow: hidden;
         border-radius: 6% / 4.3%;
-        background: conic-gradient(from var(--spin, 0deg), var(--rarity-5), var(--Pura), var(--rarity-3), var(--rarity-5));
         filter: blur(6px);
         opacity: 0.7;
-        z-index: -1;
+        pointer-events: none;
+    }
+
+    .aura::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 150%;
+        aspect-ratio: 1;
+        translate: -50% -50%;
+        background: conic-gradient(var(--rarity-5), var(--Pura), var(--rarity-3), var(--rarity-5));
         animation: spin 4s linear infinite;
+        will-change: transform;
     }
 
     .unique-tag {
@@ -794,12 +819,6 @@
         padding: 2rem 0;
     }
 
-    @property --spin {
-        syntax: "<angle>";
-        inherits: false;
-        initial-value: 0deg;
-    }
-
     @keyframes grow {
         from {
             width: 0;
@@ -817,8 +836,14 @@
 
     @keyframes spin {
         to {
-            --spin: 360deg;
+            rotate: 360deg;
         }
+    }
+
+    /* Carte ouverte en grand par-dessus : les animations sans fin de la page cachée s'arrêtent. */
+    :global(.card-inspecting) .aura::before,
+    :global(.card-inspecting) .meter .fill {
+        animation-play-state: paused;
     }
 
     @keyframes reveal {
@@ -831,7 +856,7 @@
     @media (prefers-reduced-motion: reduce) {
         .fill,
         .tile.unique,
-        .tile.unique::before,
+        .aura::before,
         .meter.over .fill,
         .meter.complete.active .fill {
             animation: none;
@@ -849,7 +874,7 @@
 
     @media (max-width: 600px) {
         .grid {
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 0.8rem 0.5rem;
         }
 
@@ -869,7 +894,7 @@
 
     @media (max-width: 380px) {
         .grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 </style>
