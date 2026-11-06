@@ -2,6 +2,7 @@
     // Vitrine d'un joueur : ses cartes épinglées, sur son profil et sur la fiche de son personnage.
     // Un toucher ouvre la carte en grand, comme dans la collection.
     import type { OwnedCard } from "$lib/cards/types";
+    import { requestGyro } from "$lib/cards/gyro.svelte";
     import CardInspector from "./CardInspector.svelte";
     import CollectibleCard from "./CollectibleCard.svelte";
 
@@ -32,7 +33,10 @@
         {#if cards.length}
             <div class="row">
                 {#each cards as card (card.copy.id)}
-                    <button type="button" class="tile" onclick={() => (open = card)} aria-label={card.template.name}>
+                    <button type="button" class="tile" onclick={() => {
+                            requestGyro();
+                            open = card;
+                        }} aria-label={card.template.name}>
                         <CollectibleCard card={card.template} copy={card.copy} lite tilt="hover" glow={card.template.rarity >= 4} />
                     </button>
                 {/each}

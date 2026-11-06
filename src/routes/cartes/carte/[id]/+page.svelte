@@ -17,7 +17,6 @@
     let card = $derived(data.card);
     let t = $derived(card.template);
     let c = $derived(card.copy);
-    let flipped = $state(false);
 
     const EVENTS: Record<string, string> = {
         tirage: "Tirée d’un booster par",
@@ -39,8 +38,8 @@
 
 <main>
     <div class="card">
-        <CollectibleCard card={t} copy={c} bind:flipped tilt="full" glow={t.rarity >= 3} label={t.name} />
-        <button type="button" class="btn btn-small" onclick={() => (flipped = !flipped)}>{flipped ? "Recto" : "Verso"}</button>
+        <!-- Un toucher ou un glissé sur le côté la retourne ; sur téléphone, elle suit l'inclinaison. -->
+        <CollectibleCard card={t} copy={c} tilt="full" glow={t.rarity >= 3} label={t.name} />
     </div>
 
     <section class="details">

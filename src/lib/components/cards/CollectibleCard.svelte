@@ -7,6 +7,10 @@
     // sont repeints. L'illustration, l'usure dessinée et le reste de la face sont posés une fois
     // pour toutes dans leurs propres calques (voir « Calques » en bas des styles) : avant, chaque
     // image repeignait toute la carte, filtres des images compris, d'où les saccades.
+    // Les variables de la lumière (--mx, --my, --active) ne sont pas héritées (app.css) : elles sont
+    // écrites sur les seuls calques qui s'en servent (classe `light`). Posées sur la carte entière,
+    // elles faisaient recalculer le style de tout le recto et du verso à chaque image, ce qui
+    // occupait plus de la moitié du temps du téléphone pendant qu'on manipulait la carte.
     //
     //   tilt="none"   carte figée (grilles sur téléphone, aperçus)
     //   tilt="hover"  s'incline au survol de la souris seulement : le doigt fait défiler la page
@@ -26,6 +30,7 @@
         type CardLook,
         type CopyView,
     } from "$lib/cards/types";
+    import { gyro, requestGyro } from "$lib/cards/gyro.svelte";
     import CardBack from "./CardBack.svelte";
     import WearMarks from "./WearMarks.svelte";
 
@@ -36,7 +41,6 @@
         tilt = "none",
         lite = false,
         wear: wearOverride,
-        gyro = false,
         glow = false,
         label,
         onswipeup,
@@ -50,8 +54,6 @@
         lite?: boolean;
         /** Usure imposée (aperçu du créateur) ; sinon celle de l'exemplaire. */
         wear?: number;
-        /** Inclinaison au gyroscope (vue détaillée sur téléphone, après autorisation). */
-        gyro?: boolean;
         /** Halo de la couleur de la rareté autour de la carte. */
         glow?: boolean;
         label?: string;
@@ -148,31 +150,45 @@
         reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
 
+    // Calques éclairés, relus à chaque reprise du mouvement (la finition peut changer dans le créateur).
+    let lights: HTMLElement[] = [];
+
     function paint() {
-        if (!scene) return;
+        if (!scene || !cardEl) return;
         const k = 0.16;
         current.x += (target.x - current.x) * k;
         current.y += (target.y - current.y) * k;
         current.a += (target.a - current.a) * k;
-        const s = scene.style;
-        s.setProperty("--mx", (current.x * 100).toFixed(2));
-        s.setProperty("--my", (current.y * 100).toFixed(2));
-        s.setProperty("--active", current.a.toFixed(3));
-        s.setProperty("--rx", `${((0.5 - current.y) * 24 * current.a).toFixed(2)}deg`);
-        s.setProperty("--ry", `${((current.x - 0.5) * 28 * current.a).toFixed(2)}deg`);
-        s.setProperty("--hyp", Math.min(1, Math.hypot(current.x - 0.5, current.y - 0.5) * 2).toFixed(3));
+        const mx = (current.x * 100).toFixed(1);
+        const my = (current.y * 100).toFixed(1);
+        const active = current.a.toFixed(3);
+        for (const el of lights) {
+            const s = el.style;
+            s.setProperty("--mx", mx);
+            s.setProperty("--my", my);
+            s.setProperty("--active", active);
+        }
+        cardEl.style.setProperty("--rx", `${((0.5 - current.y) * 24 * current.a).toFixed(2)}deg`);
+        cardEl.style.setProperty("--ry", `${((current.x - 0.5) * 28 * current.a).toFixed(2)}deg`);
         const moving =
             Math.abs(target.x - current.x) + Math.abs(target.y - current.y) + Math.abs(target.a - current.a) > 0.002;
         frame = moving ? requestAnimationFrame(paint) : 0;
     }
 
     function kick() {
-        if (!frame && !reduced) frame = requestAnimationFrame(paint);
+        if (frame || reduced || !scene) return;
+        lights = [...scene.querySelectorAll<HTMLElement>(".light")];
+        frame = requestAnimationFrame(paint);
     }
+
+    // Position de la carte à l'écran, lue une fois par geste : la relire à chaque mouvement du doigt
+    // forçait le navigateur à recalculer la page entre deux images.
+    let box: DOMRect | null = null;
+    const forget = () => (box = null);
 
     function aim(clientX: number, clientY: number) {
         if (!scene) return;
-        const box = scene.getBoundingClientRect();
+        box ??= scene.getBoundingClientRect();
         let x = (clientX - box.left) / box.width;
         // Verso visible : le reflet suit le doigt du bon côté.
         if (Math.cos(((angle + drag) * Math.PI) / 180) < 0) x = 1 - x;
@@ -185,6 +201,7 @@
     }
 
     function release() {
+        box = null;
         target = { ...rest };
         kick();
     }
@@ -226,7 +243,8 @@
 
     function onpointerdown(e: PointerEvent) {
         if (tilt !== "full" || flung) return;
-        const box = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        requestGyro();
+        box = (e.currentTarget as HTMLElement).getBoundingClientRect();
         press = { x: e.clientX, y: e.clientY, t: performance.now(), axis: null, width: box.width, height: box.height };
         last = { x: e.clientX, y: e.clientY, t: performance.now(), vx: 0, vy: 0 };
         (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -299,19 +317,25 @@
     }
 
     // ─── Gyroscope ───
+    // Sur téléphone, une carte manipulable suit l'inclinaison de l'appareil, sans bouton à activer :
+    // directement sur Android, après une autorisation demandée au premier toucher sur iOS.
     let base: { beta: number; gamma: number } | null = null;
+    let tiltOn = $derived(tilt === "full" && gyro.on);
 
     function onorientation(e: DeviceOrientationEvent) {
         if (e.beta === null || e.gamma === null || press) return;
         base ??= { beta: e.beta, gamma: e.gamma };
         const dx = Math.max(-1, Math.min(1, (e.gamma - base.gamma) / 30));
         const dy = Math.max(-1, Math.min(1, (e.beta - base.beta) / 30));
-        target = { x: 0.5 + dx / 2, y: 0.5 + dy / 2, a: Math.min(1, 0.35 + Math.hypot(dx, dy)) };
+        const next = { x: 0.5 + dx / 2, y: 0.5 + dy / 2, a: Math.min(1, 0.35 + Math.hypot(dx, dy)) };
+        // Le capteur tremble un peu même posé : sans ce seuil, la carte se repeignait sans arrêt.
+        if (Math.abs(next.x - target.x) + Math.abs(next.y - target.y) < 0.004) return;
+        target = next;
         kick();
     }
 
     $effect(() => {
-        if (!gyro || tilt !== "full") return;
+        if (!tiltOn) return;
         base = null;
         window.addEventListener("deviceorientation", onorientation);
         return () => window.removeEventListener("deviceorientation", onorientation);
@@ -322,6 +346,8 @@
     });
 </script>
 
+<svelte:window onscroll={forget} onresize={forget} />
+
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
     bind:this={scene}
@@ -331,13 +357,14 @@
     role={label ? "img" : undefined}
     aria-label={label}
     {onpointerdown}
+    onpointerenter={forget}
     {onpointermove}
     {onpointerup}
     {onpointerleave}
     onpointercancel={oncancel}
 >
     <div bind:this={cardEl} class="card" class:dragging class:flung style="--spin: {angle}deg">
-        <div class="drop" aria-hidden="true"></div>
+        <div class="drop light" aria-hidden="true"></div>
         <div class="face front frame-{face.frame} finish-{finish} r{card.rarity}" style={maskStyle(frontMask)}>
             <div class="art">
                 {#if face.background}
@@ -348,7 +375,7 @@
                     <div class="layer backdrop backdrop-{face.backdrop}"></div>
                 {/if}
                 {#if finish === "reverse"}
-                    <div class="shine under"></div>
+                    <div class="shine under light"></div>
                 {/if}
                 {#if face.art && !face.popout}
                     <div class="layer framing" style={placement(face.art)}>
@@ -357,7 +384,7 @@
                 {/if}
             </div>
 
-            <div class="ring"></div>
+            <div class="ring light"></div>
 
             {#if face.art && face.popout}
                 <div class="pop">
@@ -380,7 +407,7 @@
                 </span>
             {/if}
 
-            <div class="plate">
+            <div class="plate light">
                 <strong class="name" style:--len={Math.max(8, (card.name || "Sans nom").length)} use:fitName>{card.name || "Sans nom"}</strong>
                 {#if face.subtitle}<span class="subtitle">{face.subtitle}</span>{/if}
             </div>
@@ -399,15 +426,15 @@
             </span>
 
             <WearMarks {wear} {seed} surface={!lite} />
-            <div class="shine"></div>
-            {#if finish === "eclat"}<div class="cracks"></div>{/if}
-            <div class="glare"></div>
+            <div class="shine light"></div>
+            {#if finish === "eclat"}<div class="cracks light"></div>{/if}
+            <div class="glare light"></div>
         </div>
 
         {#if !lite}
             <div class="face back-face" style={maskStyle(backMask)}>
                 <CardBack {card} {copy} {wear} {seed} />
-                <div class="glare"></div>
+                <div class="glare light"></div>
             </div>
         {/if}
     </div>
@@ -417,12 +444,6 @@
     /* ─── Scène et volume ─────────────────────────────────────────────── */
 
     .scene {
-        --mx: 32;
-        --my: 26;
-        --active: 0;
-        --rx: 0deg;
-        --ry: 0deg;
-        --hyp: 0.4;
         --radius: 4.6cqw;
         container-type: inline-size;
         width: 100%;
@@ -946,8 +967,9 @@
 
     /* Or : cadre en feuille d'or et reflet chaud. */
     .finish-or {
+        /* Angle fixe : le reflet glisse par la position du fond (.ring, .plate), seuls calques éclairés. */
         --frame: linear-gradient(
-            calc(110deg + var(--mx) * 0.6deg),
+            130deg,
             #6e4f16 0%,
             #e9cd7c 18%,
             #a97b28 34%,
@@ -1053,18 +1075,20 @@
 
     /* Carte manipulable : ce qui ne bouge pas est rendu une fois dans son calque (l'illustration et
        ses filtres, le sujet qui déborde, l'usure dessinée), ce qui suit la lumière dans le sien. Ainsi
-       une inclinaison ne repeint que les reflets. Les cartes figées (grilles) n'en ont pas besoin. */
-    .scene:not(.tilt-none) .art,
-    .scene:not(.tilt-none) .pop,
-    .scene:not(.tilt-none) .face > :global(.wear > svg) {
+       une inclinaison ne repeint que les reflets. Seulement pour la carte qu'on manipule (grand format)
+       ou que la souris survole : posés sur toutes les cartes d'une grille, ces calques se comptaient
+       par centaines et le navigateur les réassemblait tous à chaque image de la carte ouverte. */
+    .tilt-full .art,
+    .tilt-full .pop,
+    .tilt-full .face > :global(.wear > svg),
+    .tilt-hover:hover .art,
+    .tilt-hover:hover .pop,
+    .tilt-hover:hover .face > :global(.wear > svg) {
         will-change: transform;
     }
 
-    .scene:not(.tilt-none) .shine,
-    .scene:not(.tilt-none) .glare,
-    .scene:not(.tilt-none) .cracks,
-    .scene:not(.tilt-none) .drop,
-    .scene:not(.tilt-none) .face > :global(.wear > .lit) {
+    .tilt-full .light,
+    .tilt-hover:hover .light {
         will-change: opacity;
     }
 
