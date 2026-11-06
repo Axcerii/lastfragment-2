@@ -7,7 +7,7 @@ import { createHash } from 'crypto';
 import { mkdir, readdir, stat } from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
-import { UploadError, uploadDir } from '../uploads';
+import { fileHead, IMAGE_KIND, imageKind, UploadError, uploadDir } from '../uploads';
 
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
 const ACCEPTED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']);
@@ -134,16 +134,20 @@ function serial<T>(task: () => Promise<T>): Promise<T> {
 
 const exists = (file: string) => stat(file).then(() => true, () => false);
 
-function decoder(file: string) {
-	const isSvg = file.toLowerCase().endsWith('.svg');
+// Seuls ces formats atteignent sharp, vérifiés sur les octets (voir imageKind) : un fichier d'un autre
+// format, même nommé `.png`, n'est jamais confié à libvips.
+function decoder(input: string | Buffer, kind: string) {
+	const isSvg = kind === 'svg';
 	// Un SVG est rastérisé : ses éventuels scripts disparaissent avec lui.
-	return sharp(file, { animated: !isSvg, density: isSvg ? 300 : undefined, limitInputPixels: 80_000_000 });
+	return sharp(input, { animated: !isSvg, density: isSvg ? 300 : undefined, limitInputPixels: 80_000_000 });
 }
 
 async function render(file: string, target: string, width: number, height: number, quality: number) {
 	if (await exists(target)) return;
+	const kind = imageKind(await fileHead(file));
+	if (!kind || kind !== IMAGE_KIND[path.extname(file).toLowerCase()]) throw new UploadError('Format inattendu.');
 	await serial(() =>
-		decoder(file)
+		decoder(file, kind)
 			.rotate()
 			.resize({ width, height, fit: 'inside', withoutEnlargement: true })
 			.webp({ quality, effort: 4 })
@@ -196,7 +200,8 @@ export async function saveCardSource(file: File): Promise<string> {
 	if (file.size > MAX_UPLOAD) throw new UploadError('Image trop lourde (15 Mo maximum).');
 
 	const input = Buffer.from(await file.arrayBuffer());
-	const isSvg = file.type === 'image/svg+xml';
+	const kind = imageKind(input);
+	if (!kind || kind !== IMAGE_KIND[file.type]) throw new UploadError('Ce fichier n’est pas une image lisible.');
 	const stem =
 		path
 			.parse(file.name)
@@ -210,7 +215,7 @@ export async function saveCardSource(file: File): Promise<string> {
 
 	try {
 		await serial(() =>
-			sharp(input, { animated: !isSvg, density: isSvg ? 300 : undefined, limitInputPixels: 80_000_000 })
+			decoder(input, kind)
 				.rotate()
 				.resize({ width: 2400, height: 2400, fit: 'inside', withoutEnlargement: true })
 				.webp({ quality: 90, effort: 4 })

@@ -1,4 +1,4 @@
-import { mkdir, unlink, writeFile } from 'fs/promises';
+import { mkdir, open, unlink, writeFile } from 'fs/promises';
 import path from 'path';
 import { env } from '$env/dynamic/private';
 
@@ -41,6 +41,53 @@ const VIDEO_EXTENSIONS: Record<string, string> = {
 
 export class UploadError extends Error {}
 
+export type ImageKind = 'jpeg' | 'png' | 'webp' | 'gif' | 'svg';
+
+/** Format attendu pour chaque type d'image accepté (et chaque extension). */
+export const IMAGE_KIND: Record<string, ImageKind> = {
+	'image/jpeg': 'jpeg',
+	'image/png': 'png',
+	'image/webp': 'webp',
+	'image/gif': 'gif',
+	'image/svg+xml': 'svg',
+	'.jpg': 'jpeg',
+	'.jpeg': 'jpeg',
+	'.png': 'png',
+	'.webp': 'webp',
+	'.gif': 'gif',
+	'.svg': 'svg'
+};
+
+const startsWith = (head: Uint8Array, bytes: number[], at = 0) => bytes.every((b, i) => head[at + i] === b);
+
+/**
+ * Format réel d'une image d'après ses premiers octets. Le type annoncé par le navigateur et
+ * l'extension ne prouvent rien : un fichier HEIF, TIFF ou autre renommé en `.png` serait lu par
+ * le décodeur correspondant de sharp (libvips), dont les failles visent justement ces formats-là.
+ */
+export function imageKind(head: Uint8Array): ImageKind | null {
+	if (startsWith(head, [0xff, 0xd8, 0xff])) return 'jpeg';
+	if (startsWith(head, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return 'png';
+	if (startsWith(head, [0x52, 0x49, 0x46, 0x46]) && startsWith(head, [0x57, 0x45, 0x42, 0x50], 8)) return 'webp';
+	if (startsWith(head, [0x47, 0x49, 0x46, 0x38])) return 'gif';
+	// SVG : du texte qui commence par une balise et contient <svg dès le début.
+	const text = new TextDecoder('utf-8', { fatal: false }).decode(head.subarray(0, 1024)).replace(/^\uFEFF/, '').trimStart();
+	if (text.startsWith('<') && /<svg[\s>]/i.test(text)) return 'svg';
+	return null;
+}
+
+/** Premiers octets d'un fichier du disque. */
+export async function fileHead(file: string, length = 1024): Promise<Uint8Array> {
+	const handle = await open(file, 'r');
+	try {
+		const buffer = Buffer.alloc(length);
+		const { bytesRead } = await handle.read(buffer, 0, length, 0);
+		return buffer.subarray(0, bytesRead);
+	} finally {
+		await handle.close();
+	}
+}
+
 /**
  * Enregistre une image envoyée par un formulaire et renvoie son URL publique.
  * `folder` est un nom de sous-dossier fixé par le code, jamais par l'utilisateur.
@@ -49,7 +96,11 @@ export async function saveImage(file: File, folder: string): Promise<string> {
 	const extension = EXTENSIONS[file.type];
 	if (!extension) throw new UploadError('Format d’image non pris en charge.');
 	if (file.size > MAX_SIZE) throw new UploadError('Image trop lourde (8 Mo maximum).');
-	return writeUpload(file, folder, extension);
+	const data = new Uint8Array(await file.arrayBuffer());
+	if (imageKind(data) !== IMAGE_KIND[file.type]) {
+		throw new UploadError('Le contenu de ce fichier ne correspond pas à son format d’image.');
+	}
+	return writeUpload(file, folder, extension, data);
 }
 
 /** Enregistre un fichier audio (musique, ambiance, effet) et renvoie son URL publique. */
@@ -74,7 +125,7 @@ function audioExtensionOf(name: string): string | undefined {
 	return Object.values(AUDIO_EXTENSIONS).includes(extension) ? extension : undefined;
 }
 
-async function writeUpload(file: File, folder: string, extension: string): Promise<string> {
+async function writeUpload(file: File, folder: string, extension: string, data?: Uint8Array): Promise<string> {
 	const dir = path.join(uploadDir(), folder);
 	await mkdir(dir, { recursive: true });
 
@@ -86,7 +137,7 @@ async function writeUpload(file: File, folder: string, extension: string): Promi
 		.slice(0, 40);
 	const filename = `${Date.now()}-${stem || 'fichier'}${extension}`;
 
-	await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
+	await writeFile(path.join(dir, filename), data ?? Buffer.from(await file.arrayBuffer()));
 	return `/uploads/${folder}/${filename}`;
 }
 

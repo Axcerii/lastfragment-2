@@ -96,6 +96,24 @@ Légende : ✅ fait et testé · 🚀 à faire lors de la mise en production · 
 | Accès | ✅ toutes les pages et actions sous `/admin/cartes` réservées au MJ (403 testé depuis un compte joueur) ; `/cartes` réservé aux comptes connectés. Jeu caché (par défaut) : `/cartes` et ses actions répondent 404 à tous sauf au MJ, vérifié dans `hooks.server.ts` (les actions de formulaire ne passent pas par les `load`), liens et vitrines masqués (testé en visiteur et en joueur) |
 | Limites de débit | ✅ ouverture 6 / 30 s, propositions 10 / 10 min, réponses 30 / min par joueur ; 15 propositions en attente et 12 cartes par côté au plus |
 
+## 8. Check-up du 6 novembre 2026
+
+Revue de tout ce qui a été ajouté depuis : Lastdle et son annonce n8n, versos secrets et gestion MJ
+des cartes, énigmes de `/flux`, scripts de sauvegarde. Vérifié sur un build de production
+(`node build`) avec une base MySQL neuve.
+
+| Point | État |
+| --- | --- |
+| **sharp / libvips (corrigé)** | ✅ `npm audit` signalait 4 failles « High » dans sharp 0.34 (libvips, libheif, librsvg). Elles étaient atteignables sans compte : un visiteur propose un brouillon avec une image, elle rejoint la bibliothèque du créateur de cartes, qui en fait une miniature avec sharp dès que le MJ l'ouvre. Et sharp choisit son décodeur d'après le contenu, pas l'extension : un fichier HEIF nommé `.png` arrivait jusqu'à libheif. sharp passe en 0.35.5 |
+| **Format réel des images (corrigé)** | ✅ toute image envoyée (brouillons, fiches, table, créateur de cartes) doit commencer par les octets de son format (JPEG, PNG, WebP, GIF, SVG), sinon elle est refusée avant d'être écrite. Une image déjà présente sur le disque est revérifiée avant chaque passage dans sharp. Testé : HEIF déguisé en PNG refusé à l'envoi, miniature d'un ancien fichier piégé refusée (404) sans appel à sharp |
+| Intégrations n8n | ✅ `/integrations/*` : 404 sans `INTEGRATION_TOKEN` configuré (32 caractères minimum), 401 avec un mauvais jeton (comparaison en temps constant), jamais l'annonce d'un jour à venir (400, testé). n8n n'écoute que sur `127.0.0.1` et n'a pas accès au réseau de la base |
+| Versos secrets | ✅ vidés côté serveur pour qui n'a jamais eu la carte, sur toutes les pages qui envoient des cartes (collection d'un autre joueur, vitrines, échanges, lien direct) ; tests automatiques en place |
+| Actions des cartes | ✅ chaque action vérifie la connexion et la propriété de la carte (épingler la carte d'un autre : 403) ; déplacer ou retirer un exemplaire est réservé au MJ ; jeu caché : 404 pour les visiteurs et les joueurs (testé) |
+| Énigmes `/flux` et Lastdle | ✅ réponses gardées au serveur (ordre de la Genèse, pays, personnage du jour, jeton AES-GCM du mode infini) ; corps limité à 1 Ko / 4 Ko, 90 et 60 requêtes / min par IP ; un seul booster par énigme du jour, même avec des requêtes simultanées (contrainte unique + mise à jour conditionnelle) |
+| Sauvegardes | ✅ dump fait dans le conteneur de la base (aucun mot de passe sur la machine ni dans la liste des processus), fichiers en `umask 077`, dossier `backups/` exclu de git et de l'image Docker |
+| Dépendances | ➖ il reste les 3 alertes connues de la CLI `prisma` (voir § 4) |
+| Gyroscope des cartes | ✅ `Permissions-Policy` ne bloque que caméra, micro et géolocalisation ; l'orientation du téléphone n'est lue qu'après autorisation sur iOS et ne quitte jamais le navigateur |
+
 ## Points connus, non corrigés (faible risque)
 
 - **Brouillard côté navigateur** : l'image de fond de la scène est envoyée entière, un joueur
@@ -104,3 +122,12 @@ Légende : ✅ fait et testé · 🚀 à faire lors de la mise en production · 
 - **Verrouillage de compte** : 10 échecs bloquent le compte 15 min, y compris pour son
   propriétaire (compromis assumé contre la force brute).
 - Pas de page « changer mon mot de passe » côté joueur ; pas de journal des actions MJ.
+- **Lastdle et booster** : sans compte, une requête peut comparer jusqu'à 200 personnages d'un coup,
+  ce qui donne la réponse du jour immédiatement ; il suffit ensuite de la proposer connecté pour
+  gagner le booster. C'est une triche sur le jeu, pas une faille : un joueur patient y arrive aussi
+  essai par essai.
+- **Images des brouillons gardées telles quelles** : elles ne sont pas réencodées (pour ne pas
+  exposer sharp aux visiteurs anonymes), mais leur format est vérifié et elles sont servies avec
+  `nosniff` et une CSP `sandbox`. Le volume reste borné par la limite de 5 envois / IP / 10 min.
+- **`bun.lock` périmé** : il ne connaît ni `sharp` ni `three`. L'image Docker utilise
+  `package-lock.json` ; à supprimer ou régénérer pour ne pas installer d'anciennes versions par erreur.
