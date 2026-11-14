@@ -32,8 +32,9 @@
     let hintList = $state<HTMLElement | null>(null);
     let stage = $state<HTMLElement | null>(null);
 
-    // Le dessin s'éclaire un peu plus à chaque bon dragon.
-    let glow = $derived(success ? 1 : 0.1 + (sequence.length / DRAGONS.length) * 0.25);
+    // Le symbole du Tout reste invisible : il apparaît le temps d'un clignement à chaque bon dragon
+    // (flash), et ne s'affiche vraiment qu'à la fin, en grandissant.
+    let glow = $derived(success ? 1 : 0);
 
     let lines = $derived(
         sequence.slice(1).map((to, i) => ({ from: CONSTELLATION.nodes[sequence[i]], to: CONSTELLATION.nodes[to], key: `${sequence[i]}-${to}` })),
@@ -94,93 +95,133 @@
     }
 </script>
 
-<div class="layout" class:with-hints={failedOnce}>
-    <div class="stage" bind:this={stage} class:success class:gone class:shake={wrong} style="aspect-ratio: {VIEW_W} / {VIEW_H};">
-        <div class="halo" aria-hidden="true"></div>
+<!-- Tout tient sur un écran. La place des indices est réservée dès le départ (à droite sur grand
+     écran, dessous sur téléphone) : rien ne bouge quand ils apparaissent. -->
+<div class="layout">
+    <div class="area">
+        <div class="stage" bind:this={stage} class:success class:gone class:shake={wrong} style="aspect-ratio: {VIEW_W} / {VIEW_H}; --ratio: {VIEW_W / VIEW_H};">
+            <div class="halo" aria-hidden="true"></div>
 
-        <svg viewBox="{-PAD} {-PAD} {VIEW_W} {VIEW_H}" aria-hidden="true">
-            {#key flash}
-                <g class="drawing" class:flash={flash > 0 && !success} style="--glow: {glow};">
-                    <circle cx="462.8" cy="387.6" r="188.8" />
-                    <circle cx="462.8" cy="198.8" r="188.8" />
-                    <circle cx="462.8" cy="576.4" r="188.8" />
-                    <circle cx="626.5" cy="482.1" r="188.8" />
-                    <circle cx="626.5" cy="293.3" r="188.8" />
-                    <circle cx="299.4" cy="482.1" r="188.8" />
-                    <circle cx="299.4" cy="293.3" r="188.8" />
-                    <circle cx="68.3" cy="388.4" r="58.3" />
-                    <circle cx="856.9" cy="388.4" r="58.3" />
-                    <line class="thick" x1="655.1" y1="388.4" x2="798.6" y2="388.4" />
-                    <line class="thick" x1="126.6" y1="388.4" x2="276" y2="388.4" />
-                    <line class="thick" x1="462.6" y1="580.1" x2="462.6" y2="765.2" />
-                    <line class="thick" x1="462.6" y1="10.3" x2="462.6" y2="203.5" />
-                    <line class="thin" x1="68.1" y1="820.2" x2="68.1" y2="442.5" />
-                    <line class="thin" x1="856.9" y1="820.2" x2="856.9" y2="442.5" />
-                </g>
-            {/key}
+            <svg viewBox="{-PAD} {-PAD} {VIEW_W} {VIEW_H}" aria-hidden="true">
+                {#key flash}
+                    <g class="drawing" class:flash={flash > 0 && !success} style="--glow: {glow};">
+                        <circle cx="462.8" cy="387.6" r="188.8" />
+                        <circle cx="462.8" cy="198.8" r="188.8" />
+                        <circle cx="462.8" cy="576.4" r="188.8" />
+                        <circle cx="626.5" cy="482.1" r="188.8" />
+                        <circle cx="626.5" cy="293.3" r="188.8" />
+                        <circle cx="299.4" cy="482.1" r="188.8" />
+                        <circle cx="299.4" cy="293.3" r="188.8" />
+                        <circle cx="68.3" cy="388.4" r="58.3" />
+                        <circle cx="856.9" cy="388.4" r="58.3" />
+                        <line class="thick" x1="655.1" y1="388.4" x2="798.6" y2="388.4" />
+                        <line class="thick" x1="126.6" y1="388.4" x2="276" y2="388.4" />
+                        <line class="thick" x1="462.6" y1="580.1" x2="462.6" y2="765.2" />
+                        <line class="thick" x1="462.6" y1="10.3" x2="462.6" y2="203.5" />
+                        <line class="thin" x1="68.1" y1="820.2" x2="68.1" y2="442.5" />
+                        <line class="thin" x1="856.9" y1="820.2" x2="856.9" y2="442.5" />
+                    </g>
+                {/key}
 
-            {#each lines as line (line.key)}
-                <g class="link" out:fade={{ duration: 300 }}>
-                    <line class="link-glow" x1={line.from.x} y1={line.from.y} x2={line.to.x} y2={line.to.y} pathLength="1" />
-                    <line class="link-core" x1={line.from.x} y1={line.from.y} x2={line.to.x} y2={line.to.y} pathLength="1" />
-                </g>
+                {#each lines as line (line.key)}
+                    <g class="link" out:fade={{ duration: 300 }}>
+                        <line class="link-glow" x1={line.from.x} y1={line.from.y} x2={line.to.x} y2={line.to.y} pathLength="1" />
+                        <line class="link-core" x1={line.from.x} y1={line.from.y} x2={line.to.x} y2={line.to.y} pathLength="1" />
+                    </g>
+                {/each}
+            </svg>
+
+            {#each DRAGONS as name (name)}
+                {@const linked = sequence.includes(name)}
+                <button
+                    class="dragon"
+                    class:linked
+                    class:pending={pending === name}
+                    class:wrong={wrong === name}
+                    style="left: {left(name)}%; top: {top(name)}%; width: {(ICON / VIEW_W) * 100}%;"
+                    aria-label={name}
+                    aria-pressed={linked}
+                    disabled={success}
+                    onclick={() => pick(name)}
+                >
+                    <span class="icon" data-dragon={name} style="--icon: url('/icones/dragons/{name}.svg');"></span>
+                </button>
             {/each}
-        </svg>
+        </div>
 
-        {#each DRAGONS as name (name)}
-            {@const linked = sequence.includes(name)}
-            <button
-                class="dragon"
-                class:linked
-                class:pending={pending === name}
-                class:wrong={wrong === name}
-                style="left: {left(name)}%; top: {top(name)}%; width: {(ICON / VIEW_W) * 100}%;"
-                aria-label={name}
-                aria-pressed={linked}
-                disabled={success}
-                onclick={() => pick(name)}
-            >
-                <span class="icon" data-dragon={name} style="--icon: url('/icones/dragons/{name}.svg');"></span>
-            </button>
-        {/each}
+        {#if message}
+            <p class="message-error" role="alert">{message}</p>
+        {/if}
     </div>
 
-    {#if message}
-        <p class="message-error" role="alert">{message}</p>
-    {/if}
-
-    {#if failedOnce}
-        <aside class="hints" in:fade={{ duration: 500 }} class:leaving={success}>
-            <h2>Murmures</h2>
+    <aside class="hints" class:shown={failedOnce} class:leaving={success} aria-hidden={!failedOnce}>
+        {#if failedOnce}
+            <h2 in:fade={{ duration: 500 }}>Murmures</h2>
             <div class="hint-list" bind:this={hintList}>
                 {#each hints as hint, i (i)}
                     <p class:current={i === hints.length - 1} in:fade={{ duration: 500 }}>{hint}</p>
                 {/each}
             </div>
             <p class="muted small">Chaque dragon trouvé dévoile la suite.</p>
-        </aside>
-    {/if}
+        {/if}
+    </aside>
 </div>
 
 <style>
+    /* Toute la hauteur sous le titre (--head, posé par la page), sans défilement : la
+       constellation prend la place qui reste, les indices ont la leur. */
     .layout {
         display: grid;
-        justify-items: center;
-        gap: 1.5rem;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) clamp(7.5rem, 25svh, 12rem);
+        gap: 0.8rem;
         width: 100%;
+        height: calc(100svh - var(--head, 6rem) - 3.5rem);
     }
 
-    /* Grand écran : les indices à côté de la constellation, sans jamais la recouvrir. */
-    @media (min-width: 1100px) {
-        .layout.with-hints {
-            grid-template-columns: minmax(0, 1fr) 20rem;
-            align-items: center;
+    /* Grand écran, ou téléphone couché : les indices à droite. Une colonne vide de même largeur à
+       gauche garde la constellation au centre. */
+    @media (min-width: 1100px), (orientation: landscape) and (max-height: 600px) {
+        .layout {
+            --side: clamp(12rem, 22vw, 20rem);
+            grid-template-columns: var(--side) minmax(0, 1fr) var(--side);
+            grid-template-rows: minmax(0, 1fr);
+            column-gap: clamp(1rem, 2vw, 2rem);
         }
+
+        .area {
+            grid-column: 2;
+        }
+
+        .hints {
+            grid-column: 3;
+            align-self: center;
+            max-height: min(100%, 28rem);
+        }
+    }
+
+    /* La constellation, aussi grande que sa case le permet, en largeur comme en hauteur. */
+    .area {
+        position: relative;
+        container-type: size;
+        display: grid;
+        place-items: center;
+        min-height: 0;
+    }
+
+    .area .message-error {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: 100%;
+        text-align: center;
     }
 
     .stage {
         position: relative;
-        width: min(100%, 56rem, calc((100svh - 8rem) * 1.1));
+        width: min(100cqw, 100cqh * var(--ratio), 56rem);
     }
 
     .halo {
@@ -219,13 +260,14 @@
     }
 
     .drawing.flash {
-        animation: flash 0.7s ease-out;
+        animation: flash 0.9s ease-in-out;
     }
 
+    /* Fin : le symbole s'affiche enfin, en grandissant. */
     .success .drawing {
         filter: drop-shadow(0 0 14px rgba(210, 182, 116, 0.7));
         transform-origin: 462.6px 410px;
-        animation: ignite 2.2s ease-out forwards;
+        animation: ignite 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
     }
 
     .link line {
@@ -326,37 +368,99 @@
         visibility: hidden;
     }
 
+    /* Case des indices : réservée, invisible jusqu'au premier échec. */
     .hints {
+        justify-self: center;
+        box-sizing: border-box;
         width: min(100%, 36rem);
+        min-height: 0;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        padding: 1.25rem;
+        gap: 0.5rem;
+        padding: 0.9rem 1.1rem;
         border: 1px solid rgba(210, 182, 116, 0.35);
         border-radius: var(--radius);
         background: rgba(20, 20, 20, 0.85);
-        transition: opacity 1s ease;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity 0.6s ease,
+            visibility 0.6s;
+    }
+
+    .hints.shown {
+        opacity: 1;
+        visibility: visible;
     }
 
     .hints.leaving {
         opacity: 0;
+        transition-duration: 1s;
     }
 
     .hints h2 {
-        font-size: 1.6rem;
+        font-size: 1.3rem;
         color: var(--secondary);
     }
 
+    /* Les murmures défilent dans leur case ; les plus anciens s'estompent vers le haut. */
     .hint-list {
+        flex: 1;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        max-height: 14rem;
+        padding-right: 0.6rem;
         overflow-y: auto;
+        overscroll-behavior: contain;
         font-family: var(--titleFont);
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         line-height: 1.4;
         color: rgba(255, 255, 255, 0.7);
+        mask-image: linear-gradient(to bottom, transparent, #000 1.2rem);
+        scrollbar-width: thin;
+        scrollbar-color: rgba(210, 182, 116, 0.55) transparent;
+    }
+
+    /* Barre de défilement : un fil doré, discret. */
+    .hint-list::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .hint-list::-webkit-scrollbar-track {
+        margin: 0.6rem 0;
+        background: rgba(210, 182, 116, 0.08);
+        border-radius: 2px;
+    }
+
+    .hint-list::-webkit-scrollbar-thumb {
+        background: linear-gradient(to bottom, rgba(210, 182, 116, 0.3), var(--secondary));
+        border-radius: 2px;
+    }
+
+    .hint-list p:first-child {
+        padding-top: 0.6rem;
+    }
+
+    .hints .small {
+        flex-shrink: 0;
+    }
+
+    /* Téléphone : une case plus serrée. */
+    @media (max-width: 700px) {
+        .hints {
+            padding: 0.6rem 0.8rem;
+            gap: 0.3rem;
+        }
+
+        .hints h2 {
+            font-size: 1.05rem;
+        }
+
+        .hint-list {
+            font-size: 0.95rem;
+            line-height: 1.3;
+        }
     }
 
     .hint-list p.current {
@@ -374,23 +478,28 @@
         }
     }
 
+    /* Un bon dragon : le symbole du Tout apparaît le temps d'un clignement, puis disparaît. */
     @keyframes flash {
-        30% {
-            opacity: calc(var(--glow) + 0.3);
+        0%,
+        100% {
+            opacity: 0;
+        }
+        35% {
+            opacity: 0.25;
         }
     }
 
     @keyframes ignite {
         0% {
-            opacity: 0.35;
-            transform: scale(1);
+            opacity: 0;
+            transform: scale(0.82);
         }
-        60% {
-            opacity: 0.75;
+        55% {
+            opacity: 0.9;
         }
         100% {
-            opacity: 0.6;
-            transform: scale(1.04);
+            opacity: 0.8;
+            transform: scale(1.1);
         }
     }
 

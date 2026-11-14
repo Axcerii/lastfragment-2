@@ -17,6 +17,9 @@ const LETTER_DRAGON: Record<string, string> = {
 	J: 'Shizari'
 };
 
+/** Le dragon de chaque lettre A–K, Artrish (B) et Yinva (K) compris : pour l'affichage. */
+export const LETTER_NAMES: Record<string, string> = { ...LETTER_DRAGON, B: 'Artrish', K: 'Yinva' };
+
 // Élémentaires ×2, Pestia ×1,8, rares ×1,6. Artrish, Yinva et les entités ne donnent pas de flux.
 const WEIGHTS: Record<string, number> = { A: 2, D: 2, E: 2, G: 2, I: 2, H: 1.8, C: 1.6, F: 1.6, J: 1.6 };
 
@@ -26,7 +29,14 @@ export const FAVORED_BONUS = 1.2;
 // Le second dragon ne compte que s'il est à 5 points ou moins du premier.
 const SECOND_GAP = 5;
 
-export type FluxResult = { first: string; second: string; chaos?: boolean; stats: StatBlock };
+export type FluxResult = {
+	first: string;
+	second: string;
+	chaos?: boolean;
+	stats: StatBlock;
+	/** Géant tiré demi-géant (voir HALF_GIANT_CHANCE dans races.ts) : lui canalise le flux. */
+	halfGiant?: boolean;
+};
 
 const pick = <T>(list: T[], random: () => number) => list[Math.floor(random() * list.length)];
 
@@ -71,6 +81,13 @@ export function dragonScores(counts: Record<string, number>, favored: readonly s
 		const weight = WEIGHTS[letter] * (favored.includes(dragon) ? FAVORED_BONUS : 1);
 		return { letter, dragon, score: Math.ceil((counts[letter] ?? 0) * weight) };
 	});
+}
+
+/** Dragon de flux seul en tête pour les réponses données ; null sans réponse ou à égalité. */
+export function leadingDragon(answers: number[], favored: readonly string[] = []): string | null {
+	const scores = dragonScores(countLetters(answers), favored).sort((a, b) => b.score - a.score);
+	if (scores[0].score === 0 || scores[0].score === scores[1].score) return null;
+	return scores[0].dragon;
 }
 
 /** Occurrences de chaque lettre sur l'ensemble des réponses, avant pondération. */

@@ -18,7 +18,7 @@
         type DragonName,
     } from "$lib/flux/discovery";
     import { isFluxResult, scoreAnswers } from "$lib/flux/quiz";
-    import { raceById, type Race } from "$lib/flux/races";
+    import { HALF_GIANT_CHANCE, raceById, type Race } from "$lib/flux/races";
     import { SECRET_DOOR, SECRET_TITLES, consumeFromHome } from "$lib/flux/secret";
 
     // La progression reste dans le navigateur, lue au chargement.
@@ -134,12 +134,25 @@
         stage = "map";
     }
 
+    // La dernière terre vient d'être trouvée : le temps de lire sa fiche, puis les portails
+    // s'ouvrent d'eux-mêmes. Qui revient sur une carte déjà complète garde le bouton.
+    const AUTO_PORTALS_MS = 5000;
+    let portalsSoon = $state(false);
+    let portalsTimer = 0;
+
     function found(id: string, description: string) {
+        const wasComplete = allKnown;
         progress.found[id] = description;
         save();
+        if (!wasComplete && COUNTRIES.every((c) => c.description || progress.found[c.id])) {
+            portalsSoon = true;
+            portalsTimer = window.setTimeout(() => stage === "map" && goTo("portals"), AUTO_PORTALS_MS);
+        }
     }
 
     function goTo(next: typeof stage) {
+        clearTimeout(portalsTimer);
+        portalsSoon = false;
         stage = next;
         hoverTitle = undefined;
         mapShown = next === "map";
@@ -197,8 +210,12 @@
 
     function finish(answers: number[]) {
         fromTest = true;
-        // Le peuple choisi rend certains dragons plus probables (aucun pour les humains).
-        progress.result = scoreAnswers(answers, Math.random, race?.favored);
+        // Le peuple choisi rend certains dragons plus probables (aucun pour les humains). Un géant
+        // sur dix se découvre demi-géant : tiré ici une fois, gardé avec le résultat.
+        progress.result = {
+            ...scoreAnswers(answers, Math.random, race?.favored),
+            halfGiant: race?.id === "geant" && Math.random() < HALF_GIANT_CHANCE,
+        };
         save();
         goTo("result");
     }
@@ -267,7 +284,7 @@
         </div>
     {:else if ready && stage === "journey" && race}
         <div in:fade={{ duration: 800 }}>
-            <FluxJourney color={race.color} secret={secret && race.id === SECRET_DOOR} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
+            <FluxJourney color={race.color} favored={race.favored} secret={secret && race.id === SECRET_DOOR} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
         </div>
     {:else if ready && stage === "result" && progress.result}
         <div class="full">
@@ -290,7 +307,9 @@
         {#if stage === "map"}
             <footer class="map-footer" in:fade={{ delay: 300 }}>
                 {#if allKnown}
-                    <p class="ending" in:fade>Toutes les terres te sont connues. Les portails t'attendent.</p>
+                    <p class="ending" in:fade>
+                        Toutes les terres te sont connues. {portalsSoon ? "Les portails s'ouvrent…" : "Les portails t'attendent."}
+                    </p>
                     <button class="btn portals-btn" in:fade onclick={() => goTo("portals")}>Franchir les portails</button>
                 {/if}
                 <button class="btn btn-small" onclick={() => goTo("constellation")}>Revoir la constellation</button>
@@ -535,12 +554,17 @@
 
     /* Écran bas (téléphone couché) : titre et boutons réduits à une ligne chacun. */
     @media (max-height: 560px) {
-        .full-map header {
-            padding: 0.6rem 4rem 1rem;
+        header {
+            padding: 0.5rem 4rem 0.7rem;
+            gap: 0.1rem;
         }
 
-        .full-map h1 {
+        h1 {
             font-size: 1.5rem;
+        }
+
+        header p {
+            font-size: 0.85rem;
         }
 
         .full-map header p,

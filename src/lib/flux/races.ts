@@ -54,4 +54,33 @@ export const RACES: Race[] = [
 /** Lueur où se rejoignent Humains et Géants : la possibilité d'un demi-géant. */
 export const HALF_GIANT_COLOR = '#a9d8ff';
 
+/** Un géant sur dix est en fait un demi-géant : le sang humain lui ouvre le flux. */
+export const HALF_GIANT_CHANCE = 0.1;
+
 export const raceById = (id: unknown) => RACES.find((r) => r.id === id) ?? null;
+
+/** Ce que le résultat affiche du peuple : demi-géant compris. */
+export type Lineage = {
+	name: string;
+	color: string;
+	/** Faux pour le géant : « Flux : Aucun, flux caché : … » */
+	hasFlux: boolean;
+	/** Phrase sur le peuple, reprise dans la description du personnage */
+	summary: string;
+	/** Mot sous le flux, sur le certificat */
+	note?: string;
+};
+
+// À CONFIRMER : phrases provisoires du demi-géant.
+const HALF_GIANT: Lineage = {
+	name: 'Demi-géant',
+	color: HALF_GIANT_COLOR,
+	hasFlux: true,
+	summary: 'Né du sang des géants et des humains : sa peau est dure, et pourtant le flux la traverse.',
+	note: 'Le sang des humains coule aussi en toi : tu es demi-géant, et le flux t’a choisi.'
+};
+
+export function lineageOf(race: Race, halfGiant = false): Lineage {
+	if (race.id === 'geant' && halfGiant) return HALF_GIANT;
+	return { name: race.name, color: race.color, hasFlux: race.id !== 'geant', summary: race.motto, note: race.resultNote };
+}

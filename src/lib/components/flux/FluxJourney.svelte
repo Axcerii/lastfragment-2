@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import * as THREE from "three";
+    import { LETTER_NAMES, leadingDragon } from "$lib/flux/quiz";
     import { QUESTIONS } from "$lib/flux/quiz-data";
     import { secretComplete, secretTitle } from "$lib/flux/secret";
 
@@ -15,12 +16,15 @@
     // réponse). Pas de post-traitement, aucun état Svelte touché pendant le rendu.
     let {
         color,
+        favored = [],
         secret = false,
         onFinish,
         onSecret,
         onTitle,
     }: {
         color: string;
+        /** Dragons favorisés par la race (voir races.ts) : ils comptent pour la couleur des ailes. */
+        favored?: readonly string[];
         /** Secret éveillé (arrivée par l'accueil, bonne porte) : voir secret.ts. */
         secret?: boolean;
         onFinish: (answers: number[]) => void;
@@ -71,7 +75,21 @@
         head(): { x: number; y: number };
         /** Écran étroit : hauteur (px) de la bande réservée au noyau, sous la question. */
         anchor(y: number): void;
+        /** Couleur de l'ange, son Œil et ses ailes (CSS) ; blanc pour null. */
+        wing(color: string | null): void;
+        /** Dragons de la réponse choisie : ils apparaissent parmi les étoiles, sur le vol qui suit. */
+        dragons(names: string[], last: boolean): void;
     } | null = null;
+
+    // Couleur d'un dragon (variables du site). Shizari a celle du fond : éclairci pour se lire.
+    const dragonColor = (name: string) =>
+        name === "Shizari" ? "#bdbdbd" : getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim() || "#ffffff";
+
+    // L'ange prend la couleur du dragon en tête des réponses ; blanc à égalité (et au départ).
+    function wingColor() {
+        const leader = leadingDragon(answers, favored);
+        return leader ? dragonColor(leader) : null;
+    }
 
     // Écran étroit : les réponses occupent toute la largeur. Le noyau a sa bande à lui, entre la
     // question et les réponses (BAND, part de la hauteur de l'écran), pour rester visible.
@@ -95,6 +113,7 @@
     async function choose(k: number, el: HTMLElement) {
         if (phase !== "answers") return;
         answers.push(k);
+        const letters = question.answers[k].letters;
         const r = el.getBoundingClientRect();
         // La réponse rejoint le bout du chemin, qui va s'allonger vers l'étoile.
         const target = scene3d?.head() ?? { x: innerWidth / 2, y: innerHeight / 2 };
@@ -106,6 +125,9 @@
         scene3d?.absorb();
         await wait(ABSORB_MS);
 
+        // La réponse a rejoint le chemin : l'ange se teinte.
+        scene3d?.wing(wingColor());
+
         // Le flux grandit : un segment de plus s'allume, le noyau et le ciel se densifient.
         lit = answered;
         answered++;
@@ -115,6 +137,8 @@
         const found = secret && !!onSecret && secretComplete(answers);
         const last = found || index + 1 >= QUESTIONS.length;
         phase = last ? "ending" : "warp";
+        // Les dragons de ses lettres attendaient parmi les étoiles : on les croise pendant le vol.
+        if (!reduced) scene3d?.dragons([...letters].map((l) => LETTER_NAMES[l]).filter(Boolean), last);
         // Mouvement réduit : le chemin s'allonge quand même, sans vol (warp instantané).
         if (last) {
             if (scene3d) await scene3d.warp(reduced ? 1 : WARP_MS * 1.6, true);
@@ -152,6 +176,30 @@
         if (el) choose(k, el);
     }
 
+
+    // Le symbole d'un dragon en lumière blanche (la couleur vient du shader), avec un halo : il
+    // brille comme les étoiles. Large marge tout autour : le flou de vitesse s'y étale.
+    function drawSigil(img: HTMLImageElement) {
+        const S = 256;
+        const PAD = 56;
+        const shape = document.createElement("canvas");
+        shape.width = shape.height = S;
+        const g = shape.getContext("2d")!;
+        // Sans taille propre, le SVG garde ses proportions dans le carré (sa viewBox, centrée).
+        g.drawImage(img, PAD, PAD, S - 2 * PAD, S - 2 * PAD);
+        g.globalCompositeOperation = "source-in";
+        g.fillStyle = "#fff";
+        g.fillRect(0, 0, S, S);
+        const out = document.createElement("canvas");
+        out.width = out.height = S;
+        const h = out.getContext("2d")!;
+        h.filter = "blur(12px)";
+        h.drawImage(shape, 0, 0);
+        h.filter = "none";
+        h.globalCompositeOperation = "lighter";
+        h.drawImage(shape, 0, 0);
+        return out;
+    }
 
     // Une aile droite, plume par plume, en lumière blanche (la couleur vient du shader). L'épaule
     // est à gauche (6 %, 60 % de la hauteur) ; le bras monte vers le poignet, d'où partent les
@@ -382,10 +430,112 @@
         lines.visible = false;
         scene.add(points, lines);
 
+        // Couleur vive : la lumière s'additionne, une teinte sombre (Goliath, Drii) paraîtrait terne.
+        // Les couleurs franches passent à pleine lumière ; les gris (Aqua, Shizari) restent argentés.
+        const vivid = (target: THREE.Color, css: string) => {
+            target.set(css);
+            const max = Math.max(target.r, target.g, target.b);
+            const min = Math.min(target.r, target.g, target.b);
+            if (max > 0 && max - min > 0.15) target.multiplyScalar(1 / max);
+            return target;
+        };
+
+        // ---- Dragons parmi les étoiles. Ceux des lettres de la réponse choisie attendaient au loin :
+        // ils s'allument doucement, de la lumière des étoiles, filent vers nous avec elles, s'étirent
+        // un peu avec la vitesse, et
+        // s'effacent une fois dépassés. Un plan par dragon (12 au plus à la fois, réutilisés), une
+        // texture par symbole, dessinée une fois.
+        let disposed = false;
+        const dragonMaps = new Map<string, THREE.Texture>();
+        for (const name of new Set(Object.values(LETTER_NAMES))) {
+            const img = new Image();
+            img.src = `/icones/dragons/${name}.svg`;
+            img.decode()
+                .then(() => {
+                    if (!disposed) dragonMaps.set(name, new THREE.CanvasTexture(drawSigil(img)));
+                })
+                .catch(() => {});
+        }
+        const SIGIL = 1.5;
+        const sigilGeometry = new THREE.PlaneGeometry(SIGIL, SIGIL);
+        const sigilVertex = /* glsl */ `
+            uniform float uPop, uStretch;
+            uniform vec2 uDir;
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                // Il éclot (de 55 % à sa taille), puis la vitesse l'étire un peu vers le bord de
+                // l'écran, où il file ; sa traînée reste en arrière, vers le centre d'où il vient.
+                vec2 p = position.xy * (0.55 + 0.45 * uPop);
+                p += uDir * (dot(p, uDir) * uStretch * 0.45 - uStretch * ${(SIGIL * 0.12).toFixed(2)});
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 0.0, 1.0);
+            }
+        `;
+        const sigilFragment = /* glsl */ `
+            uniform sampler2D uMap;
+            uniform vec3 uColor;
+            uniform float uAlpha, uStretch;
+            uniform vec2 uDir;
+            varying vec2 vUv;
+            void main() {
+                // Léger flou de vitesse : la silhouette répétée le long de sa course.
+                float a = 0.0;
+                for (int i = 0; i < 6; i++) a += texture2D(uMap, vUv + uDir * (float(i) / 5.0) * uStretch * 0.06).a;
+                a = a / 6.0 * uAlpha;
+                // La lumière des étoiles : la couleur du peuple, mêlée de blanc. Mélange additif : la
+                // couleur est déjà multipliée par l'alpha au rendu.
+                gl_FragColor = vec4(mix(uColor, vec3(1.0), 0.55), a);
+            }
+        `;
+        type Sigil = {
+            mesh: THREE.Mesh;
+            material: THREE.ShaderMaterial;
+            u: { uMap: { value: THREE.Texture | null }; uColor: { value: THREE.Color }; uAlpha: { value: number }; uPop: { value: number }; uStretch: { value: number }; uDir: { value: THREE.Vector2 } };
+            /** Place autour de l'axe de vol, et profondeur devant la caméra (négative). */
+            x: number;
+            y: number;
+            z: number;
+            born: number;
+            active: boolean;
+            /** Plus forte vitesse du vol croisée, et effacement une fois le vol retombé (0 → 1). */
+            peak: number;
+            gone: number;
+        };
+        const sigils: Sigil[] = Array.from({ length: 12 }, () => {
+            const u = {
+                uMap: { value: null as THREE.Texture | null },
+                // La couleur des étoiles (celle du peuple), partagée.
+                uColor: uniforms.uColor,
+                uAlpha: { value: 0 },
+                uPop: { value: 0 },
+                uStretch: { value: 0 },
+                uDir: { value: new THREE.Vector2(1, 0) },
+            };
+            const material = new THREE.ShaderMaterial({
+                uniforms: u,
+                vertexShader: sigilVertex,
+                fragmentShader: sigilFragment,
+                transparent: true,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending,
+            });
+            const mesh = new THREE.Mesh(sigilGeometry, material);
+            mesh.visible = false;
+            mesh.frustumCulled = false;
+            scene.add(mesh);
+            return { mesh, material, u, x: 0, y: 0, z: 0, born: 0, active: false, peak: 0, gone: 0 };
+        });
+
         // ---- Noyau de flux : un anneau de bruit qui respire, un cœur, et un rayon vers la réponse visée.
+        // L'ange (cet Œil et ses ailes) a sa propre couleur : celle du dragon en tête des réponses,
+        // blanche à égalité (et au départ). Elle y glisse doucement (angelTarget, suivie dans la
+        // boucle de rendu) ; le ciel et le chemin gardent la couleur du peuple.
+        const angelTint = { value: new THREE.Color(1, 1, 1) };
+        const angelTarget = new THREE.Color(1, 1, 1);
         const coreUniforms = {
             uTime: uniforms.uTime,
-            uColor: uniforms.uColor,
+            uColor: angelTint,
             uFlare: { value: 0 },
             uFocus: { value: new THREE.Vector2(0, 1) },
             uFocusAmt: { value: 0 },
@@ -521,7 +671,7 @@
                     float d = length(vUv - vec2(${WING_UV.x.toFixed(2)}, ${WING_UV.y.toFixed(2)}));
                     float sweep = 0.72 + 0.28 * sin(d * 9.0 - uTime * 1.6);
                     float a = m * sweep * (0.5 + uCharge * 0.25 + uFar * 0.35 + uFlare * 0.45) * (1.0 - uFade);
-                    vec3 col = mix(uColor, vec3(1.0), 0.4 + m * 0.4);
+                    vec3 col = mix(uColor, vec3(1.0), 0.15 + m * 0.35);
                     gl_FragColor = vec4(col * a, min(a, 1.0));
                 }
             `,
@@ -879,6 +1029,34 @@
             progress(p) {
                 charge = p;
             },
+            wing(css) {
+                // Les gris (Aqua, Shizari) restent argentés, plus ternes que le blanc d'une égalité.
+                vivid(angelTarget, css ?? "#ffffff");
+            },
+            dragons(names, last) {
+                const ready = names.filter((name) => dragonMaps.has(name));
+                // Répartis autour de l'axe de vol, jamais au centre (le noyau y brille).
+                const turn = Math.random() * Math.PI * 2;
+                ready.forEach((name, i) => {
+                    const d = sigils.find((s) => !s.active);
+                    if (!d) return;
+                    const a = turn + (i / ready.length) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+                    const r = 4 + Math.random() * 2.5;
+                    d.x = Math.cos(a) * r;
+                    d.y = Math.sin(a) * r;
+                    // Assez loin pour être dépassé à la fin du vol (bien plus loin pour la plongée
+                    // finale, bien plus rapide).
+                    d.z = -(last ? 75 : 34) - Math.random() * 6;
+                    d.born = performance.now();
+                    d.active = true;
+                    d.peak = 0;
+                    d.gone = 0;
+                    d.u.uMap.value = dragonMaps.get(name)!;
+                    d.u.uDir.value.set(Math.cos(a), Math.sin(a));
+                    d.u.uAlpha.value = 0;
+                    d.mesh.visible = true;
+                });
+            },
         };
 
         const onPointer = (e: PointerEvent) => pointer.set(e.clientX / width - 0.5, e.clientY / height - 0.5);
@@ -961,12 +1139,35 @@
             base.y = on.y + RIDE * (1 - diving);
 
             uniforms.uTravel.value += speed * dt;
+
+            // Les dragons filent avec les étoiles (même vitesse), s'étirent avec la vitesse du vol,
+            // et s'effacent à notre passage. Ceux qu'on n'a pas tout à fait dépassés s'éteignent
+            // quand le vol retombe : ils ne restent jamais sur les réponses suivantes.
+            for (const d of sigils) {
+                if (!d.active) continue;
+                d.z += speed * dt;
+                d.peak = Math.max(d.peak, s);
+                if (d.peak > 0.5 && s < 0.15) d.gone = Math.min(1, d.gone + dt * 4);
+                const age = (now - d.born) / 1000;
+                const pop = Math.min(1, age / 0.4);
+                const near = Math.min(1, Math.max(0, -d.z / 5));
+                const life = (1 - d.gone) * (1 - Math.min(1, Math.max(0, (age - 2.4) / 0.6)));
+                d.u.uPop.value = 1 - Math.pow(1 - pop, 3);
+                d.u.uAlpha.value = 0.55 * pop * near * life;
+                d.u.uStretch.value = s;
+                d.mesh.position.set(base.x + d.x, base.y + d.y, base.z + d.z);
+                if (d.z > -0.3 || life <= 0) {
+                    d.active = false;
+                    d.mesh.visible = false;
+                }
+            }
             uniforms.uStretch.value = (warp?.last ? 18 : 10) * s;
             uniforms.uStreak.value = s;
             lines.visible = s > 0.01;
             points.position.copy(base);
             lines.position.copy(base);
 
+            angelTint.value.lerp(angelTarget, 1 - Math.exp(-2 * dt));
             coreUniforms.uFlare.value = smooth(coreUniforms.uFlare.value, warp ? 1 : flareTarget, 6, dt);
             coreUniforms.uFocusAmt.value = smooth(coreUniforms.uFocusAmt.value, focusTarget, 8, dt);
             coreUniforms.uFocus.value.lerp(focusDir, 1 - Math.exp(-10 * dt)).normalize();
@@ -1022,8 +1223,10 @@
             for (const d of [
                 pointsGeometry, linesGeometry, coreGeometry, wingGeometry, pathGeometry, beadGeometry, sparkGeometry,
                 pointsMaterial, linesMaterial, coreMaterial, wingMaterial, pathMaterial, beadMaterial, sparkMaterial, wingMap,
+                sigilGeometry, ...sigils.map((s) => s.material), ...dragonMaps.values(),
             ])
                 d.dispose();
+            disposed = true;
             renderer.dispose();
             scene3d = null;
         };
@@ -1108,7 +1311,6 @@
         height: 100%;
         display: block;
     }
-
     .hud {
         position: absolute;
         top: 1.1rem;

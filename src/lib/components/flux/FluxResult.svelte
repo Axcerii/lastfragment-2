@@ -1,9 +1,11 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { goto } from "$app/navigation";
     import { fade, fly } from "svelte/transition";
     import Bar from "$lib/components/ui/Bar.svelte";
+    import { CHARACTER_DRAFT_KEY, characterDraft } from "$lib/flux/character";
     import { POTENTIAL_AXES, potential, revealFlux, type FluxResult } from "$lib/flux/quiz";
-    import type { Race } from "$lib/flux/races";
+    import { lineageOf, type Race } from "$lib/flux/races";
     import {
         COMBAT_STATS,
         CONSO_STATS,
@@ -34,6 +36,19 @@
     } = $props();
 
     let flux = $derived(revealFlux(result));
+    // Le peuple, demi-géant compris : le géant n'a pas de flux, seulement un flux caché.
+    let lineage = $derived(race ? lineageOf(race, result.halfGiant) : null);
+
+    // Le créateur de personnage reprend le nom (un des prénoms du flux), les stats, le peuple et
+    // le flux : il lit ce brouillon en arrivant.
+    function createCharacter() {
+        try {
+            sessionStorage.setItem(CHARACTER_DRAFT_KEY, JSON.stringify(characterDraft(result, race)));
+        } catch {
+            // Stockage indisponible : le créateur s'ouvre vide.
+        }
+        goto("/outils/createur");
+    }
 
     // Shizari a la couleur du fond du site : on l'éclaircit pour qu'il se lise.
     const DRAGON_COLOR: Record<string, string> = { Shizari: "#bdbdbd", Chaos: "#ff3b3b" };
@@ -153,14 +168,20 @@
                 {#if flux.dragon !== "Chaos"}
                     <span class="emblem" style="--icon: url('/icones/dragons/{flux.dragon}.svg');" aria-hidden="true"></span>
                 {/if}
-                <p class="blessing">
-                    {#if race}{race.name} · {/if}Bénédiction de <strong>{flux.dragon}</strong>
+                <p class="heading">
+                    {#if lineage}
+                        <span class="race" style="--r: {lineage.color};">{lineage.name}</span>
+                    {/if}
+                    <span class="blessing">Bénédiction de <strong>{flux.dragon}</strong></span>
                 </p>
                 <h2>{flux.name}</h2>
+                {#if lineage && !lineage.hasFlux}
+                    <p class="hidden-flux">Flux : Aucun, flux caché : <strong>{flux.name}</strong></p>
+                {/if}
                 <p class="quote">« {flux.quote} »</p>
                 <p class="description">{flux.description}</p>
-                {#if race?.resultNote}
-                    <p class="note">{race.resultNote}</p>
+                {#if lineage?.note}
+                    <p class="note">{lineage.note}</p>
                 {/if}
                 {#if flux.names.length}
                     <p class="names"><span class="muted">Prénoms possibles :</span> {flux.names.join(", ")}</p>
@@ -213,8 +234,14 @@
             </section>
 
             <div class="actions" in:fade={{ delay: 700 }}>
-                <button class="btn btn-small" onclick={onRetry}>Refaire le test</button>
-                <button class="btn btn-small" onclick={onMap}>Revoir la carte</button>
+                <button class="btn btn-small create" onclick={createCharacter}>Créer mon personnage</button>
+                <!-- Téléphone : libellés courts, pour que les trois boutons tiennent sur une ligne. -->
+                <button class="btn btn-small" onclick={onRetry} aria-label="Refaire le test">
+                    <span class="wide">Refaire le test</span><span class="narrow">Refaire</span>
+                </button>
+                <button class="btn btn-small" onclick={onMap} aria-label="Revoir la carte">
+                    <span class="wide">Revoir la carte</span><span class="narrow">La carte</span>
+                </button>
             </div>
         </div>
     {/if}
@@ -360,7 +387,8 @@
         animation: rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
     }
 
-    .card.revealed h2 {
+    .card.revealed h2,
+    .card.revealed .hidden-flux {
         animation-delay: 0.1s;
     }
 
@@ -459,12 +487,54 @@
         pointer-events: none;
     }
 
-    .blessing {
+    /* En tête du certificat : le peuple, à sa couleur, puis le dragon de bénédiction. */
+    .heading {
         position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem 0.7rem;
+    }
+
+    .race {
+        padding: 0.1rem 0.75rem;
+        font-family: var(--titleFont);
+        font-size: 0.85rem;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--r);
+        border: 1px solid color-mix(in srgb, var(--r) 55%, transparent);
+        border-radius: 999px;
+        box-shadow: 0 0 12px color-mix(in srgb, var(--r) 25%, transparent);
+    }
+
+    .blessing {
         font-size: 0.8rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--muted);
+    }
+
+    .hidden-flux {
+        position: relative;
+        font-size: 0.9rem;
+        color: var(--muted);
+    }
+
+    .hidden-flux strong {
+        font-weight: normal;
+        color: var(--d);
+    }
+
+    .narrow {
+        display: none;
+    }
+
+    .create {
+        border-color: var(--secondary);
+        color: var(--secondary);
+        box-shadow: 0 0 12px rgba(210, 182, 116, 0.35);
     }
 
     .blessing strong {
@@ -648,8 +718,45 @@
             gap: 0.3rem;
         }
 
-        .blessing {
+        .blessing,
+        .race {
             font-size: 0.7rem;
+        }
+
+        .hidden-flux {
+            font-size: 0.78rem;
+        }
+
+        .heading {
+            gap: 0.3rem 0.5rem;
+        }
+
+        .race {
+            padding: 0.05rem 0.55rem;
+            letter-spacing: 0.12em;
+        }
+
+        .blessing {
+            letter-spacing: 0.04em;
+        }
+
+        .actions {
+            flex-wrap: nowrap;
+            gap: 0.4rem;
+        }
+
+        .actions .btn {
+            padding: 0.3rem 0.65rem;
+            font-size: 0.72rem;
+            white-space: nowrap;
+        }
+
+        .wide {
+            display: none;
+        }
+
+        .narrow {
+            display: inline;
         }
 
         h2 {

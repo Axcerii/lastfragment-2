@@ -113,7 +113,11 @@
         {/if}
         <p class="description" in:fade={{ duration: 600 }}>{description}</p>
     {:else}
-        <h3><span class="sheet-icon unknown" style="--icon: url('/icones/pays/Inconnu.svg');"></span> Terre inconnue</h3>
+        <!-- Le symbole du pays, en indice : il dit déjà quelque chose de la terre. -->
+        <h3>
+            <span class="sheet-icon unknown" style="--icon: url('/icones/pays/{country.icon ?? 'Inconnu'}.svg');"></span>
+            Terre inconnue
+        </h3>
         {#if country.riddle}
             <p class="description">{country.riddle}</p>
         {/if}
@@ -144,7 +148,8 @@
                 <button
                     class="marker"
                     class:known
-                    class:neutral-marker={known && !country.icon}
+                    class:neutral-marker={!country.icon}
+                    class:calling={!found[country.id]}
                     class:selected={selectedId === country.id}
                     class:burst={justFound === country.id}
                     style="left: {country.x}%; top: {country.y}%; --size: {MAP_SYMBOL_SIZE}%;"
@@ -152,10 +157,12 @@
                     aria-expanded={selectedId === country.id}
                     onclick={() => select(country)}
                 >
-                    {#if known}
-                        {#if country.icon}
+                    {#if country.icon}
+                        {#key known}
                             <span class="marker-icon" in:scale={{ start: 0.4, duration: 700 }} style="--icon: url('/icones/pays/{country.icon}.svg');"></span>
-                        {/if}
+                        {/key}
+                    {/if}
+                    {#if known}
                         <span class="label" in:fade={{ duration: 800 }}>{country.name}</span>
                     {/if}
                 </button>
@@ -239,52 +246,42 @@
         opacity: 0.85;
     }
 
+    /* Chaque terre cliquable est cerclée de la couleur Accent, à la taille des symboles des dragons
+       imprimés sur la carte. Une onde douce part des terres à deviner et des terres données
+       (Augeaime, Vulcain, pour intriguer : les ouvrir n'est pas obligatoire) ; une terre trouvée
+       se calme. */
     .marker {
         position: absolute;
-        width: clamp(1.6rem, 3.2%, 2.6rem);
+        width: max(var(--size), 1.6rem);
         aspect-ratio: 1;
         transform: translate(-50%, -50%);
         display: grid;
         place-items: center;
         padding: 0;
-        border: 1px solid rgba(210, 182, 116, 0.6);
+        border: 1.5px solid var(--accent);
         border-radius: 50%;
         background: rgba(27, 27, 27, 0.9);
+        box-shadow: 0 0 10px rgba(229, 184, 204, 0.35);
         transition:
             transform 0.25s ease,
             box-shadow 0.3s ease,
             border-color 0.3s ease;
     }
 
-    .marker::after {
+    .marker.calling::after {
         content: "";
         position: absolute;
-        inset: -1px;
+        inset: -2px;
         border-radius: 50%;
-        border: 1px solid var(--secondary);
-        animation: ping 2.4s ease-out infinite;
+        border: 1.5px solid var(--accent);
+        animation: ping 2.8s ease-out infinite;
         pointer-events: none;
     }
 
     .marker:hover,
     .marker.selected {
         transform: translate(-50%, -50%) scale(1.15);
-        box-shadow: 0 0 16px rgba(210, 182, 116, 0.55);
-    }
-
-    /* Terre inconnue : un simple point doré, pour ne pas la confondre avec les symboles des dragons. */
-    .marker:not(.known) {
-        width: clamp(1.1rem, 2%, 1.6rem);
-        border-style: dashed;
-    }
-
-    .marker:not(.known)::before {
-        content: "";
-        width: 40%;
-        height: 40%;
-        border-radius: 50%;
-        background-color: var(--secondary);
-        box-shadow: 0 0 10px var(--secondary);
+        box-shadow: 0 0 18px rgba(229, 184, 204, 0.65);
     }
 
     .marker-icon {
@@ -294,28 +291,21 @@
         mask: var(--icon) center / contain no-repeat;
     }
 
-    /* Terre connue : son symbole, cerclé et à la taille de ceux des dragons imprimés sur la carte. */
-    .marker.known {
-        width: max(var(--size), 1.6rem);
-        border-color: var(--primary);
+    /* Terre inconnue : son symbole en indice, couleur Accent, qui palpite. */
+    .marker:not(.known) .marker-icon {
+        background-color: var(--accent);
+        animation: glimmer 2.8s ease-in-out infinite;
     }
 
-    /* Territoire sans nation : seulement son nom. */
+    /* Territoire sans nation (Vulcain) : un point Accent, son nom dessous. */
     .marker.neutral-marker {
-        width: 1.6rem;
-        border: none;
-        background: none;
+        width: 1.5rem;
+        background: radial-gradient(circle, var(--accent) 0 22%, rgba(27, 27, 27, 0.9) 30%);
     }
 
     .marker.neutral-marker .label {
-        top: 50%;
-        transform: translate(-50%, -50%);
         font-style: italic;
-        color: rgba(255, 255, 255, 0.75);
-    }
-
-    .marker.known::after {
-        display: none;
+        color: rgba(255, 255, 255, 0.8);
     }
 
     .marker.burst {
@@ -411,7 +401,7 @@
     }
 
     .sheet-icon.unknown {
-        background-color: var(--secondary);
+        background-color: var(--accent);
     }
 
     .revealed {
@@ -451,11 +441,18 @@
     @keyframes ping {
         0% {
             transform: scale(1);
-            opacity: 0.6;
+            opacity: 0.5;
         }
+        70%,
         100% {
-            transform: scale(1.9);
+            transform: scale(1.8);
             opacity: 0;
+        }
+    }
+
+    @keyframes glimmer {
+        50% {
+            opacity: 0.65;
         }
     }
 
@@ -479,7 +476,8 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .marker::after,
+        .marker.calling::after,
+        .marker:not(.known) .marker-icon,
         .marker.burst,
         form.wrong input {
             animation: none;

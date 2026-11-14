@@ -4,7 +4,7 @@
     import { bridge, maze } from "$lib/flux/maze";
     import { HALF_GIANT_COLOR, RACES, type Race } from "$lib/flux/races";
 
-    // Les trois portails : Humains et Géants côte à côte, reliés par la lueur d'un possible
+    // Les trois portails : Géants et Humains (au centre) côte à côte, reliés par la lueur d'un possible
     // demi-géant ; les Éternelles à part. Choisir un portail dévoile une phrase par-dessus les
     // portes ; le franchir ouvre ses deux battants, et on plonge dans la lumière.
     // Les portes ne portent pas le nom de leur peuple : leurs phrases sont les seuls indices.
@@ -87,6 +87,12 @@
     });
 
     const delay = (i: number) => `${(i * 0.37) % 3}s`;
+
+    // Géants, puis Humains au centre, reliés par la lueur ; les Éternelles à part.
+    const race = (id: Race["id"]) => RACES.find((r) => r.id === id)!;
+    const GIANT = race("geant");
+    const HUMAN = race("humain");
+    const ETERNAL = race("eternelle");
 </script>
 
 {#snippet portal(race: Race)}
@@ -150,9 +156,9 @@
     >
         <defs>
             <linearGradient id="half-giant-{vertical ? 'v' : 'h'}" x1="0" y1="0" x2={vertical ? 0 : 1} y2={vertical ? 1 : 0}>
-                <stop offset="0" stop-color={RACES[0].color} />
+                <stop offset="0" stop-color={GIANT.color} />
                 <stop offset="0.5" stop-color={HALF_GIANT_COLOR} />
-                <stop offset="1" stop-color={RACES[1].color} />
+                <stop offset="1" stop-color={HUMAN.color} />
             </linearGradient>
         </defs>
         {#each paths as d, i (i)}
@@ -165,14 +171,14 @@
 <section class="portals" class:entering bind:this={section} style="--origin: {origin};">
     <div class="row">
         <div class="duo">
-            {@render portal(RACES[0])}
+            {@render portal(GIANT)}
             <div class="bridge" class:dimmed={selected}>
                 {@render link(bridges.across, false)}
                 {@render link(bridges.down, true)}
             </div>
-            {@render portal(RACES[1])}
+            {@render portal(HUMAN)}
         </div>
-        {@render portal(RACES[2])}
+        {@render portal(ETERNAL)}
     </div>
 
     <p class="hint muted" class:hidden={selected}>Choisis le portail de ton peuple.</p>
@@ -655,7 +661,7 @@
     }
 
     /* Téléphone : les trois portes en diagonale, chaque phrase dans l'espace laissé libre. La
-       lueur des demi-géants relie en biais les Humains (en haut) aux Géants (au milieu). */
+       lueur des demi-géants relie en biais les Géants (en haut) aux Humains (au milieu). */
     @media (max-width: 860px) {
         .portals {
             --door-h: clamp(5rem, calc((100svh - 17rem) / 3 - 0.8rem), 11rem);
@@ -683,11 +689,11 @@
             gap: 0.9rem;
         }
 
-        .portal.humain {
+        .portal.geant {
             grid-area: 1 / 1 / 2 / 4;
         }
 
-        .portal.geant {
+        .portal.humain {
             grid-area: 2 / 2 / 3 / 4;
         }
 
@@ -711,7 +717,7 @@
             text-align: right;
         }
 
-        /* Part du centre de la porte des Humains vers celui des Géants. */
+        /* Part du centre de la porte des Géants vers celui des Humains. */
         .bridge {
             --dy: calc(var(--door-h) + var(--row-gap));
             position: absolute;
