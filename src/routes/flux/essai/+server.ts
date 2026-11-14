@@ -1,6 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { COUNTRIES, DRAGONS } from '$lib/flux/discovery';
 import { checkConstellation, checkCountry, isDragon } from '$lib/server/flux/discovery';
+import { checkSecret, unlockSecret } from '$lib/server/flux/secret';
 import { RateLimiter } from '$lib/server/ratelimit';
 import type { RequestHandler } from './$types';
 
@@ -13,16 +14,18 @@ const requests = new RateLimiter(90, 60 * 1000);
  *
  * - `{ type: 'constellation', sequence }` : dragons cliqués jusqu'ici, dans l'ordre.
  * - `{ type: 'country', id, guess }` : nom proposé pour un pays de la carte.
+ * - `{ type: 'secret', race, answers }` : chemin secret suivi jusqu'au bout ? Si oui, un cookie
+ *   signé ouvre la page secrète (voir $lib/server/flux/secret).
  *
  * Rien n'est enregistré ici : la page garde la progression dans le navigateur.
  */
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = async ({ request, cookies, getClientAddress }) => {
 	if (!requests.take(getClientAddress())) error(429, 'Doucement : réessaie dans une minute.');
 
 	const raw = await request.text();
 	if (raw.length > MAX_BODY) error(413, 'Requête trop longue.');
 
-	let body: { type?: unknown; sequence?: unknown; id?: unknown; guess?: unknown };
+	let body: { type?: unknown; sequence?: unknown; id?: unknown; guess?: unknown; race?: unknown; answers?: unknown };
 	try {
 		body = JSON.parse(raw);
 	} catch {
@@ -42,6 +45,12 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
 		if (typeof guess !== 'string' || guess.length > MAX_GUESS) error(400, 'Nom invalide.');
 		const description = checkCountry(id, guess);
 		return json(description ? { found: true, description } : { found: false });
+	}
+
+	if (body.type === 'secret') {
+		const opened = checkSecret(body.race, body.answers);
+		if (opened) unlockSecret(cookies);
+		return json({ opened });
 	}
 
 	error(400, 'Requête invalide.');

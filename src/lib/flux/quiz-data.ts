@@ -1,560 +1,180 @@
-// Questions, flux et citations du test de flux, repris tels quels de la V1
-// (table `quizz` et php/fluxDescriptions.php). Chaque réponse rapporte des lettres : voir $lib/flux/quiz.
+// Questions du test de flux (Quiz 2 : Quiz2Reponses/Quiz 2 - Feuille 1.csv), flux et citations repris
+// de la V1 (php/fluxDescriptions.php). Chaque réponse rapporte des lettres : voir $lib/flux/quiz.
 
 export type QuizQuestion = { text: string; answers: { text: string; letters: string }[] };
 
 export const QUESTIONS: QuizQuestion[] = [
 	{
-		text: "Quelle activité préférez-vous réaliser durant votre temps libre ?",
+		text: "Tes paupières sont lourdes, une odeur douce et familière dilate tes narines, tu te réveilles, allongé, dans un champ de...",
 		answers: [
-			{
-				text: "Faire du Sport",
-				letters: "I"
-			},
-			{
-				text: "Lire",
-				letters: "CEGO"
-			},
-			{
-				text: "Être avec des amis",
-				letters: "HJKLMPQ"
-			},
-			{
-				text: "Me balader",
-				letters: "ABDFN"
-			}
+			{ text: "Blé", letters: "EIK" },
+			{ text: "Maïs", letters: "AB" },
+			{ text: "Riz", letters: "DGJ" },
+			{ text: "Coquelicots", letters: "CFH" }
 		]
 	},
 	{
-		text: "À quel point te connais-tu ?",
+		text: "Tu te relèves, tu dépoussières ton équipement, tu plisses les yeux vers l'horizon, le soleil...",
 		answers: [
-			{
-				text: "0%",
-				letters: "KNPQ"
-			},
-			{
-				text: "25%",
-				letters: "FHO"
-			},
-			{
-				text: "50%",
-				letters: "AJ"
-			},
-			{
-				text: "75%",
-				letters: "BCGM"
-			},
-			{
-				text: "100%",
-				letters: "DEHL"
-			}
+			{ text: "Se lève", letters: "AEGK" },
+			{ text: "Se couche", letters: "BH" },
+			{ text: "Est au zénith", letters: "DFI" },
+			{ text: "N'est plus visible", letters: "CJ" }
 		]
 	},
 	{
-		text: "Les gens vous considèrent :",
+		text: "Une ombre se glisse dans la pénombre jusqu'à toi, tes yeux finissent par s'adapter à la lumière. La silhouette est celle...",
 		answers: [
-			{
-				text: "Optimiste",
-				letters: "AEHIJLM"
-			},
-			{
-				text: "Réaliste",
-				letters: "BDGO"
-			},
-			{
-				text: "Pessimiste",
-				letters: "CKNPQ"
-			},
-			{
-				text: "Lunatique",
-				letters: "F"
-			}
+			{ text: "d'un vieil homme inquiet pour toi", letters: "DJ" },
+			{ text: "d'une enfant un peu trop curieuse", letters: "AFK" },
+			{ text: "d'un paysan sali par l'effort", letters: "BEG" },
+			{ text: "d'un chevalier en armure", letters: "CHI" }
 		]
 	},
 	{
-		text: "Lorsque vous prenez une décision simple :",
+		text: "Observant ta confusion, la personne fouille dans sa besace et te tend...",
 		answers: [
-			{
-				text: "Vous le faites rapidement, sans hésitation, on n’a pas de temps à perdre dans notre vie.",
-				letters: "AFI"
-			},
-			{
-				text: "Vous pesez le pour et le contre et malgré tout, l’hésitation reste mais après de longues minutes de réflexion vous faites votre choix.",
-				letters: "BCGOP"
-			},
-			{
-				text: "Vous hésitez longuement et vous finissez souvent par laisser le hasard choisir.",
-				letters: "EHJLMN"
-			},
-			{
-				text: "Vous demandez à une personne tierce de choisir, que vous blâmez en cas de pépins.",
-				letters: "DKQ"
-			}
+			{ text: "un reste de pain encore un peu moelleux", letters: "CEJK" },
+			{ text: "une vessie à moitié remplie d'eau", letters: "DGI" },
+			{ text: "une pomme dans un état immaculé", letters: "BFH" },
+			{ text: "un sandwich travaillé et monté avec amour", letters: "A" }
 		]
 	},
 	{
-		text: "Quelle mort vous convient le plus parmi celle-ci :",
+		text: "Ton premier réflexe en voyant cet acte de bonté innocent est...",
 		answers: [
-			{
-				text: "Mourir de gloire en martyre / en combat.",
-				letters: "LI"
-			},
-			{
-				text: "Mourir paisiblement AVANT mon/ma compagne, comme ça, je n’ai pas à la/le voir souffrir.",
-				letters: "ACEHM"
-			},
-			{
-				text: "Mourir paisiblement APRÈS mon/ma compagne, comme ça, il/elle n’a pas à souffrir de mon départ.",
-				letters: "FGOQ"
-			},
-			{
-				text: "Mourir seule, paisiblement.",
-				letters: "JN"
-			},
-			{
-				text: "Mourir éclaté.e par une Bombe Atomique, autant ne pas se faire d’idée.",
-				letters: "BDKP"
-			}
+			{ text: "d'accepter et de le manger sans plus attendre", letters: "AEFI" },
+			{ text: "d'accepter avec précaution en vérifiant que le don n'est pas piégé", letters: "CDG" },
+			{ text: "d'accepter et de le ranger pour plus tard", letters: "HK" },
+			{ text: "de le refuser poliment.", letters: "BJ" }
 		]
 	},
 	{
-		text: "Ce soir, je regarde :",
+		text: "Le bienfaiteur te demande comment tu as fini dans cette situation, tu prends une inspiration et tu essaies de te remémorer...",
 		answers: [
-			{
-				text: "Une Romance, pour l'AMOUR.",
-				letters: "AHKM"
-			},
-			{
-				text: "Une série dramatique, pour relativiser.",
-				letters: "FOP"
-			},
-			{
-				text: "Un documentaire, pour apprendre.",
-				letters: "DG"
-			},
-			{
-				text: "Une série/dessin animé d'exploration, pour rêver.",
-				letters: "ELNQ"
-			},
-			{
-				text: "Un thriller avec de l'action, pour poser mon cerveau.",
-				letters: "BCI"
-			},
-			{
-				text: "Une vidéo -18, il n'y a plus que cela qui me fait de l'effet...",
-				letters: "J"
-			}
+			{ text: "Tu t'es endormi après une balade pour soigner une énième insomnie", letters: "AFJK" },
+			{ text: "Tu as poursuivi un scélérat et tu t'es écroulé de fatigue", letters: "GI" },
+			{ text: "Tu as eu une soirée à la taverne qui est allée trop loin, et dont tu espères ne jamais te souvenir", letters: "DE" },
+			{ text: "Tu as été téléporté par une magie étrange, tu ne fais jamais rien d'inconscient", letters: "BCH" }
 		]
 	},
 	{
-		text: "Vous arrivez chez un collègue, il vous propose par courtoisie si vous souhaitez un thé ou un café :",
+		text: "Il t'indique l'emplacement d'un village à proximité où tu pourras trouver de l'aide. Tu...",
 		answers: [
-			{
-				text: "Vous prenez un café",
-				letters: "BCDGKP"
-			},
-			{
-				text: "Vous prenez un thé",
-				letters: "AFHJMQO"
-			},
-			{
-				text: "Vous dites que vous préférez de l'Eau",
-				letters: "IE"
-			},
-			{
-				text: "Vous prenez l'un ou l'autre et le buvez malgré le fait que vous n'aimiez ni l'un, ni l'autre",
-				letters: "LN"
-			}
+			{ text: "suis l'indication en faisant pleinement confiance à cette aide charitable", letters: "AE" },
+			{ text: "remercies, mais tu préfères suivre ta propre voie et prendre un chemin que tu connais", letters: "BFGH" },
+			{ text: "feins de suivre son indication, mais bifurques pour éviter un guet-apens", letters: "DK" },
+			{ text: "ignores ce qu'il dit, le vagabondage a toujours été la meilleure des vertus", letters: "CIJ" }
 		]
 	},
 	{
-		text: "Noir ou blanc ? Ange ou Démon ?",
+		text: "Sur ton chemin, tu croises un lac, tu y remplis ta gourde, en te penchant, tu peux y observer le reflet...",
 		answers: [
-			{
-				text: "Noir et Démon",
-				letters: "BCDFJKPOQ"
-			},
-			{
-				text: "Blanc et Ange",
-				letters: "AEGHILM"
-			},
-			{
-				text: "Caramel au beurre salé avec supplément crème fouettée.",
-				letters: "N"
-			}
+			{ text: "d'un soldat en armure, perdu dans ce qu'il doit accomplir", letters: "DE" },
+			{ text: "d'un mercenaire à la recherche d'une fortune toujours plus importante", letters: "HIK" },
+			{ text: "d'un futur héros, qui a encore ses preuves à faire", letters: "BG" },
+			{ text: "d'un vagabond lambda sans aucune ambition", letters: "ACFJ" }
 		]
 	},
 	{
-		text: "Vous arrivez dans une crêperie, vous commandez :",
+		text: "Au loin, le portail d'un hameau de campagne se dresse, tu t'en approches et y cherches de l'aide en...",
 		answers: [
-			{
-				text: "Une crêpe salée",
-				letters: "QPABDGK"
-			},
-			{
-				text: "Une crêpe sucrée",
-				letters: "OMLCEFHIJ"
-			},
-			{
-				text: "J'ai déjà répondu à cette question juste avant.",
-				letters: "N"
-			}
+			{ text: "allant à la rencontre d'un garde, ce sont des personnes de confiance", letters: "DF" },
+			{ text: "cherchant une taverne, les tenanciers ont toujours de bons tuyaux, en plus de pouvoir boire un coup", letters: "AEI" },
+			{ text: "parlant à un habitant de la zone, c'est le plus rapide et le plus simple", letters: "BHJ" },
+			{ text: "parcourant la ville à la recherche d'une carte, les autres ne doivent pas perdre leur temps à cause de ton erreur", letters: "CGK" }
 		]
 	},
 	{
-		text: "Votre couleur préféré de l'arc en ciel :",
+		text: "Tu passes devant l'église du village, tu te recueilles sur l'autel...",
 		answers: [
-			{
-				text: "Violet",
-				letters: "LO"
-			},
-			{
-				text: "Bleu",
-				letters: "AH"
-			},
-			{
-				text: "Vert",
-				letters: "FBGJMQ"
-			},
-			{
-				text: "Jaune",
-				letters: "DIKP"
-			},
-			{
-				text: "Orange",
-				letters: "E"
-			},
-			{
-				text: "Rouge",
-				letters: "CN"
-			}
+			{ text: "Le seul véritable Dieu, le Dieu Créateur", letters: "DH" },
+			{ text: "Le Dieu de la Vie pour qu'il t'accorde une bonne santé", letters: "CJ" },
+			{ text: "Le Dieu du Vent pour que ce dernier t'amène à bon port", letters: "FG" },
+			{ text: "Aucun dieu, tu n'es pas du genre religieux", letters: "ABEIK" }
 		]
 	},
 	{
-		text: "Le plus important dans une oeuvre c'est :",
+		text: "Tu as obtenu les informations dont tu avais besoin, tu planifies ton départ pour...",
 		answers: [
-			{
-				text: "L'histoire qu'elle raconte",
-				letters: "AFIL"
-			},
-			{
-				text: "Le message qu'il fait passer",
-				letters: "CDGQ"
-			},
-			{
-				text: "Les émotions ressentis",
-				letters: "EHKMOP"
-			},
-			{
-				text: "Son originalité",
-				letters: "BJN"
-			}
+			{ text: "maintenant, tu as déjà perdu assez de temps", letters: "BCG" },
+			{ text: "demain, tu prendras une nuit à l'auberge pour te reposer avant de partir", letters: "EHI" },
+			{ text: "dans quelques jours, tu te sers de cet heureux événement pour découvrir la région", letters: "AJ" },
+			{ text: "tu regardes la position du soleil, et tu t'adaptes en fonction", letters: "DFK" }
 		]
 	},
 	{
-		text: "Aimez vous être au centre de l'attention ?",
+		text: "Tu te prépares à partir, tu récupères des vivres, tu resserres ton équipement et tu poses ta main sur ton arme de prédilection, ...",
 		answers: [
-			{
-				text: "Pas du tout",
-				letters: "DF"
-			},
-			{
-				text: "Un peu",
-				letters: "BCLMP"
-			},
-			{
-				text: "Cela m'est égale",
-				letters: "AGKN"
-			},
-			{
-				text: "Oui",
-				letters: "EHOQ"
-			},
-			{
-				text: "Complètement",
-				letters: "IJ"
-			}
+			{ text: "une hallebarde, arme lourde, demande de l'entraînement mais est la plus efficace", letters: "AK" },
+			{ text: "une épée, l'arme des héros, équilibrée, pratique sans être encombrante", letters: "CDFH" },
+			{ text: "une hache, puissante, passe aussi bien pour tailler du monstre que des arbres", letters: "EI" },
+			{ text: "une simple dague, rapide, discrète, létale, un véritable utilitaire", letters: "BGJ" }
 		]
 	},
 	{
-		text: "Dans un groupe de rock, vous seriez :",
+		text: "Le chemin est long, et la solitude est forte, heureusement, tu as pour t'accompagner...",
 		answers: [
-			{
-				text: "Keyboardiste (Synthétiseur)",
-				letters: "CGJMOP"
-			},
-			{
-				text: "Guitariste",
-				letters: "EHIL"
-			},
-			{
-				text: "Bassiste",
-				letters: "AFKQ"
-			},
-			{
-				text: "Batteur",
-				letters: "BDN"
-			}
+			{ text: "ton fidèle destrier, un vrai gourmand mais il t'a sorti des pires situations", letters: "BEK" },
+			{ text: "ton oiseau voyageur qui te permet de prendre contact avec ta famille sans être encombré", letters: "FGH" },
+			{ text: "ton chien de chasse, ton véritable meilleur ami", letters: "DJ" },
+			{ text: "ton casse-croûte, cette solitude est un véritable confort pour toi", letters: "ACI" }
 		]
 	},
 	{
-		text: "Selon toi l'intelligence est :",
+		text: "Dans ton sommeil, tu entends un cri de détresse provenant des bois à proximité de toi, tu...",
 		answers: [
-			{
-				text: "La capacité à anticipé le futur",
-				letters: "BCJNO"
-			},
-			{
-				text: "La capacité à s'adapter",
-				letters: "DEKQ"
-			},
-			{
-				text: "La capacité à comprendre",
-				letters: "AGIL"
-			},
-			{
-				text: "La capacité à ressentir",
-				letters: "FHMP"
-			}
+			{ text: "prends ton arme, et tu cours aider la personne sans attendre", letters: "AFH" },
+			{ text: "récupères ton arme, et avances furtivement jusqu'à pouvoir évaluer le danger avant d'agir", letters: "DG" },
+			{ text: "fuis, tu n'es pas prêt à risquer ta vie pour sauver un inconnu", letters: "CK" },
+			{ text: "te rendors, ce n'est peut-être qu'un renard, et au pire, tu ne dois rien à qui que ce soit", letters: "BEIJ" }
 		]
 	},
 	{
-		text: "Quelle saison vous représente le mieux :",
+		text: "Dans ton périple, tu trouves une entrée de grotte avec une porte utilisant une technologie nordique, tu...",
 		answers: [
-			{
-				text: "L'Automne",
-				letters: "GJMNQ"
-			},
-			{
-				text: "Hiver",
-				letters: "BFOP"
-			},
-			{
-				text: "Printemps",
-				letters: "AHKL"
-			},
-			{
-				text: "Été",
-				letters: "CDEI"
-			}
+			{ text: "te poses et essaies de trouver une solution à cette énigme.", letters: "BDFH" },
+			{ text: "sors tes outils et essaies de contourner le circuit en crochetant le mécanisme", letters: "J" },
+			{ text: "frappes dedans avec ton arme pour forcer l'ouverture, parfois, ça marche", letters: "AEI" },
+			{ text: "pars, il est dangereux d'ouvrir des ruines nordiques sans être préparé", letters: "CGK" }
 		]
 	},
 	{
-		text: "Dans un film d'horreur, vous seriez :",
+		text: "Tu te retrouves face à un meurtrier, il est grièvement blessé, tu...",
 		answers: [
-			{
-				text: "Le tueur",
-				letters: "BGIPQ"
-			},
-			{
-				text: "Le / La Beau/Belle gosse de service",
-				letters: "EO"
-			},
-			{
-				text: "Le/La Protagoniste un peu niais.e",
-				letters: "AHKLM"
-			},
-			{
-				text: "Le premier à mourir",
-				letters: "CF"
-			},
-			{
-				text: "La tronçonneuse",
-				letters: "DJN"
-			}
+			{ text: "le tues, avec un léger sourire en pensant aux vies qu'il a détruites", letters: "FIK" },
+			{ text: "abrèges ses souffrances, dans une tristesse profonde de devoir en arriver là", letters: "BDHJ" },
+			{ text: "le massacres, sans peine, juste de la haine face à l'horreur des crimes qu'il a commis", letters: "CG" },
+			{ text: "le laisses mourir, sans montrer d'émotion, il ne faut pas lui laisser le plaisir de t'affecter", letters: "AE" }
 		]
 	},
 	{
-		text: "Lorsque vous avez une série de tâches à effectuer :",
+		text: "Te voilà rentré chez toi après cette intense aventure, tu te poses dans une taverne, tu commandes...",
 		answers: [
-			{
-				text: "Vous les faites toutes une à une.",
-				letters: "BDGHKO"
-			},
-			{
-				text: "Vous les commencez toutes en même temps et peiné à en finir une.",
-				letters: "ACIMQ"
-			},
-			{
-				text: "Vous les abandonnez toutes.",
-				letters: "EFJLP"
-			},
-			{
-				text: "La javel, ça nettoie les taches.",
-				letters: "N"
-			}
+			{ text: "un bon verre d'eau bien frais, pour te désaltérer après cette épopée", letters: "AFI" },
+			{ text: "une bière, pour te détendre et festoyer", letters: "DE" },
+			{ text: "un alcool fort, pour désinfecter la plaie dans ton estomac", letters: "CK" },
+			{ text: "un petit thé, pour bien dormir ensuite", letters: "BGHJ" }
 		]
 	},
 	{
-		text: "Quelle est votre plus grande peur :",
+		text: "Si tout cela était une mission officielle, tu aurais aimé avoir en récompense...",
 		answers: [
-			{
-				text: "La mort",
-				letters: "CDIKLP"
-			},
-			{
-				text: "La solitude",
-				letters: "GHJM"
-			},
-			{
-				text: "Être victime d'injustice",
-				letters: "AGQ"
-			},
-			{
-				text: "Vous-même",
-				letters: "BFNO"
-			}
+			{ text: "une somme d'argent immense pour ne plus jamais avoir à repartir pour cela", letters: "CEK" },
+			{ text: "un équipement légendaire pour être prêt pour la prochaine escapade", letters: "GI" },
+			{ text: "un nouveau cerveau pour ne plus jamais retomber dans ces travers", letters: "DFJ" },
+			{ text: "rien, cette étrange aventure et le sourire des personnes sur le chemin en valaient la peine", letters: "ABH" }
 		]
 	},
 	{
-		text: "Quel trait de caractère les personnes vous attribuent elles :",
+		text: "Finalement, tu t'allonges dans ton lit et tu repenses à ta vie, tu décides de te reprendre en main et de...",
 		answers: [
-			{
-				text: "Colérique",
-				letters: "CDHI"
-			},
-			{
-				text: "Pitoyable (de qui on a pitié)",
-				letters: "FPQ"
-			},
-			{
-				text: "Excentrique",
-				letters: "BJKLO"
-			},
-			{
-				text: "Stoïque",
-				letters: "AEGMN"
-			}
-		]
-	},
-	{
-		text: "Vous trouvez une créature inconnue, que faites vous ?",
-		answers: [
-			{
-				text: "Ni une, ni deux, je l'affronte.",
-				letters: "EH"
-			},
-			{
-				text: "J'observe ses habitudes et je la laisse tranquille.",
-				letters: "CDGO"
-			},
-			{
-				text: "Je ne me rends même pas compte que c'est une créature inconnue.",
-				letters: "ABKN"
-			},
-			{
-				text: "Je fuis.",
-				letters: "FPQ"
-			},
-			{
-				text: "J'ai peur, je laisse ma garde. On ne sait jamais.",
-				letters: "JLM"
-			}
-		]
-	},
-	{
-		text: "Vous avez eu une mauvaise note à un examen que vous avez un peu préparé, qui aura potentiellement un impact sur vos futurs résultats :",
-		answers: [
-			{
-				text: "Vous persistez, vous aurez une meilleure note la prochaine fois.",
-				letters: "AGHLM"
-			},
-			{
-				text: "Vous abandonnez, après tout le peu de préparation aurait dû suffire, je ne suis pas à la hauteur.",
-				letters: "ENP"
-			},
-			{
-				text: "Vous vous dites que c’est la faute du professeur, en plus sa matière est nulle, vous vous préparerez tout autant pour le prochain contrôle.",
-				letters: "BCDKO"
-			},
-			{
-				text: "Vous souriez comme si ce malheureux évènement n'avait jamais eu lieu.",
-				letters: "FIJQ"
-			}
-		]
-	},
-	{
-		text: "Une maladie infecte et tue 1 / 1 000 000, tu peux endiguer la maladie en te sacrifiant, le ferais-tu ?",
-		answers: [
-			{
-				text: "Oui",
-				letters: "AEFGHNOPQ"
-			},
-			{
-				text: "Non",
-				letters: "BCDIJKLM"
-			}
-		]
-	},
-	{
-		text: "Quel péché capital te représente le plus ;",
-		answers: [
-			{
-				text: "Gourmandise/Envie",
-				letters: "ABQ"
-			},
-			{
-				text: "Orgueil",
-				letters: "CI"
-			},
-			{
-				text: "Cupidité",
-				letters: "DJ"
-			},
-			{
-				text: "Luxure",
-				letters: "NO"
-			},
-			{
-				text: "Paresse",
-				letters: "EKLP"
-			},
-			{
-				text: "Colère",
-				letters: "FGHM"
-			}
-		]
-	},
-	{
-		text: "Quel est la chose la plus dévastatrice sur terre :",
-		answers: [
-			{
-				text: "La Famine",
-				letters: "AE"
-			},
-			{
-				text: "Les épidémies",
-				letters: "HIJ"
-			},
-			{
-				text: "Le Pouvoir",
-				letters: "BDFGMNOPQ"
-			},
-			{
-				text: "Les Guerres",
-				letters: "CKL"
-			}
-		]
-	},
-	{
-		text: "Que signifie 'entropie' :",
-		answers: [
-			{
-				text: "Epique",
-				letters: "AKLM"
-			},
-			{
-				text: "Synonyme de géant",
-				letters: "CEQ"
-			},
-			{
-				text: "Destruction",
-				letters: "OBDFP"
-			},
-			{
-				text: "Le Chaos",
-				letters: "NIJ"
-			}
+			{ text: "véritablement passer tes classes et devenir un soldat de l'armée", letters: "D" },
+			{ text: "te réveiller, continuer à être un mercenaire à ton compte, mais le faire avec sérieux et conviction", letters: "C" },
+			{ text: "finalement abandonner, et devenir un brigand, le royaume n'a de cesse de te décevoir, tu vas prendre les armes et te révolter", letters: "IK" },
+			{ text: "devenir un aventurier, qui aidera son prochain et vivra grâce à son sourire et ses services", letters: "FH" },
+			{ text: "trouver la vérité sur le flux et la magie, devenir un scientifique, c'est ce qui te fait vibrer", letters: "BGJ" },
+			{ text: "abandonner la voie de l'épée et devenir un artisan, peut-être monteras-tu jusqu'à la bourgeoisie si tu es suffisamment capable", letters: "AE" }
 		]
 	}
 ];
@@ -572,7 +192,7 @@ export const FLUXES: FluxEntry[] = [
 		names: [
 			"Aqua"
 		],
-		description: "Vous êtes un Créateur d’Eau, vous serez à l’origine de torrent et tsunami. Il s’agit d’un flux plus utile que combatif cependant utilisé avec créativité, ce pouvoir peut être dévastateur."
+		description: "Vous êtes un Créateur d’Eau, vous serez à l’origine de torrents et de tsunamis. Il s’agit d’un flux plus utile que combatif ; cependant, utilisé avec créativité, ce pouvoir peut être dévastateur."
 	},
 	{
 		dragons: [
@@ -585,7 +205,7 @@ export const FLUXES: FluxEntry[] = [
 			"Kuro",
 			"Kroa"
 		],
-		description: "Vous êtes un Créateur de Slime, une substance entre le liquide et le solide qui ne lâche jamais sa cible. Aussi pratique que agaçant, ce pouvoir fera faire des cauchemars à certains adversaires."
+		description: "Vous êtes un Créateur de Slime, une substance entre le liquide et le solide qui ne lâche jamais sa cible. Aussi pratique qu’agaçant, ce pouvoir fera faire des cauchemars à certains adversaires."
 	},
 	{
 		dragons: [
@@ -599,7 +219,7 @@ export const FLUXES: FluxEntry[] = [
 			"Kurii",
 			"Ahrii"
 		],
-		description: "Vous êtes un Créateur de Vapeur, capable de créer des brumes et jet de vapeur aussi brûlant que de l’huile sur le feu, bien qu’un peu handicapant, ce pouvoir est destructeur."
+		description: "Vous êtes un Créateur de Vapeur, capable de créer des brumes et des jets de vapeur aussi brûlants que de l’huile sur le feu. Bien qu’un peu handicapant, ce pouvoir est destructeur."
 	},
 	{
 		dragons: [
@@ -626,7 +246,7 @@ export const FLUXES: FluxEntry[] = [
 			"Maha",
 			"Kark"
 		],
-		description: "Vous êtes un Créateur de Plantes. Que ce soit des fleurs, des arbres, laissez le pouvoir de la vie s’accaparer de votre créativité pour devenir un puissant combattant."
+		description: "Vous êtes un Créateur de Plantes. Que ce soient des fleurs ou des arbres, laissez le pouvoir de la vie s’emparer de votre créativité pour devenir un puissant combattant."
 	},
 	{
 		dragons: [
@@ -640,7 +260,7 @@ export const FLUXES: FluxEntry[] = [
 			"Kuda",
 			"Kula"
 		],
-		description: "Vous êtes un Créateur de Glace. Un matériau fragile qui peut s’avérer tranchant et dangereux. Un pouvoir subtile, simple et efficace."
+		description: "Vous êtes un Créateur de Glace. Un matériau fragile qui peut s’avérer tranchant et dangereux. Un pouvoir subtil, simple et efficace."
 	},
 	{
 		dragons: [
@@ -653,7 +273,7 @@ export const FLUXES: FluxEntry[] = [
 			"Tiku",
 			"Sepia"
 		],
-		description: "Vous êtes un Créateur de Nuage. À vous de vous entraînez afin de les faire cracher des torrents jusqu’aux éclairs. Un flux nécessitant une forte dévotion, mais le pouvoir acquis en vaut la chandelle."
+		description: "Vous êtes un Créateur de Nuage. À vous de vous entraîner afin de leur faire cracher des torrents jusqu’aux éclairs. Un flux nécessitant une forte dévotion, mais le pouvoir acquis en vaut la chandelle."
 	},
 	{
 		dragons: [
@@ -667,7 +287,7 @@ export const FLUXES: FluxEntry[] = [
 			"Ra",
 			"Kara"
 		],
-		description: "Vous êtes un Créateur de Résine, qu’elle soit liquide ou solide, utilisez votre créativité pour bloquer vos adversaires et les transformer en œuvres d’arts morbides."
+		description: "Vous êtes un Créateur de Résine, qu’elle soit liquide ou solide, utilisez votre créativité pour bloquer vos adversaires et les transformer en œuvres d’art morbides."
 	},
 	{
 		dragons: [
@@ -681,7 +301,7 @@ export const FLUXES: FluxEntry[] = [
 			"Shiku",
 			"Kuri"
 		],
-		description: "Vous êtes un Créateur de Poison Liquide. Mortelle, ou paralysante, à vous de vous démenez pour créer les infusions adéquates à chaque situation."
+		description: "Vous êtes un Créateur de Poison Liquide. Mortel ou paralysant, à vous de vous démener pour créer les infusions adéquates à chaque situation."
 	},
 	{
 		dragons: [
@@ -695,7 +315,7 @@ export const FLUXES: FluxEntry[] = [
 			"Nos",
 			"Son"
 		],
-		description: "Vous êtes un Accélérateur Temporel. Vous pouvez viser des zones dans lesquelles le temps sera accéléré. Un pouvoir qui semble surpuissant au premier abord mais étant extrêmement subtil à maîtriser. Un flux rare dont les bons utilisateurs le sont encore plus."
+		description: "Vous êtes un Accélérateur Temporel. Vous pouvez viser des zones dans lesquelles le temps sera accéléré. Un pouvoir qui semble surpuissant au premier abord mais extrêmement subtil à maîtriser. Un flux rare dont les bons utilisateurs le sont encore plus."
 	},
 	{
 		dragons: [
@@ -708,7 +328,7 @@ export const FLUXES: FluxEntry[] = [
 			"Riinos",
 			"Kronii"
 		],
-		description: "Telle Chicxulub, vous aurez une puissance dévastatrice, un flux rare d’une complexité immense, vous devrez sans doute vous entraîner toute votre vie pour parfaire ce pouvoir. Un pouvoir aussi dangereux pour son utilisateur que pour ses ennemis."
+		description: "Tel Chicxulub, vous aurez une puissance dévastatrice, un flux rare d’une complexité immense, vous devrez sans doute vous entraîner toute votre vie pour parfaire ce pouvoir. Un pouvoir aussi dangereux pour son utilisateur que pour ses ennemis."
 	},
 	{
 		dragons: [
@@ -735,7 +355,7 @@ export const FLUXES: FluxEntry[] = [
 			"Noma",
 			"Kroma"
 		],
-		description: "Vous êtes un Soigneur. Votre flux permet d’accélérer la récupération d’une plaie ou d’une maladie. Un flux extrêmement rare, très recherché. Deviendrez vous le soigneur d’une contrée entière ou un combattant immortel ? À vous de choisir."
+		description: "Vous êtes un Soigneur. Votre flux permet d’accélérer la récupération d’une plaie ou d’une maladie. Un flux extrêmement rare, très recherché. Deviendrez-vous le soigneur d’une contrée entière ou un combattant immortel ? À vous de choisir."
 	},
 	{
 		dragons: [
@@ -775,7 +395,7 @@ export const FLUXES: FluxEntry[] = [
 			"Krora",
 			"Nosu"
 		],
-		description: "Vous êtes un Destructeur de Temps. Vous pouvez stopper le temps dans une zone donnée. Un pouvoir rare possédant de forte contrainte, qui est beaucoup plus dur à maîtriser que ce que l'on peut penser. Je me demande ce que vous en ferez."
+		description: "Vous êtes un Destructeur de Temps. Vous pouvez stopper le temps dans une zone donnée. Un pouvoir rare possédant de fortes contraintes, qui est beaucoup plus dur à maîtriser que ce que l'on peut penser. Je me demande ce que vous en ferez."
 	},
 	{
 		dragons: [
@@ -788,7 +408,7 @@ export const FLUXES: FluxEntry[] = [
 			"Shino",
 			"Rinos"
 		],
-		description: "Vous êtes un Créateur de Peste. Vous créer des monstres microscopiques pouvant mettre à mal le plus robuste des combattants. C’est un pouvoir extrêmement rare et dévastateur. Il nécessite une connaissance approfondie de la santé pour fonctionner à son plein potentiel."
+		description: "Vous êtes un Créateur de Peste. Vous créez des monstres microscopiques pouvant mettre à mal le plus robuste des combattants. C’est un pouvoir extrêmement rare et dévastateur. Il nécessite une connaissance approfondie de la santé pour fonctionner à son plein potentiel."
 	},
 	{
 		dragons: [
@@ -827,7 +447,7 @@ export const FLUXES: FluxEntry[] = [
 			"Mari",
 			"Giri"
 		],
-		description: "Vous êtes un Créateur de Sang. Un flux étrange, similaire à celui de l’eau. À vous de vous démarquer avec, d'utilisez chaque composant de ce liquide et toutes ses formes pour devenir un combattant remarquable."
+		description: "Vous êtes un Créateur de Sang. Un flux étrange, similaire à celui de l’eau. À vous de vous démarquer en utilisant chaque composant de ce liquide sous toutes ses formes pour devenir un combattant remarquable."
 	},
 	{
 		dragons: [
@@ -841,7 +461,7 @@ export const FLUXES: FluxEntry[] = [
 			"Rida",
 			"Rila"
 		],
-		description: "Vous êtes un Créateur de Chaleur. Vous pouvez augmenter la chaleur d’un endroit à votre guise. Un pouvoir subtil qui vous permettra de faire connaître l’enfer à vos opposants, ou de devenir le plus grand cuisinier que ce monde aie connu."
+		description: "Vous êtes un Créateur de Chaleur. Vous pouvez augmenter la chaleur d’un endroit à votre guise. Un pouvoir subtil qui vous permettra de faire connaître l’enfer à vos opposants, ou de devenir le plus grand cuisinier que ce monde ait connu."
 	},
 	{
 		dragons: [
@@ -854,7 +474,7 @@ export const FLUXES: FluxEntry[] = [
 			"Rya",
 			"Tiry"
 		],
-		description: "Vous êtes un Créateur d'Éclairs. Foudroyez vos adversaires avec une vitesse hors du commun. Un pouvoir très puissant mais avec des contrecoups qui peuvent s’avérer fatal."
+		description: "Vous êtes un Créateur d'Éclairs. Foudroyez vos adversaires avec une vitesse hors du commun. Un pouvoir très puissant mais avec des contrecoups qui peuvent s’avérer fatals."
 	},
 	{
 		dragons: [
@@ -867,7 +487,7 @@ export const FLUXES: FluxEntry[] = [
 			"Dura",
 			"Lyra"
 		],
-		description: "Vous êtes un Créateur de Flammes Ardentes. Un pouvoir ayant une puissance supérieure à celle des flammes classiques, cependant très gourmand en flux et encore plus dangereuse pour son utilisateur que celui des flammes. Certains maîtres de ce flux arrivent même à générer des flammes pouvant virer au bleu azur."
+		description: "Vous êtes un Créateur de Flammes Ardentes. Un pouvoir ayant une puissance supérieure à celle des flammes classiques, cependant très gourmand en flux et encore plus dangereux pour son utilisateur que celui des flammes. Certains maîtres de ce flux arrivent même à générer des flammes pouvant virer au bleu azur."
 	},
 	{
 		dragons: [
@@ -880,7 +500,7 @@ export const FLUXES: FluxEntry[] = [
 			"Zari",
 			"Lily"
 		],
-		description: "Vous êtes un Créateur d’Os. Bien que morbide ce pouvoir possède de nombreuses qualités, seule votre imagination vous limitera. Vous ferez sans doute peur aux enfants, mais aussi à vos cibles."
+		description: "Vous êtes un Créateur d’Os. Bien que morbide, ce pouvoir possède de nombreuses qualités, seule votre imagination vous limitera. Vous ferez sans doute peur aux enfants, mais aussi à vos cibles."
 	},
 	{
 		dragons: [
@@ -891,7 +511,7 @@ export const FLUXES: FluxEntry[] = [
 		names: [
 			"Goliath"
 		],
-		description: "Vous êtes un Créateur de Terre. Un flux très commun mais avec énormément de possibilités. Une imagination débordante est importante pour maîtriser ce pouvoir. Avec de l’entraînement même des rochers peuvent être générés."
+		description: "Vous êtes un Créateur de Terre. Un flux très commun mais avec énormément de possibilités. Une imagination débordante est importante pour maîtriser ce pouvoir. Avec de l’entraînement, même des rochers peuvent être générés."
 	},
 	{
 		dragons: [
@@ -905,7 +525,7 @@ export const FLUXES: FluxEntry[] = [
 			"Zalia",
 			"Mali"
 		],
-		description: "Vous êtes un Créateur de Coquillages. Un flux rare et très spécifique, à l’instar d’un animal vous pourrez vous rendre indestructible et créer des lames aussi tranchantes que du verre."
+		description: "Vous êtes un Créateur de Coquillages. Un flux rare et très spécifique, à l’instar d’un animal, vous pourrez vous rendre indestructible et créer des lames aussi tranchantes que du verre."
 	},
 	{
 		dragons: [
@@ -918,7 +538,7 @@ export const FLUXES: FluxEntry[] = [
 			"Gola",
 			"Dago"
 		],
-		description: "Vous êtes un Créateur de Sable. Un flux, bien que commun, peut se révéler très puissant. Pour vos adversaires vous serez un démon venue du désert, capable de créer des tempêtes de sable à sa guise."
+		description: "Vous êtes un Créateur de Sable. Ce flux, bien que commun, peut se révéler très puissant. Pour vos adversaires vous serez un démon venu du désert, capable de créer des tempêtes de sable à sa guise."
 	},
 	{
 		dragons: [
@@ -931,7 +551,7 @@ export const FLUXES: FluxEntry[] = [
 			"Ai",
 			"Talia"
 		],
-		description: "Vous êtes un créateur de cristaux. On dit souvent que le diamant est le matériau le plus dur du monde, que ferez-vous avec un tel pouvoir ?"
+		description: "Vous êtes un Créateur de Cristaux. On dit souvent que le diamant est le matériau le plus dur du monde, que ferez-vous avec un tel pouvoir ?"
 	},
 	{
 		dragons: [
@@ -945,7 +565,7 @@ export const FLUXES: FluxEntry[] = [
 			"Raliath",
 			"Ralia"
 		],
-		description: "Vous êtes un Créateur de Fer. En un claquement de doigt vous pourrez revêtir une armure impénétrable ou vous forger la plus grande des épées. Il s’agit d’un flux où l’imagination est très importante."
+		description: "Vous êtes un Créateur de Fer. En un claquement de doigts, vous pourrez revêtir une armure impénétrable ou vous forger la plus grande des épées. Il s’agit d’un flux où l’imagination est très importante."
 	},
 	{
 		dragons: [
@@ -959,7 +579,7 @@ export const FLUXES: FluxEntry[] = [
 			"Shigo",
 			"Goshi"
 		],
-		description: "Vous êtes un Créateur de Cendre. Un pouvoir quelque peu rare, à vous et votre imagination de déterminer son potentiel. Réduirez-vous le monde à l’image de votre flux ?"
+		description: "Vous êtes un Créateur de Cendre. Un pouvoir quelque peu rare, à vous et à votre imagination de déterminer son potentiel. Réduirez-vous le monde à l’image de votre flux ?"
 	},
 	{
 		dragons: [
@@ -970,7 +590,7 @@ export const FLUXES: FluxEntry[] = [
 		names: [
 			"Guizamark"
 		],
-		description: "Vous êtes un Donneur de Vie. Un flux très rare qui vous permet d’insuffler la vie temporairement à des objets et leur donner des ordres. L' individu possédant ce flux possède aussi une grande force régénératrice."
+		description: "Vous êtes un Donneur de Vie. Un flux très rare qui vous permet d’insuffler la vie temporairement à des objets et leur donner des ordres. L’individu possédant ce flux possède aussi une grande force régénératrice."
 	},
 	{
 		dragons: [
@@ -991,13 +611,13 @@ export const FLUXES: FluxEntry[] = [
 			"Pestia",
 			"Guizamark"
 		],
-		name: "Créateur d'Oeils",
+		name: "Créateur d'Yeux",
 		names: [
 			"Giya",
 			"Zaya",
 			"Maya"
 		],
-		description: "Vous êtes un Créateur d’Oeils. Un flux aussi rare qu’il est morbide. Vous pouvez créer des yeux. Bien qu’inutile en combat, on raconte que ceux capable de le maîtriser parfaitement arrivent à voir ce que les yeux créer observent. Je vous laisse réfléchir aux possibilités de ce pouvoir…"
+		description: "Vous êtes un Créateur d’Yeux. Un flux aussi rare qu’il est morbide. Vous pouvez créer des yeux. Bien qu’il soit inutile en combat, on raconte que ceux capables de le maîtriser parfaitement arrivent à voir ce qu’observent les yeux créés. Je vous laisse réfléchir aux possibilités de ce pouvoir…"
 	},
 	{
 		dragons: [
@@ -1024,7 +644,7 @@ export const FLUXES: FluxEntry[] = [
 			"Mashi",
 			"Shigi"
 		],
-		description: "Vous êtes Immortel. Un flux mythique qui n’a jamais existé, jusqu’à maintenant. Votre corps se refuse de mourir, qu’importe les dégâts et la vieillesse qu’il reçoit. Vous finissez toujours par récupérer votre forme normale. Une bénédiction pour certains, un enfer pour d'autres."
+		description: "Vous êtes Immortel. Un flux mythique qui n’a jamais existé, jusqu’à maintenant. Votre corps refuse de mourir, quels que soient les dégâts qu’il reçoit et la vieillesse qu’il subit. Vous finissez toujours par récupérer votre forme normale. Une bénédiction pour certains, un enfer pour d'autres."
 	},
 	{
 		dragons: [
@@ -1036,7 +656,7 @@ export const FLUXES: FluxEntry[] = [
 			"Lada",
 			"Dala"
 		],
-		description: "Vous êtes un Créateur de Vent. Un flux très commun mais à ne surtout pas sous-estimé. Peut-être qu’au début ce ne sera qu’une brise, mais avec de l’entraînement, cela conduira à un ouragan."
+		description: "Vous êtes un Créateur de Vent. Un flux très commun mais à ne surtout pas sous-estimer. Peut-être qu’au début ce ne sera qu’une brise, mais avec de l’entraînement, cela conduira à un ouragan."
 	},
 	{
 		dragons: [
@@ -1076,7 +696,7 @@ export const FLUXES: FluxEntry[] = [
 			"Shida",
 			"Lashi"
 		],
-		description: "Empoisonné, inflammable, explosif, à vous de connaître tous les types de gaz à votre disposition pour devenir un combattant inattrapable."
+		description: "Toxique, inflammable, explosif, à vous de connaître tous les types de gaz à votre disposition pour devenir un combattant inattrapable."
 	},
 	{
 		dragons: [
@@ -1088,7 +708,7 @@ export const FLUXES: FluxEntry[] = [
 			"Pestia",
 			"Tia"
 		],
-		description: "Vous êtes un Créateur de Lumière. Flash bombe, Illusion, Intimidation, à vous de découvrir votre propre style avec ce pouvoir."
+		description: "Vous êtes un Créateur de Lumière. Flashs aveuglants, illusions, intimidation : à vous de découvrir votre propre style avec ce pouvoir."
 	},
 	{
 		dragons: [
@@ -1125,7 +745,7 @@ export const FLUXES: FluxEntry[] = [
 		names: [
 			"Pura"
 		],
-		description: "Vous êtes un Créateur de Force Pure. C’est un flux simple, augmentant votre force de frappe. Vous l’aurez compris, il est aussi simple que surpuissant. Faites en bon usage et attention aux contrecoups."
+		description: "Vous êtes un Créateur de Force Pure. C’est un flux simple, augmentant votre force de frappe. Vous l’aurez compris, il est aussi simple que surpuissant. Faites-en bon usage et attention aux contrecoups."
 	},
 	{
 		dragons: [
@@ -1152,7 +772,7 @@ export const FLUXES: FluxEntry[] = [
 			"Shy",
 			"Shizari"
 		],
-		description: "Vous êtes un Annihilateur de Vie. D’un simple contact avec un individu, vous pouvez gangréner le corps d’autrui. Vous serez surement haït et fuit pour ce pouvoir, mais sachez que peu d'individus arriveront à votre cheville."
+		description: "Vous êtes un Annihilateur de Vie. D’un simple contact avec un individu, vous pouvez gangréner le corps d’autrui. Vous serez sûrement haï et fui pour ce pouvoir, mais sachez que peu d'individus arriveront à votre cheville."
 	}
 ];
 
@@ -1165,7 +785,7 @@ export const QUOTES: Record<string, string> = {
 	Guizamark: "La vie, ce mystère que la nature tend à perpétuer...",
 	Lada: "Perfectionne ta brise avant de t'essayer à la tempête...",
 	Pestia: "Mon peuple a besoin que je le guide...",
-	Pura: "Soit fort, et rien de grave ne t'arriveras...",
+	Pura: "Sois fort, et rien de grave ne t'arrivera...",
 	Shizari: "Je les ai tous découverts...",
 	Yinva: "Suis-moi, le monde que tu connais est si petit...",
 	Chaos: "Qui es-tu ?.."

@@ -1,5 +1,6 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
+    import { goto } from "$app/navigation";
     import { fade } from "svelte/transition";
     import Constellation from "$lib/components/flux/Constellation.svelte";
     import FluxJourney from "$lib/components/flux/FluxJourney.svelte";
@@ -17,16 +18,35 @@
         type DragonName,
     } from "$lib/flux/discovery";
     import { isFluxResult, scoreAnswers } from "$lib/flux/quiz";
-    import { raceById, type Race } from "$lib/flux/races";
+    import { HALF_GIANT_CHANCE, raceById, type Race } from "$lib/flux/races";
+    import { SECRET_DOOR, SECRET_TITLES, consumeFromHome } from "$lib/flux/secret";
 
     // La progression reste dans le navigateur, lue au chargement.
     let progress = $state<DiscoveryProgress>({ constellation: false, found: {} });
     let ready = $state(false);
+    // Arrivée par la page d'accueil : le secret s'éveille pour cette visite (voir secret.ts).
+    let secret = $state(false);
+    // Secret : le titre de l'onglet change selon l'étape, et le temps d'un survol (la bonne porte,
+    // la bonne réponse). Le chemin des réponses ne vaut que pour qui a pris la bonne porte.
+    let hoverTitle = $state<string | undefined>(undefined);
+    let tabTitle = $derived.by(() => {
+        if (secret && hoverTitle) return hoverTitle;
+        if (secret && stage === "constellation") return SECRET_TITLES.constellation;
+        if (secret && (stage === "travel" || stage === "map")) return SECRET_TITLES.map;
+        return "Don de flux : Last Fragment";
+    });
     let stage = $state<"constellation" | "travel" | "map" | "portals" | "journey" | "result">("constellation");
     let race = $derived(raceById(progress.race));
 
     // Voile de couleur quand on franchit un portail.
     let veil = $state<string | null>(null);
+    // On avance vers la porte choisie : tout le décor grandit autour d'elle (point en px).
+    let approach = $state<{ x: number; y: number } | null>(null);
+
+    // Tout recommencer : un premier clic demande confirmation, le second efface la progression.
+    let confirmReset = $state(false);
+    let confirmTimer = 0;
+    let hasProgress = $derived(progress.constellation || Object.keys(progress.found).length > 0 || !!progress.result);
 
     // Voyage des dragons de la constellation vers leur symbole sur la carte.
     type Flyer = { name: DragonName; x: number; y: number; size: number; delay: number };
@@ -35,10 +55,16 @@
     let mapShown = $state(false);
     let mapEl = $state<HTMLElement | null>(null);
 
+    // Carte et voyage : la carte occupe tout l'écran, titre et boutons flottent par-dessus.
+    let fullMap = $derived(stage === "travel" || stage === "map");
+    // Hauteur du titre, posé en haut de l'écran : le contenu des autres étapes commence dessous.
+    let headHeight = $state(0);
+
     let knownCount = $derived(COUNTRIES.filter((c) => c.description || progress.found[c.id]).length);
     let allKnown = $derived(knownCount === COUNTRIES.length);
 
     onMount(() => {
+        secret = consumeFromHome();
         try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
             if (saved && typeof saved === "object") {
@@ -108,15 +134,47 @@
         stage = "map";
     }
 
+    // La dernière terre vient d'être trouvée : le temps de lire sa fiche, puis les portails
+    // s'ouvrent d'eux-mêmes. Qui revient sur une carte déjà complète garde le bouton.
+    const AUTO_PORTALS_MS = 5000;
+    let portalsSoon = $state(false);
+    let portalsTimer = 0;
+
     function found(id: string, description: string) {
+        const wasComplete = allKnown;
         progress.found[id] = description;
         save();
+        if (!wasComplete && COUNTRIES.every((c) => c.description || progress.found[c.id])) {
+            portalsSoon = true;
+            portalsTimer = window.setTimeout(() => stage === "map" && goTo("portals"), AUTO_PORTALS_MS);
+        }
     }
 
     function goTo(next: typeof stage) {
+        clearTimeout(portalsTimer);
+        portalsSoon = false;
         stage = next;
+        hoverTitle = undefined;
         mapShown = next === "map";
+        approach = null;
         window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Efface toute la progression (constellation, carte, race, résultat) : on repart du début.
+    // Le secret reste éveillé si l'on est arrivé par l'accueil : c'est ce qui permet de le
+    // trouver après avoir déjà fini le test.
+    function reset() {
+        clearTimeout(confirmTimer);
+        if (!confirmReset) {
+            confirmReset = true;
+            confirmTimer = window.setTimeout(() => (confirmReset = false), 4000);
+            return;
+        }
+        confirmReset = false;
+        progress = { constellation: false, found: {} };
+        save();
+        fromTest = false;
+        goTo("constellation");
     }
 
     // Le portail s'ouvre : un voile de sa couleur couvre l'écran, et le test commence derrière.
@@ -124,14 +182,40 @@
         progress.race = chosen.id;
         save();
         veil = chosen.color;
-        await wait(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900);
+        // Le portail a déjà ouvert ses battants et grandi : le voile n'a plus qu'à couvrir l'écran.
+        await wait(window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500);
         goTo("journey");
         await wait(300);
         veil = null;
     }
 
+    // Vrai quand on arrive au certificat en sortant du test (et non en rechargeant la page).
+    let fromTest = $state(false);
+
+    // Le chemin secret a été suivi : le serveur le vérifie et ouvre la page secrète. S'il refuse
+    // (ou ne répond pas), le test se termine normalement, sur le certificat.
+    async function toSecret(answers: number[]) {
+        try {
+            const res = await fetch("/flux/essai", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ type: "secret", race: race?.id, answers }),
+            });
+            if (res.ok && (await res.json()).opened) return goto("/flux/secret");
+        } catch {
+            // Hors ligne : on finit le test.
+        }
+        finish(answers);
+    }
+
     function finish(answers: number[]) {
-        progress.result = scoreAnswers(answers);
+        fromTest = true;
+        // Le peuple choisi rend certains dragons plus probables (aucun pour les humains). Un géant
+        // sur dix se découvre demi-géant : tiré ici une fois, gardé avec le résultat.
+        progress.result = {
+            ...scoreAnswers(answers, Math.random, race?.favored),
+            halfGiant: race?.id === "geant" && Math.random() < HALF_GIANT_CHANCE,
+        };
         save();
         goTo("result");
     }
@@ -139,43 +223,72 @@
     const SUBTITLES: Record<string, string> = {
         constellation: "Les onze dragons attendent. Touche-les dans le bon ordre.",
         portals: "Trois portails. Un seul est le tien.",
-        journey: "Suis le fil. Réponds sans trop réfléchir.",
-        result: "Ton don de flux.",
     };
 </script>
 
 <svelte:head>
-    <title>Don de flux : Last Fragment</title>
+    <title>{tabTitle}</title>
 </svelte:head>
 
-<main>
-    <header>
-        <h1>Don de flux</h1>
-        {#if ready}
-            {#key stage}
-                <p class="muted" in:fade={{ delay: 300 }}>
-                    {SUBTITLES[stage] ?? `Le monde s'ouvre à toi. ${knownCount} terres sur ${COUNTRIES.length} te sont connues.`}
-                </p>
-            {/key}
-        {/if}
-    </header>
+<main
+    class:immersive={stage === "journey"}
+    class:full-map={fullMap}
+    class:approaching={approach}
+    style="--head: {headHeight}px; --ox: {approach?.x ?? 0}px; --oy: {approach?.y ?? 0}px;"
+>
+    {#if stage !== "journey"}
+        <a class="home" href="/" transition:fade={{ duration: 300 }}>
+            <span class="logo" aria-hidden="true"></span>
+            <span>Last Fragment</span>
+        </a>
 
-    {#if stage === "portals" || stage === "journey" || stage === "result"}
+        {#if ready && hasProgress}
+            <button
+                class="reset"
+                class:confirm={confirmReset}
+                transition:fade={{ duration: 300 }}
+                onclick={reset}
+                aria-label={confirmReset ? "Confirmer : tout effacer et recommencer" : "Tout recommencer"}
+            >
+                <span class="reset-icon" aria-hidden="true">↺</span>
+                <span class="reset-text">{confirmReset ? "Tout effacer ?" : "Recommencer"}</span>
+            </button>
+        {/if}
+    {/if}
+    <!-- Le certificat a son propre titre : le nom du flux. -->
+    {#if stage !== "journey" && stage !== "result"}
+        <header transition:fade={{ duration: 300 }} bind:clientHeight={headHeight}>
+            <h1>Don de flux</h1>
+            {#if ready}
+                {#key stage}
+                    <p class="muted" in:fade={{ delay: 300 }}>
+                        {SUBTITLES[stage] ?? `Le monde s'ouvre à toi. ${knownCount} terres sur ${COUNTRIES.length} te sont connues.`}
+                    </p>
+                {/key}
+            {/if}
+        </header>
+    {/if}
+
+    {#if stage === "portals" || stage === "result"}
         <PatternBackground />
     {/if}
 
     {#if ready && stage === "portals"}
         <div class="full" in:fade={{ duration: 600 }}>
-            <Portals onChoose={enter} />
+            <Portals
+                onChoose={enter}
+                onApproach={(x, y) => (approach = { x, y })}
+                onHover={(door) => (hoverTitle = secret && door?.id === SECRET_DOOR ? SECRET_TITLES.door : undefined)}
+            />
             <button class="btn btn-small" onclick={() => goTo("map")}>Revenir à la carte</button>
         </div>
     {:else if ready && stage === "journey" && race}
-        <div class="full" in:fade={{ duration: 800 }}>
-            <FluxJourney color={race.color} onFinish={finish} />
+        <div in:fade={{ duration: 800 }}>
+            <FluxJourney color={race.color} favored={race.favored} secret={secret && race.id === SECRET_DOOR} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
         </div>
     {:else if ready && stage === "result" && progress.result}
-        <div class="full" in:fade={{ duration: 800 }}>
-            <FluxResult result={progress.result} {race} onRetry={() => goTo("portals")} onMap={() => goTo("map")} />
+        <div class="full">
+            <FluxResult result={progress.result} {race} intro={fromTest} onRetry={() => goTo("portals")} onMap={() => goTo("map")} />
         </div>
     {:else if ready}
         <div class="stack">
@@ -184,7 +297,7 @@
                     <Constellation onComplete={travel} />
                 </div>
             {/if}
-            {#if stage === "travel" || stage === "map"}
+            {#if fullMap}
                 <div class="layer map-layer" class:shown={mapShown}>
                     <WorldMap found={progress.found} onFound={found} bind:mapEl />
                 </div>
@@ -192,9 +305,11 @@
         </div>
 
         {#if stage === "map"}
-            <footer in:fade={{ delay: 300 }}>
+            <footer class="map-footer" in:fade={{ delay: 300 }}>
                 {#if allKnown}
-                    <p class="ending" in:fade>Toutes les terres te sont connues. Les portails t'attendent.</p>
+                    <p class="ending" in:fade>
+                        Toutes les terres te sont connues. {portalsSoon ? "Les portails s'ouvrent…" : "Les portails t'attendent."}
+                    </p>
                     <button class="btn portals-btn" in:fade onclick={() => goTo("portals")}>Franchir les portails</button>
                 {/if}
                 <button class="btn btn-small" onclick={() => goTo("constellation")}>Revoir la constellation</button>
@@ -218,27 +333,160 @@
 {/each}
 
 <style>
+    /* Plein écran, sans le header du site : la découverte occupe toute la fenêtre. */
     main {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1.5rem;
-        width: min(100% - 2rem, 72rem);
-        margin: 2rem auto 4rem;
+        justify-content: center;
+        gap: 1.25rem;
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 100svh;
+        /* Le titre est posé en haut de l'écran : le contenu commence juste dessous. */
+        padding: calc(var(--head) + 1.5rem) clamp(1rem, 3vw, 2.5rem) 2rem;
+        /* Labyrinthes des portails et portail qu'on franchit (il grandit jusqu'à couvrir l'écran) :
+           rien ne déborde de la page ni ne la fait défiler. */
+        overflow: clip;
+    }
+
+    main.immersive {
+        padding: 0;
+    }
+
+    .home {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-family: var(--titleFont);
+        font-size: 0.95rem;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .home:hover,
+    .home:focus-visible {
+        color: var(--secondary);
+    }
+
+    /* Tout recommencer, en haut à droite, face au lien du site. */
+    .reset {
+        position: absolute;
+        top: 0.85rem;
+        right: 1rem;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+        background: rgba(10, 10, 12, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: var(--radius);
+        transition:
+            color 0.2s ease,
+            border-color 0.2s ease;
+    }
+
+    .reset:hover,
+    .reset:focus-visible {
+        color: var(--secondary);
+        border-color: var(--secondary);
+    }
+
+    .reset.confirm {
+        color: var(--danger);
+        border-color: var(--danger);
+    }
+
+    .reset-icon {
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    .full-map .reset {
+        position: fixed;
+    }
+
+    /* On avance vers la porte : le titre et les boutons s'effacent, le fond grandit moins vite
+       que les portes (il est plus loin). */
+    .approaching header,
+    .approaching .home,
+    .approaching .reset,
+    .approaching .full > .btn {
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+
+    /* Couche à part dès les portails : rien à redessiner quand le fond grandit. */
+    main:has(:global(.portals)) :global(.pattern) {
+        will-change: transform;
+    }
+
+    .approaching :global(.pattern) {
+        transform: scale(1.4);
+        transform-origin: var(--ox) var(--oy);
+        transition: transform 0.85s cubic-bezier(0.6, 0, 0.9, 0.5);
+    }
+
+    .logo {
+        width: 1.6rem;
+        height: 1.6rem;
+        background-color: currentColor;
+        mask: url("/layout/Logo.svg") center / contain no-repeat;
     }
 
     header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 4;
+        padding: 1.1rem 4rem 1.5rem;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
-        min-height: 5rem;
+        gap: 0.35rem;
         text-align: center;
     }
 
     h1 {
-        font-size: 3rem;
+        font-size: clamp(2rem, 4vw, 2.6rem);
         color: var(--secondary);
+    }
+
+    /* Sur la carte, le titre flotte au-dessus, sur un fondu qui le garde lisible. */
+    .full-map header {
+        position: fixed;
+        pointer-events: none;
+        background: linear-gradient(to bottom, rgba(10, 10, 12, 0.88), rgba(10, 10, 12, 0.55) 60%, transparent);
+    }
+
+    .full-map header p {
+        text-shadow: 0 0 6px #000;
+    }
+
+    .full-map .home {
+        position: fixed;
+    }
+
+    @media (max-width: 700px) {
+        /* Téléphone : seul le logo du site reste, le titre a besoin de la largeur. */
+        .home span:not(.logo),
+        .reset:not(.confirm) .reset-text {
+            display: none;
+        }
+
+        header {
+            padding: 1rem 3rem 1.25rem;
+        }
     }
 
     /* Les deux énigmes se superposent pendant le passage de l'une à l'autre. */
@@ -256,7 +504,11 @@
         align-items: start;
     }
 
+    /* La carte occupe tout l'écran, sous le titre et les boutons. */
     .map-layer {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
         opacity: 0;
         transition: opacity 1.2s ease;
         pointer-events: none;
@@ -267,12 +519,65 @@
         pointer-events: auto;
     }
 
+    /* Fiche d'un pays ouverte : la carte passe au-dessus du titre et des boutons. */
+    .map-layer:has(:global(.popup, .panel-below)) {
+        z-index: 5;
+    }
+
     footer {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 1rem;
         text-align: center;
+    }
+
+    .map-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 4;
+        gap: 0.75rem;
+        padding: 2.5rem 1rem max(1rem, env(safe-area-inset-bottom));
+        background: linear-gradient(to top, rgba(10, 10, 12, 0.85), transparent);
+        pointer-events: none;
+    }
+
+    .map-footer > * {
+        pointer-events: auto;
+    }
+
+    .map-footer .ending {
+        text-shadow: 0 0 8px #000;
+    }
+
+    /* Écran bas (téléphone couché) : titre et boutons réduits à une ligne chacun. */
+    @media (max-height: 560px) {
+        header {
+            padding: 0.5rem 4rem 0.7rem;
+            gap: 0.1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+        }
+
+        header p {
+            font-size: 0.85rem;
+        }
+
+        .full-map header p,
+        .map-footer .ending {
+            display: none;
+        }
+
+        .map-footer {
+            flex-direction: row;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding-top: 1.5rem;
+        }
     }
 
     .ending {
@@ -287,6 +592,15 @@
         align-items: center;
         gap: 1.5rem;
         width: 100%;
+    }
+
+    /* Portails : la place gagnée en bas va aux portes. */
+    main:has(:global(.portals)) {
+        padding-bottom: 0.8rem;
+    }
+
+    .full:has(:global(.portals)) {
+        gap: 0.8rem;
     }
 
     .portals-btn {

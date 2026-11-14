@@ -1,6 +1,6 @@
 <script lang="ts">
     import { tick } from "svelte";
-    import { fade, scale } from "svelte/transition";
+    import { fade, fly, scale } from "svelte/transition";
     import { MediaQuery } from "svelte/reactivity";
     import { COUNTRIES, MAP_SYMBOL_SIZE, NEUTRAL_MASK, type Country } from "$lib/flux/discovery";
 
@@ -16,7 +16,8 @@
         mapEl?: HTMLElement | null;
     } = $props();
 
-    // Sur téléphone, la carte défile de côté et la fiche du pays s'affiche dessous.
+    // La carte remplit l'écran. En portrait, elle garde la hauteur et défile de côté ; sur
+    // téléphone, la fiche du pays monte du bas de l'écran.
     const narrow = new MediaQuery("max-width: 760px");
 
     let selectedId = $state<string | null>(null);
@@ -31,9 +32,21 @@
     let selected = $derived(COUNTRIES.find((c) => c.id === selectedId) ?? null);
     const descriptionOf = (c: Country) => c.description ?? found[c.id] ?? null;
 
-    // Point de départ du défilement sur téléphone : le milieu de la carte.
+    // Quand la carte déborde (écran en portrait), on part de son milieu, recentré si l'écran tourne.
     $effect(() => {
-        if (narrow.current && scroller) scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+        if (!scroller) return;
+        const el = scroller;
+        let lastWidth = 0;
+        const center = () => {
+            if (el.scrollWidth === lastWidth) return;
+            lastWidth = el.scrollWidth;
+            el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+            el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+        };
+        center();
+        const observer = new ResizeObserver(center);
+        observer.observe(el);
+        return () => observer.disconnect();
     });
 
     async function select(country: Country) {
@@ -100,7 +113,11 @@
         {/if}
         <p class="description" in:fade={{ duration: 600 }}>{description}</p>
     {:else}
-        <h3><span class="sheet-icon unknown" style="--icon: url('/icones/pays/Inconnu.svg');"></span> Terre inconnue</h3>
+        <!-- Le symbole du pays, en indice : il dit déjà quelque chose de la terre. -->
+        <h3>
+            <span class="sheet-icon unknown" style="--icon: url('/icones/pays/{country.icon ?? 'Inconnu'}.svg');"></span>
+            Terre inconnue
+        </h3>
         {#if country.riddle}
             <p class="description">{country.riddle}</p>
         {/if}
@@ -124,14 +141,15 @@
         <div class="map" bind:this={mapEl} onclick={(e) => e.target === e.currentTarget && (selectedId = null)}>
             <!-- Territoire neutre de Vulcain : le motif des pages personnages, découpé à sa forme. -->
             <div class="neutral" style="--mask: url('{NEUTRAL_MASK}');" aria-hidden="true"></div>
-            <img src="/flux/carte.webp" alt="Carte du monde d'Aeteria" draggable="false" />
+            <img src="/flux/carte.webp" alt="Carte du monde d'Arthera" draggable="false" />
 
             {#each COUNTRIES as country (country.id)}
                 {@const known = !!descriptionOf(country)}
                 <button
                     class="marker"
                     class:known
-                    class:neutral-marker={known && !country.icon}
+                    class:neutral-marker={!country.icon}
+                    class:calling={!found[country.id]}
                     class:selected={selectedId === country.id}
                     class:burst={justFound === country.id}
                     style="left: {country.x}%; top: {country.y}%; --size: {MAP_SYMBOL_SIZE}%;"
@@ -139,10 +157,12 @@
                     aria-expanded={selectedId === country.id}
                     onclick={() => select(country)}
                 >
-                    {#if known}
-                        {#if country.icon}
+                    {#if country.icon}
+                        {#key known}
                             <span class="marker-icon" in:scale={{ start: 0.4, duration: 700 }} style="--icon: url('/icones/pays/{country.icon}.svg');"></span>
-                        {/if}
+                        {/key}
+                    {/if}
+                    {#if known}
                         <span class="label" in:fade={{ duration: 800 }}>{country.name}</span>
                     {/if}
                 </button>
@@ -161,35 +181,47 @@
     </div>
 
     {#if selected && narrow.current}
-        <div class="panel-below" transition:fade={{ duration: 180 }}>
+        <div class="panel-below" transition:fly={{ y: 40, duration: 220 }}>
+            <button class="close" aria-label="Fermer" onclick={() => (selectedId = null)}>×</button>
             {@render sheet(selected)}
         </div>
     {/if}
 </div>
 
 <style>
+    /* Toute la place du parent (l'écran) : la carte y tient en entier, centrée. */
     .world {
-        width: 100%;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        position: absolute;
+        inset: 0;
     }
 
     .scroller {
         width: 100%;
-        overflow-x: auto;
-        border: 1px solid rgba(210, 182, 116, 0.25);
-        border-radius: var(--radius);
-        background: radial-gradient(ellipse at center, rgba(210, 182, 116, 0.08), rgba(0, 0, 0, 0.35) 75%);
+        height: 100%;
+        display: flex;
+        overflow: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(210, 182, 116, 0.35) transparent;
+        background: radial-gradient(ellipse at center, rgba(210, 182, 116, 0.1), rgba(0, 0, 0, 0.45) 75%);
     }
 
     .map {
         position: relative;
-        width: 100%;
-        min-width: 720px;
+        flex-shrink: 0;
+        /* margin auto : centrée quand elle tient, défilable sans être rognée quand elle déborde. */
+        margin: auto;
+        width: min(100vw, 100svh * 16 / 9);
         aspect-ratio: 16 / 9;
         user-select: none;
+    }
+
+    /* Portrait : la carte garde de la hauteur et défile de côté (deux à trois écrans). */
+    @media (max-aspect-ratio: 1 / 1) {
+        .map {
+            width: auto;
+            height: min(100svh, 145vw);
+        }
     }
 
     .neutral {
@@ -214,52 +246,42 @@
         opacity: 0.85;
     }
 
+    /* Chaque terre cliquable est cerclée de la couleur Accent, à la taille des symboles des dragons
+       imprimés sur la carte. Une onde douce part des terres à deviner et des terres données
+       (Augeaime, Vulcain, pour intriguer : les ouvrir n'est pas obligatoire) ; une terre trouvée
+       se calme. */
     .marker {
         position: absolute;
-        width: clamp(1.6rem, 3.2%, 2.6rem);
+        width: max(var(--size), 1.6rem);
         aspect-ratio: 1;
         transform: translate(-50%, -50%);
         display: grid;
         place-items: center;
         padding: 0;
-        border: 1px solid rgba(210, 182, 116, 0.6);
+        border: 1.5px solid var(--accent);
         border-radius: 50%;
         background: rgba(27, 27, 27, 0.9);
+        box-shadow: 0 0 10px rgba(229, 184, 204, 0.35);
         transition:
             transform 0.25s ease,
             box-shadow 0.3s ease,
             border-color 0.3s ease;
     }
 
-    .marker::after {
+    .marker.calling::after {
         content: "";
         position: absolute;
-        inset: -1px;
+        inset: -2px;
         border-radius: 50%;
-        border: 1px solid var(--secondary);
-        animation: ping 2.4s ease-out infinite;
+        border: 1.5px solid var(--accent);
+        animation: ping 2.8s ease-out infinite;
         pointer-events: none;
     }
 
     .marker:hover,
     .marker.selected {
         transform: translate(-50%, -50%) scale(1.15);
-        box-shadow: 0 0 16px rgba(210, 182, 116, 0.55);
-    }
-
-    /* Terre inconnue : un simple point doré, pour ne pas la confondre avec les symboles des dragons. */
-    .marker:not(.known) {
-        width: clamp(1.1rem, 2%, 1.6rem);
-        border-style: dashed;
-    }
-
-    .marker:not(.known)::before {
-        content: "";
-        width: 40%;
-        height: 40%;
-        border-radius: 50%;
-        background-color: var(--secondary);
-        box-shadow: 0 0 10px var(--secondary);
+        box-shadow: 0 0 18px rgba(229, 184, 204, 0.65);
     }
 
     .marker-icon {
@@ -269,28 +291,21 @@
         mask: var(--icon) center / contain no-repeat;
     }
 
-    /* Terre connue : son symbole, cerclé et à la taille de ceux des dragons imprimés sur la carte. */
-    .marker.known {
-        width: max(var(--size), 1.6rem);
-        border-color: var(--primary);
+    /* Terre inconnue : son symbole en indice, couleur Accent, qui palpite. */
+    .marker:not(.known) .marker-icon {
+        background-color: var(--accent);
+        animation: glimmer 2.8s ease-in-out infinite;
     }
 
-    /* Territoire sans nation : seulement son nom. */
+    /* Territoire sans nation (Vulcain) : un point Accent, son nom dessous. */
     .marker.neutral-marker {
-        width: 1.6rem;
-        border: none;
-        background: none;
+        width: 1.5rem;
+        background: radial-gradient(circle, var(--accent) 0 22%, rgba(27, 27, 27, 0.9) 30%);
     }
 
     .marker.neutral-marker .label {
-        top: 50%;
-        transform: translate(-50%, -50%);
         font-style: italic;
-        color: rgba(255, 255, 255, 0.75);
-    }
-
-    .marker.known::after {
-        display: none;
+        color: rgba(255, 255, 255, 0.8);
     }
 
     .marker.burst {
@@ -320,6 +335,32 @@
         border-radius: var(--radius);
         background: rgba(15, 15, 15, 0.96);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Téléphone : la fiche monte du bas de l'écran, par-dessus la carte et ses boutons. */
+    .panel-below {
+        position: fixed;
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
+        z-index: 10;
+        max-height: 60svh;
+        overflow-y: auto;
+        padding-right: 2.75rem;
+    }
+
+    .close {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        font-size: 1.4rem;
+        line-height: 1;
+        color: var(--muted);
+        background: none;
+        border: none;
     }
 
     .popup {
@@ -360,7 +401,7 @@
     }
 
     .sheet-icon.unknown {
-        background-color: var(--secondary);
+        background-color: var(--accent);
     }
 
     .revealed {
@@ -400,11 +441,18 @@
     @keyframes ping {
         0% {
             transform: scale(1);
-            opacity: 0.6;
+            opacity: 0.5;
         }
+        70%,
         100% {
-            transform: scale(1.9);
+            transform: scale(1.8);
             opacity: 0;
+        }
+    }
+
+    @keyframes glimmer {
+        50% {
+            opacity: 0.65;
         }
     }
 
@@ -428,7 +476,8 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .marker::after,
+        .marker.calling::after,
+        .marker:not(.known) .marker-icon,
         .marker.burst,
         form.wrong input {
             animation: none;

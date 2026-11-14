@@ -85,7 +85,7 @@ export const COUNTRIES: Country[] = [
 		y: 62,
 		icon: 'Augeaime',
 		description:
-			"Augeaime, au centre du monde. Autour d'elle, chaque terre porte le nom d'une fleur : trouve la fleur, et la terre te dira son nom."
+			"Augeaime, pays de la Rose. Son nom mêle l'auge et l'amour : une auge est un objet sale, qui peut pourtant s'avérer magnifique si l'on y fait pousser diverses plantes. Pays au centre d'Arthera, trouverez-vous les fleurs qui l'entourent ?"
 	},
 	{
 		id: 'vulcain',
@@ -94,15 +94,16 @@ export const COUNTRIES: Country[] = [
 		y: 54,
 		icon: null,
 		description:
-			"Vulcain n'appartient à aucune nation. Territoire neutre, il repose au cœur des quatre terres qui l'entourent."
+			"Vulcain, une région innocente de tous les vices de la civilisation. Terre qu'aucun pays ne revendique, ce désert de sable abrite la faune la plus hostile d'Arthera : quiconque y entre n'en ressort jamais indemne."
 	},
 	{
 		id: 'saxifra',
 		name: 'Saxifra',
-		x: 77,
-		y: 35,
+		// Sur la même terre que le symbole de Goliath (le nord-ouest du continent central).
+		x: 59,
+		y: 36,
 		icon: 'Saxifra',
-		riddle: 'Ici, une petite fleur pousse dans les fissures des rochers. Son nom veut dire « qui brise la pierre ».'
+		riddle: 'La fleur du Nord, une petite plante poussant dans les fissures des rochers, symbole de la force des géants peuplant majoritairement le pays. Son nom veut dire « qui brise la pierre » et rime avec « Naufrage ».'
 	},
 	{
 		id: 'irisia',
@@ -110,7 +111,7 @@ export const COUNTRIES: Country[] = [
 		x: 74,
 		y: 71,
 		icon: 'Irisia',
-		riddle: 'Ici pousse une fleur qui porte le nom de la messagère des dieux, et que tu retrouves au cœur de tes yeux.'
+		riddle: 'La fleur du Sud, une longue fleur à bulbe. Ce pays abrite la plus grande bibliothèque d\'Arthera, son nom se trouve alors dans l\'œil qui lit le monde à la recherche de sa vérité.'
 	},
 	{
 		id: 'mudan',
@@ -118,7 +119,7 @@ export const COUNTRIES: Country[] = [
 		x: 94,
 		y: 42,
 		icon: 'Mudan',
-		riddle: 'Ici règne la reine des fleurs, symbole de richesse en Chine, où on la nomme en deux syllabes.'
+		riddle: 'La fleur de l\'Impératrice. Une grande fleur synonyme de beauté, surnommée Reine des Fleurs en Orient. Une fleur noble et cyclopéenne pour le plus grand de tous les pays.'
 	},
 	{
 		id: 'edenia',
@@ -126,7 +127,7 @@ export const COUNTRIES: Country[] = [
 		x: 11,
 		y: 44,
 		icon: 'Edenia',
-		riddle: "Ici pousse une fleur qui ressemble à la tête d'un oiseau coloré. On la nomme d'après le jardin perdu des origines."
+		riddle: "La fleur de la Renaissance. Une fleur similaire à un colibri qui prend son envol. Ce royaume porte le nom du premier des jardins, ou bien celui d'après la vie."
 	},
 	{
 		id: 'amari',
@@ -134,7 +135,7 @@ export const COUNTRIES: Country[] = [
 		x: 21,
 		y: 74,
 		icon: 'Amari',
-		riddle: "Ici éclot, en plein hiver, une grande fleur rouge en trompette, qui porte le nom d'une bergère des poèmes antiques."
+		riddle: "La fleur de la fierté. Une grande fleur à bulbe qui crie son nom. Plante des conquérants, elle survit dans son environnement et s'y adapte."
 	}
 ];
 

@@ -12,6 +12,7 @@
         randomName,
     } from "$lib/game/generator";
     import { emptyStats } from "$lib/game/stats";
+    import { CHARACTER_DRAFT_KEY, readCharacterDraft } from "$lib/flux/character";
 
     let { data, form } = $props();
 
@@ -71,8 +72,27 @@
         preview = file ? URL.createObjectURL(file) : null;
     }
 
+    // Arrivée depuis le certificat de flux (« Créer mon personnage ») : nom, stats, peuple et flux.
+    let fromFlux = $state(false);
+
+    function readFluxDraft() {
+        try {
+            const draft = readCharacterDraft(JSON.parse(sessionStorage.getItem(CHARACTER_DRAFT_KEY) ?? "null"));
+            sessionStorage.removeItem(CHARACTER_DRAFT_KEY);
+            if (!draft) return;
+            kind = "personnage";
+            name = draft.name;
+            description = draft.description;
+            stats = draft.stats;
+            fromFlux = true;
+        } catch {
+            // Stockage indisponible ou brouillon abîmé : le créateur reste vide.
+        }
+    }
+
     // Tiré au montage seulement : le hasard du serveur et celui du navigateur ne coïncideraient pas.
     onMount(() => {
+        readFluxDraft();
         name ||= randomName();
         return () => {
             if (preview) URL.revokeObjectURL(preview);
@@ -98,6 +118,11 @@
     <header>
         <a class="muted back" href="/outils">← Outils</a>
         <h1>Créateur de personnage</h1>
+        {#if fromFlux}
+            <p class="from-flux" role="status">
+                Pré-rempli depuis ton don de flux : nom, stats, peuple et flux. Tout reste modifiable.
+            </p>
+        {/if}
     </header>
 
     <form
@@ -293,6 +318,14 @@
     h1 {
         font-size: 2.4rem;
         margin-bottom: 0.5rem;
+    }
+
+    .from-flux {
+        padding: 0.6rem 0.9rem;
+        border-left: 3px solid var(--secondary);
+        border-radius: var(--radius);
+        background: rgba(210, 182, 116, 0.08);
+        color: var(--secondary);
     }
 
     h2 {
