@@ -17,19 +17,20 @@ const ORDER: DragonName[] = [
 
 // L'indice n mène au dragon n de l'ordre. Écrits pour qui ne connaît pas le monde : chaque dragon
 // a autant de sommets que son rang, et l'indice le nomme en décrivant son symbole.
-// Ils se dévoilent un à un, après un premier échec.
+// Ils se dévoilent un à un, après un premier échec, et se lisent à la suite comme un seul texte :
+// la genèse d'Arthera.
 const HINTS = [
-	"Au commencement, il n'y avait que lui, Artrish, le créateur. Une fleur à 6 pétales est sa muse.",
-	'Puis vint son opposé, Yinva, la manipulatrice qui tisse ses fils depuis sa croix.',
-	'Ensuite vint la vie, portant la croix de sa prédécesseure sur le bouclier du gardien Guizamark.',
-	'La vie est timide, alors la mort commence à chercher. Ainsi Shizari alluma sa lanterne.',
-	'La lumière naît, et les 7 étoiles de Pestia apparaissent pour vous guider.',
-	'La gravité apparaît, Chronos retourne donc le sablier du temps.',
-	'Les éléments naissent, Aqua verse ses larmes sur le monde.',
-	'Les continents, faits de roche et de terre, sont forgés par Goliath.',
-	'Les flammes du Soleil brillent durant la chute de Drii.',
-	'Le moulin de Lada se met à tourner par la force des vents.',
-	'Finalement, Pura retire son masque pour contempler Arthera, notre monde.'
+	"Au commencement, il était seul. On raconte qu'il naquit d'une fleur à six pétales.",
+	'Dans le miroir, il fit naître son reflet : Yinva, la manipulatrice, qui tisse ses fils depuis sa croix.',
+	"Puis vint la vie, et le gardien Guizamark porta sur son bouclier la croix de celle qui l'avait précédé.",
+	'Pour lui faire contrepoids, la mort dut se dresser : Shizari alluma sa lanterne et signala sa présence.',
+	"À sa lueur, les sept étoiles de Pestia entamèrent leur ronde, et la gravité s'abattit sur Arthera.",
+	"Chronos retourna le sablier du temps, afin que l'existence des vivants connaisse une fin.",
+	"Accablé d'une profonde tristesse, Aqua versa ses larmes, et de ses larmes émergèrent les éléments.",
+	"Pour que l'humanité ne sombre pas sous les eaux, Goliath forgea les continents de terre et de pierre.",
+	'Le soleil embrasa le monde de ses rayons, et Drii chuta sur le sol des Nograds.',
+	"Pour attiser les flammes de celui qui l'avait précédé, Lada fit tourner les moulins du monde.",
+	"Enfin, Pura retira son masque pour contempler l'œuvre achevée du créateur."
 ];
 
 // Pays à deviner : chacun porte le nom d'une fleur, que son énigme décrit. Le nom du pays comme

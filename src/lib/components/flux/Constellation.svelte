@@ -158,9 +158,12 @@
         {#if failedOnce}
             <h2 in:fade={{ duration: 500 }}>Murmures</h2>
             <div class="hint-list" bind:this={hintList}>
-                {#each hints as hint, i (i)}
-                    <p class:current={i === hints.length - 1} in:fade={{ duration: 500 }}>{hint}</p>
-                {/each}
+                <!-- Un seul texte, la genèse d'Arthera, qui s'allonge d'une phrase à chaque dragon. -->
+                <p class="genesis">
+                    {#each hints as hint, i (i)}
+                        <span class:current={i === hints.length - 1}>{hint}</span>{" "}
+                    {/each}
+                </p>
             </div>
             <p class="muted small">Chaque dragon trouvé dévoile la suite.</p>
         {/if}
@@ -403,13 +406,10 @@
         color: var(--secondary);
     }
 
-    /* Les murmures défilent dans leur case ; les plus anciens s'estompent vers le haut. */
+    /* Le texte défile dans sa case ; le début s'estompe vers le haut. */
     .hint-list {
         flex: 1;
         min-height: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
         padding-right: 0.6rem;
         overflow-y: auto;
         overscroll-behavior: contain;
@@ -438,8 +438,40 @@
         border-radius: 2px;
     }
 
-    .hint-list p:first-child {
+    /* La genèse : un texte d'un seul tenant, comme une page de manuscrit, ouvert par une lettrine.
+       Chaque nouvelle phrase naît à la suite des autres, dorée, puis rejoint le texte. */
+    .genesis {
+        margin: 0;
         padding-top: 0.6rem;
+        /* Aligné à gauche : justifié, la colonne étroite se creuserait de grands blancs. */
+        hyphens: auto;
+    }
+
+    .genesis::first-letter {
+        float: left;
+        margin: 0.08em 0.1em 0 0;
+        font-size: 2.6em;
+        line-height: 0.85;
+        color: var(--secondary);
+    }
+
+    .genesis span {
+        transition:
+            color 1.6s ease,
+            text-shadow 1.6s ease;
+        animation: emerge 1.4s ease-out backwards;
+    }
+
+    .genesis span.current {
+        color: var(--secondary);
+        text-shadow: 0 0 10px rgba(210, 182, 116, 0.5);
+    }
+
+    @keyframes emerge {
+        from {
+            opacity: 0;
+            filter: blur(4px);
+        }
     }
 
     .hints .small {
@@ -461,11 +493,6 @@
             font-size: 0.95rem;
             line-height: 1.3;
         }
-    }
-
-    .hint-list p.current {
-        color: var(--secondary);
-        text-shadow: 0 0 10px rgba(210, 182, 116, 0.5);
     }
 
     .small {
@@ -531,7 +558,8 @@
         .drawing.flash,
         .success .drawing,
         .dragon.pending,
-        .shake .dragon:not(.wrong) {
+        .shake .dragon:not(.wrong),
+        .genesis span {
             animation: none;
         }
 
