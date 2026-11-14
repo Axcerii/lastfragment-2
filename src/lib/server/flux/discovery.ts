@@ -16,20 +16,20 @@ const ORDER: DragonName[] = [
 ];
 
 // L'indice n mène au dragon n de l'ordre. Écrits pour qui ne connaît pas le monde : chaque dragon
-// a autant de sommets que son rang, l'indice met sur la piste sans le nommer.
+// a autant de sommets que son rang, et l'indice le nomme en décrivant son symbole.
 // Ils se dévoilent un à un, après un premier échec.
 const HINTS = [
-	"Au commencement, il n'y avait qu'un seul.",
-	'Puis vint son reflet : deux, face à face.',
-	'Trois pointes soutiennent la vie.',
-	'Quatre coins enferment le trépas.',
-	'Cinq étoiles éclairent la nuit.',
-	'Six sommets retiennent le sable du temps.',
-	'Le septième coule, goutte après goutte.',
-	"Huit côtés, forgés comme l'acier.",
-	'Neuf rayons brûlent au cœur de la flamme.',
-	'Dix côtés tournent dans la tempête.',
-	'Onze, et la boucle est bouclée.'
+	"Au commencement, il n'y avait que lui, Artrish, le créateur. Une fleur à 6 pétales est sa muse.",
+	'Puis vint son opposé, Yinva, la manipulatrice qui tisse ses fils depuis sa croix.',
+	'Ensuite vint la vie, portant la croix de sa prédécesseure sur le bouclier du gardien Guizamark.',
+	'La vie est timide, alors la mort commence à chercher. Ainsi Shizari alluma sa lanterne.',
+	'La lumière naît, et les 7 étoiles de Pestia apparaissent pour vous guider.',
+	'La gravité apparaît, Chronos retourne donc le sablier du temps.',
+	'Les éléments naissent, Aqua verse ses larmes sur le monde.',
+	'Les continents, faits de roche et de terre, sont forgés par Goliath.',
+	'Les flammes du Soleil brillent durant la chute de Drii.',
+	'Le moulin de Lada se met à tourner par la force des vents.',
+	'Finalement, Pura retire son masque pour contempler Arthera, notre monde.'
 ];
 
 // Pays à deviner : chacun porte le nom d'une fleur, que son énigme décrit. Le nom du pays comme
@@ -38,23 +38,23 @@ const HINTS = [
 const SECRETS: Record<string, { answers: string[]; description: string }> = {
 	irisia: {
 		answers: ['irisia', 'irysia', 'iris', 'irys'],
-		description: "Irisia, la terre du sud. Elle tient son nom de l'iris."
+		description: "Irisia, la terre du Sud. Les habitants ne prient que des divinités locales, ils ne croient pas en la sagesse des Dragons et encore moins aux pouvoirs créateurs d'Artrish."
 	},
 	amari: {
 		answers: ['amari', 'amary', 'amaryllis', 'amarylis', 'amarilis', 'amaryllys', 'amarillys'],
-		description: "Amari, la terre du sud-ouest. Elle tient son nom de l'amaryllis."
+		description: "Amari, le royaume de la chaotique Pura. Il est fermé à tous, on raconte qu'une malédiction frappe ceux qui traversent ses frontières."
 	},
 	saxifra: {
 		answers: ['saxifra', 'saxyfra', 'saxifrage', 'saxifrages', 'saxifraga'],
-		description: 'Saxifra, la terre du nord. Elle tient son nom de la saxifrage, la fleur qui brise la pierre.'
+		description: 'Saxifra, le pays enneigé. Goliath y vivait jadis, ces confins furent son tombeau. Cette mort brisa le sentiment d\'invincibilité des Dieux, bouleversant l\'ordre établi ; depuis, géants et humains ne cessent de se faire la guerre en ce lieu.'
 	},
 	edenia: {
 		answers: ['edenia', 'eden', 'paradis', 'paradise', 'oiseau de paradis', 'oiseau du paradis', 'strelitzia'],
-		description: "Edenia, la terre du nord-ouest. Elle tient son nom de l'oiseau de paradis."
+		description: "Edenia, ou bien Paradis. Maison du Dieu de la Vie et de la Mort, une véritable anarchie s'est installée depuis la disparition soudaine du premier. Éternelles et Humains y cohabitent dans un massacre constant."
 	},
 	mudan: {
 		answers: ['mudan', 'pivoine', 'pivoines', 'peony', '牡丹'],
-		description: 'Mudan, la terre de l’est. Elle tient son nom de la pivoine, « mǔdān » en chinois.'
+		description: 'Mudan, le plus grand empire d\'Arthera. Pestia et Lada guident le pays avec sagesse et conscience afin qu\'humain comme Éternelle vivent dans une paix assurée.'
 	}
 };
 

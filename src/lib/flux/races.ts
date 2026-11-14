@@ -27,7 +27,7 @@ export const RACES: Race[] = [
 		name: 'Humain',
 		color: '#5b8cff',
 		symbols: ['/layout/Logo.svg'],
-		motto: "Le peuple le plus nombreux d'Aeteria, et celui que le flux traverse le plus.",
+		motto: "Le peuple le plus nombreux d'Arthera, ceux qui innovent.",
 		reveal: 'Tu es né humain. Ton flux s’éveillera tôt, et ne te quittera plus.'
 	},
 	{
@@ -35,18 +35,18 @@ export const RACES: Race[] = [
 		name: 'Géant',
 		color: '#f2f2f2',
 		symbols: ['/icones/pays/Saxifra.svg', '/icones/pays/Irisia.svg'],
-		motto: 'Les peuples du Nord, dont la peau encaisse ce que le flux ne leur donne pas.',
+		motto: 'Le peuple dont rien ne traverse la peau, pas même le flux, ceux qui façonnent.',
 		reveal: 'Tu es né géant. Le flux ne coule pas en toi… mais il sait qui tu aurais pu être.',
 		favored: ['Pura', 'Drii', 'Aqua', 'Lada', 'Goliath'],
-		resultNote: "Les géants ne canalisent pas le flux : voici celui qui t'aurait été destiné."
+		resultNote: "Les géants ne canalisent pas le flux, mais le monde d'Arthera est plein de surprises : voici le flux que tu aurais pu avoir."
 	},
 	{
 		id: 'eternelle',
 		name: 'Éternelle',
 		color: '#5fe0a0',
 		symbols: ['/icones/pays/Edenia.svg', '/icones/pays/Mudan.svg'],
-		motto: 'Ceux que le temps oublie, et qui ne vieillissent qu’à peine.',
-		reveal: 'Tu es né éternel. Tu auras tout le temps d’apprendre à maîtriser ton flux.',
+		motto: 'Ceux que Chronos oublie, et qui ne vieillissent qu’à peine, ceux qui transmettent.',
+		reveal: 'Tu es né éternelle. Tu auras tout le temps d’apprendre à maîtriser ton flux.',
 		favored: ['Guizamark', 'Shizari', 'Chronos', 'Pestia']
 	}
 ];

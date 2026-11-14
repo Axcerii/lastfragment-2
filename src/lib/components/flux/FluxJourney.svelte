@@ -31,7 +31,7 @@
     } = $props();
 
     // Durées des étapes d'une question (ms). La question suivante naît pendant que la plongée
-    // ralentit (WARP_NEXT) : les étapes se chevauchent pour garder le rythme sur 25 questions.
+    // ralentit (WARP_NEXT) : les étapes se chevauchent pour garder le rythme sur toutes les questions.
     const QUESTION_MS = 650;
     const ABSORB_MS = 380;
     const WARP_MS = 1000;

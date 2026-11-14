@@ -2,7 +2,8 @@ import { STAT_KEYS, STATS, statPower, toScale, type StatBlock, type StatKey } fr
 import { FLUXES, QUESTIONS, QUOTES } from './quiz-data';
 
 // Calcul du don de flux, repris de la V1 (flux-resultat.php).
-// Chaque réponse rapporte des lettres : A–K désignent un dragon, L–Q des entités sans flux.
+// Chaque réponse rapporte des lettres : A–K désignent un dragon, L–Q des entités sans flux (absentes
+// du Quiz 2 : le Chaos, qui demande N à chaque question, ne peut donc plus sortir).
 
 const LETTER_DRAGON: Record<string, string> = {
 	A: 'Aqua',
@@ -40,12 +41,7 @@ export function scoreAnswers(answers: number[], random: () => number = Math.rand
 	if (answers.length === QUESTIONS.length && counts.N === QUESTIONS.length)
 		return { first: 'Chaos', second: 'Chaos', chaos: true, stats: { ...CHAOS_STATS } };
 
-	const scores = Object.keys(WEIGHTS)
-		.map((letter) => {
-			const weight = WEIGHTS[letter] * (favored.includes(LETTER_DRAGON[letter]) ? FAVORED_BONUS : 1);
-			return { letter, score: Math.ceil((counts[letter] ?? 0) * weight) };
-		})
-		.sort((a, b) => b.score - a.score);
+	const scores = dragonScores(counts, favored).sort((a, b) => b.score - a.score);
 
 	const top = scores[0].score;
 	const firsts = scores.filter((s) => s.score === top).map((s) => s.letter);
@@ -66,6 +62,15 @@ export function scoreAnswers(answers: number[], random: () => number = Math.rand
 				: first;
 	}
 	return { first: LETTER_DRAGON[first], second: LETTER_DRAGON[second], stats: drawStats(counts, random) };
+}
+
+/** Score pondéré de chaque dragon de flux, pour des occurrences de lettres données. */
+export function dragonScores(counts: Record<string, number>, favored: readonly string[] = []) {
+	return Object.keys(WEIGHTS).map((letter) => {
+		const dragon = LETTER_DRAGON[letter];
+		const weight = WEIGHTS[letter] * (favored.includes(dragon) ? FAVORED_BONUS : 1);
+		return { letter, dragon, score: Math.ceil((counts[letter] ?? 0) * weight) };
+	});
 }
 
 /** Occurrences de chaque lettre sur l'ensemble des réponses, avant pondération. */

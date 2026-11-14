@@ -40,56 +40,44 @@ export type SecretStep = {
  */
 // À CONFIRMER : chemin d'exemple sur tout le test, à remplacer par celui du porteur du projet.
 export const SECRET_PATH: SecretStep[] = [
-	// 1. Quelle activité préférez-vous réaliser durant votre temps libre ?
-	{ question: 1, answer: 'Me balader', title: 'Par ici.' },
-	// 2. À quel point te connais-tu ?
-	{ question: 2, answer: '0%', title: 'Par là.' },
-	// 3. Les gens vous considèrent :
-	{ question: 3, answer: 'Lunatique', title: 'Encore.' },
-	// 4. Lorsque vous prenez une décision simple :
-	{ question: 4, answer: 'Vous hésitez longuement et vous finissez souvent par laisser le hasard choisir.', title: 'Plus loin.' },
-	// 5. Quelle mort vous convient le plus parmi celle-ci :
-	{ question: 5, answer: 'Mourir seule, paisiblement.', title: 'Suis-moi.' },
-	// 6. Ce soir, je regarde :
-	{ question: 6, answer: "Une série/dessin animé d'exploration, pour rêver.", title: 'Ne t’arrête pas.' },
-	// 7. Vous arrivez chez un collègue, il vous propose par courtoisie si vous souhaitez un thé ou un café :
-	{ question: 7, answer: "Vous prenez l'un ou l'autre et le buvez malgré le fait que vous n'aimiez ni l'un, ni l'autre", title: 'Par ici.' },
-	// 8. Noir ou blanc ? Ange ou Démon ?
-	{ question: 8, answer: 'Caramel au beurre salé avec supplément crème fouettée.', title: 'Tu me vois ?' },
-	// 9. Vous arrivez dans une crêperie, vous commandez :
-	{ question: 9, answer: "J'ai déjà répondu à cette question juste avant.", title: 'Par là.' },
-	// 10. Votre couleur préféré de l'arc en ciel :
-	{ question: 10, answer: 'Violet', title: 'Continue.' },
-	// 11. Le plus important dans une oeuvre c'est :
-	{ question: 11, answer: 'Son originalité', title: 'Plus profond.' },
-	// 12. Aimez vous être au centre de l'attention ?
-	{ question: 12, answer: 'Pas du tout', title: 'Par ici.' },
-	// 13. Dans un groupe de rock, vous seriez :
-	{ question: 13, answer: 'Bassiste', title: 'Écoute.' },
-	// 14. Selon toi l'intelligence est :
-	{ question: 14, answer: 'La capacité à comprendre', title: 'Par là.' },
-	// 15. Quelle saison vous représente le mieux :
-	{ question: 15, answer: 'Hiver', title: 'Il fait froid, ici.' },
-	// 16. Dans un film d'horreur, vous seriez :
-	{ question: 16, answer: 'Le premier à mourir', title: 'Encore.' },
-	// 17. Lorsque vous avez une série de tâches à effectuer :
-	{ question: 17, answer: 'Vous les commencez toutes en même temps et peiné à en finir une.', title: 'Ne te retourne pas.' },
-	// 18. Quelle est votre plus grande peur :
-	{ question: 18, answer: 'Vous-même', title: 'Par ici.' },
-	// 19. Quel trait de caractère les personnes vous attribuent elles :
-	{ question: 19, answer: 'Excentrique', title: 'Presque.' },
-	// 20. Vous trouvez une créature inconnue, que faites vous ?
-	{ question: 20, answer: "J'observe ses habitudes et je la laisse tranquille.", title: 'Observe.' },
-	// 21. Vous avez eu une mauvaise note à un examen que vous avez un peu préparé, qui aura potentiellement un impact sur vos futurs résultats :
-	{ question: 21, answer: "Vous souriez comme si ce malheureux évènement n'avait jamais eu lieu.", title: 'Souris.' },
-	// 22. Une maladie infecte et tue 1 / 1 000 000, tu peux endiguer la maladie en te sacrifiant, le ferais-tu ?
-	{ question: 22, answer: 'Oui', title: 'Par là.' },
-	// 23. Quel péché capital te représente le plus ;
-	{ question: 23, answer: 'Orgueil', title: 'Tu me ressembles.' },
-	// 24. Quel est la chose la plus dévastatrice sur terre :
-	{ question: 24, answer: 'Le Pouvoir', title: 'Encore un pas.' },
-	// 25. Que signifie 'entropie' :
-	{ question: 25, answer: 'Le Chaos', title: 'Entre.' },
+	// 1. Tes paupières sont lourdes, une odeur douce et familière dilate tes narines, tu te réveilles, allongé, dans un champ de...
+	{ question: 1, answer: 'Coquelicots', title: 'Par ici.' },
+	// 2. Tu te relèves, tu dépoussières ton équipement, tu plisses les yeux vers l'horizon, le soleil...
+	{ question: 2, answer: "N'est plus visible", title: 'Par là.' },
+	// 3. Une ombre se glisse dans la pénombre jusqu'à toi, tes yeux finissent par s'adapter à la lumière. La silhouette est celle...
+	{ question: 3, answer: "d'une enfant un peu trop curieuse", title: 'Encore.' },
+	// 4. Observant ta confusion, la personne fouille dans sa besace et te tend...
+	{ question: 4, answer: 'une pomme dans un état immaculé', title: 'Plus loin.' },
+	// 5. Ton premier réflexe en voyant cet acte de bonté innocent est...
+	{ question: 5, answer: 'de le refuser poliment.', title: 'Suis-moi.' },
+	// 6. Le bienfaiteur te demande comment tu as fini dans cette situation, tu prends une inspiration et tu essaies de te remémorer...
+	{ question: 6, answer: "Tu as été téléporté par une magie étrange, tu ne fais jamais rien d'inconscient", title: 'Ne t’arrête pas.' },
+	// 7. Il t'indique l'emplacement d'un village à proximité où tu pourras trouver de l'aide. Tu...
+	{ question: 7, answer: "ignores ce qu'il dit, le vagabondage a toujours été la meilleure des vertus", title: 'Par ici.' },
+	// 8. Sur ton chemin, tu croises un lac, tu y remplis ta gourde, en te penchant, tu peux y observer le reflet...
+	{ question: 8, answer: "d'un vagabond lambda sans aucune ambition", title: 'Tu me vois ?' },
+	// 9. Au loin, le portail d'un hameau de campagne se dresse, tu t'en approches et y cherches de l'aide en...
+	{ question: 9, answer: "parcourant la ville à la recherche d'une carte, les autres ne doivent pas perdre leur temps à cause de ton erreur", title: 'Par là.' },
+	// 10. Tu passes devant l'église du village, tu te recueilles sur l'autel...
+	{ question: 10, answer: "Aucun dieu, tu n'es pas du genre religieux", title: 'Continue.' },
+	// 11. Tu as obtenu les informations dont tu avais besoin, tu planifies ton départ pour...
+	{ question: 11, answer: "tu regardes la position du soleil, et tu t'adaptes en fonction", title: 'Plus profond.' },
+	// 12. Tu te prépares à partir, tu récupères des vivres, tu resserres ton équipement et tu poses ta main sur ton arme de prédilection, ...
+	{ question: 12, answer: 'une simple dague, rapide, discrète, létale, un véritable utilitaire', title: 'Par ici.' },
+	// 13. Le chemin est long, et la solitude est forte, heureusement, tu as pour t'accompagner...
+	{ question: 13, answer: 'ton casse-croûte, cette solitude est un véritable confort pour toi', title: 'Écoute.' },
+	// 14. Dans ton sommeil, tu entends un cri de détresse provenant des bois à proximité de toi, tu...
+	{ question: 14, answer: "te rendors, ce n'est peut-être qu'un renard, et au pire, tu ne dois rien à qui que ce soit", title: 'Par là.' },
+	// 15. Dans ton périple, tu trouves une entrée de grotte avec une porte utilisant une technologie nordique, tu...
+	{ question: 15, answer: "pars, il est dangereux d'ouvrir des ruines nordiques sans être préparé", title: 'Tu chauffes, ici.' },
+	// 16. Tu te retrouves face à un meurtrier, il est grièvement blessé, tu...
+	{ question: 16, answer: "le laisses mourir, sans montrer d'émotion, il ne faut pas lui laisser le plaisir de t'affecter", title: 'Ne te retourne pas.' },
+	// 17. Te voilà rentré chez toi après cette intense aventure, tu te poses dans une taverne, tu commandes...
+	{ question: 17, answer: 'un petit thé, pour bien dormir ensuite', title: 'Presque.' },
+	// 18. Si tout cela était une mission officielle, tu aurais aimé avoir en récompense...
+	{ question: 18, answer: 'rien, cette étrange aventure et le sourire des personnes sur le chemin en valaient la peine', title: 'Encore un pas.' },
+	// 19. Finalement, tu t'allonges dans ton lit et tu repenses à ta vie, tu décides de te reprendre en main et de...
+	{ question: 19, answer: "trouver la vérité sur le flux et la magie, devenir un scientifique, c'est ce qui te fait vibrer", title: 'Entre.' },
 ];
 
 // ---- Mécanique (rien à régler en dessous).

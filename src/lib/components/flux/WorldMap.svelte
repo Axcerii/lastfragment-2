@@ -137,7 +137,7 @@
         <div class="map" bind:this={mapEl} onclick={(e) => e.target === e.currentTarget && (selectedId = null)}>
             <!-- Territoire neutre de Vulcain : le motif des pages personnages, découpé à sa forme. -->
             <div class="neutral" style="--mask: url('{NEUTRAL_MASK}');" aria-hidden="true"></div>
-            <img src="/flux/carte.webp" alt="Carte du monde d'Aeteria" draggable="false" />
+            <img src="/flux/carte.webp" alt="Carte du monde d'Arthera" draggable="false" />
 
             {#each COUNTRIES as country (country.id)}
                 {@const known = !!descriptionOf(country)}
