@@ -35,7 +35,7 @@ Légende : ✅ fait et testé · 🚀 à faire lors de la mise en production · 
 | --- | --- |
 | Chiffrement | 🚀 HTTPS par Caddy ; le cookie passe en `Secure` dès que `ORIGIN` commence par `https://` |
 | Authentification à l'ouverture | ✅ droits vérifiés avant d'ouvrir le flux (MJ, joueur avec personnage, ou clé OBS) |
-| Détournement depuis un autre site | ✅ en-tête `Origin` vérifié sur le flux et sur toutes les requêtes POST/PATCH/DELETE (403, testé) ; cookie `SameSite=Strict` |
+| Détournement depuis un autre site | ✅ en-tête `Origin` vérifié sur le flux et sur toutes les requêtes POST/PATCH/DELETE (403, testé) ; cookie `SameSite=Lax` (refusé aux formulaires et requêtes des autres sites) |
 | Taille des messages | ✅ action limitée à 64 Ko, lue sans dépasser cette taille en mémoire (413, testé) |
 | Limite de débit | ✅ 40 actions / 10 s par joueur (le MJ n'est pas limité) ; 12 flux ouverts max par compte |
 | Validation des entrées | ✅ chaque champ est converti et borné (`int`, `text`, `statKey`, listes fermées…) ; types d'action limités à la liste déclarée. Pas de Zod, mais même effet |
@@ -55,7 +55,7 @@ Légende : ✅ fait et testé · 🚀 à faire lors de la mise en production · 
 | Point | État |
 | --- | --- |
 | CSP | ✅ scripts du site seulement (nonce), sans violation sur toutes les pages testées |
-| Cookies | ✅ `HttpOnly`, `SameSite=Strict`, `Secure` en HTTPS 🚀 |
+| Cookies | ✅ `HttpOnly`, `SameSite=Lax`, `Secure` en HTTPS 🚀 ; `Lax` plutôt que `Strict`, qui faisait paraître déconnecté en arrivant par un lien externe. Aucune page affichée (GET) ne modifie de données, sauf l’arrivée d’un joueur dans une partie ouverte, qu’il a de toute façon le droit de rejoindre |
 | `{@html}` | ✅ aucun dans le projet |
 
 ## 6. Secrets et déploiement

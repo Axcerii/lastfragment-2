@@ -8,6 +8,8 @@ import { prisma } from './prisma';
 
 const COOKIE = 'jwt';
 const SESSION_DAYS = 30;
+/** Un jeton plus vieux que ça est réémis : la session dure 30 jours après la dernière visite. */
+const RENEW_AFTER_SECONDS = 24 * 60 * 60;
 const ALGORITHM = 'HS256';
 const BCRYPT_ROUNDS = 12;
 const MIN_SECRET_LENGTH = 32;
@@ -41,7 +43,11 @@ export function startSession(cookies: Cookies, player: { id: number; password: s
 	);
 	cookies.set(COOKIE, token, {
 		httpOnly: true,
-		sameSite: 'strict',
+		// Pas `strict` : le navigateur garderait alors le cookie pour lui quand on arrive par un lien
+		// venu d'ailleurs (Discord, un moteur de recherche…), et la page s'afficherait comme si on
+		// était déconnecté. `lax` le refuse toujours aux formulaires et requêtes des autres sites ;
+		// hooks.server.ts vérifie en plus l'origine de toute requête qui modifie quelque chose.
+		sameSite: 'lax',
 		// Cookie réservé au HTTPS dès que le site est servi en HTTPS (voir ORIGIN dans .env).
 		secure: (env.ORIGIN ?? '').startsWith('https://'),
 		path: '/',
@@ -58,7 +64,7 @@ export async function readSession(cookies: Cookies): Promise<App.Locals['user']>
 	const token = cookies.get(COOKIE);
 	if (!token) return null;
 
-	let payload: { userId: string; pwd?: string };
+	let payload: { userId: string; pwd?: string; iat?: number };
 	try {
 		payload = jwt.verify(token, secret(), { algorithms: [ALGORITHM] }) as typeof payload;
 	} catch {
@@ -72,6 +78,10 @@ export async function readSession(cookies: Cookies): Promise<App.Locals['user']>
 		select: { id: true, login: true, role: true, characterId: true, password: true }
 	});
 	if (!found || payload.pwd !== passwordStamp(found.password)) return null;
+
+	// Une fois par jour au plus, un nouveau jeton repart pour 30 jours (il remplace aussi les
+	// anciens cookies `strict`).
+	if (Date.now() / 1000 - (payload.iat ?? 0) > RENEW_AFTER_SECONDS) startSession(cookies, found);
 
 	const { password: _, ...player } = found;
 	return { ...player, isAdmin: player.role >= ROLE_ADMIN };

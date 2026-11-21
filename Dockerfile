@@ -13,6 +13,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npx prisma generate && npm run build
+# Les fichiers de static/ gardent leur date d'origine une fois copiés dans build/client : leur ETag
+# (taille + date) ne change pas à chaque build, et le navigateur ne retélécharge après une mise à
+# jour que les images qui ont vraiment changé.
+RUN cd static && find . -type f -exec sh -c 'for f; do touch -c -r "$f" "../build/client/$f"; done' sh {} +
 # Ne garder que les dépendances de production pour l'image finale (le client Prisma généré en fait partie).
 RUN npm prune --omit=dev
 
@@ -29,7 +33,7 @@ ENV PRISMA_HIDE_UPDATE_MESSAGE=1
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/build ./build
 COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/package.json ./
+COPY --from=build /app/package.json /app/server.js ./
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Les images envoyées vivent dans un volume, seul endroit où `node` doit pouvoir écrire.

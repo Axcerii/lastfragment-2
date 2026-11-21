@@ -101,6 +101,7 @@ Pour tester l'annonce d'un jour passé : `/integrations/lastdle?date=2026-10-25`
 | `npm run check` | Vérification des types et des composants |
 | `npm test` | Tests des règles de jeu |
 | `npm run build` | Build de production |
+| `npm start` | Lance ce build comme en production (`server.js` : serveur d’adapter-node + cache des images de `static/`) |
 
 ## Organisation
 

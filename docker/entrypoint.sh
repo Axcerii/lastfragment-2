@@ -17,4 +17,5 @@ if [ "$1" = "migrate" ]; then
 fi
 
 echo "[démarrage] Lancement du site sur le port ${PORT:-3000}"
-exec node build
+# server.js : le serveur d'adapter-node, avec une durée de cache pour les images de static/.
+exec node server.js
