@@ -1,14 +1,20 @@
 <script lang="ts">
+    import { onMount } from "svelte";
     import { fade } from "svelte/transition";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
+    import { gendered, type Address } from "$lib/flux/address";
+    import { savedAddress } from "$lib/flux/discovery";
 
     // Page secrète du don de flux. Le serveur ne la sert qu'à qui a suivi le chemin jusqu'au bout
-    // (voir $lib/server/flux/secret) ; son texte vient de lui.
+    // (voir $lib/server/flux/secret) ; son texte vient de lui, accordé ici comme le test s'est
+    // adressé au personnage (choix gardé dans le navigateur).
     let { data } = $props();
+    let address = $state<Address>("il");
+    onMount(() => (address = savedAddress()));
 </script>
 
 <svelte:head>
-    <title>{data.page.title} : Last Fragment</title>
+    <title>{gendered(data.page.title, address)} : Last Fragment</title>
 </svelte:head>
 
 <PatternBackground />
@@ -16,9 +22,9 @@
 <main>
     <div class="glow" aria-hidden="true"></div>
     <article in:fade={{ duration: 1600 }}>
-        <h1>{data.page.title}</h1>
+        <h1>{gendered(data.page.title, address)}</h1>
         {#each data.page.paragraphs as paragraph, i (i)}
-            <p in:fade={{ duration: 1200, delay: 900 + i * 700 }}>{paragraph}</p>
+            <p in:fade={{ duration: 1200, delay: 900 + i * 700 }}>{gendered(paragraph, address)}</p>
         {/each}
     </article>
     <a class="btn btn-small" href="/flux">Revenir au don de flux</a>

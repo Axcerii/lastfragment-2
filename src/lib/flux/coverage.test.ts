@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { gendered } from './address';
 import { countLetters, dragonScores, revealFlux, scoreAnswers } from './quiz';
 import { FLUXES, QUESTIONS } from './quiz-data';
 import { RACES } from './races';
@@ -66,7 +67,8 @@ describe('tous les flux sont atteignables', () => {
 				}
 				// Le vrai calcul, avec un hasard quelconque : le flux ne dépend pas du tirage.
 				const result = scoreAnswers(answers, random, race.favored ?? []);
-				expect(revealFlux(result).name, flux.name).toBe(flux.name);
+				expect(revealFlux(result).name, flux.name).toBe(gendered(flux.name, 'il'));
+				expect(revealFlux(result, 'elle').name, flux.name).toBe(gendered(flux.name, 'elle'));
 			}
 			expect(missing, `flux impossibles pour ${race.id}`).toEqual([]);
 		});

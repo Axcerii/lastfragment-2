@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { gendered } from './address';
 import { QUESTIONS } from './quiz-data';
 import { RACES } from './races';
 import { SECRET_DOOR, SECRET_PATH, onSecretPath, secretComplete, secretTitle } from './secret';
 
 // Les bonnes réponses du chemin, en indices, question par question.
 const goodAnswers = () =>
-	SECRET_PATH.map((step) => QUESTIONS[step.question - 1].answers.findIndex((a) => a.text === step.answer));
+	SECRET_PATH.map((step) => QUESTIONS[step.question - 1].answers.findIndex((a) => gendered(a.text) === step.answer));
 
 describe('chemin secret', () => {
 	it('chaque étape désigne une réponse qui existe, dans l’ordre des questions', () => {
@@ -13,7 +14,7 @@ describe('chemin secret', () => {
 		for (const step of SECRET_PATH) {
 			expect(step.question, `question ${step.question}`).toBeGreaterThan(previous);
 			expect(step.question).toBeLessThanOrEqual(QUESTIONS.length);
-			const texts = QUESTIONS[step.question - 1].answers.map((a) => a.text);
+			const texts = QUESTIONS[step.question - 1].answers.map((a) => gendered(a.text));
 			expect(texts, `question ${step.question}`).toContain(step.answer);
 			expect(step.title).toBeTruthy();
 			previous = step.question;

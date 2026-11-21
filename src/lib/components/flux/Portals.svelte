@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { fade, fly } from "svelte/transition";
+    import { gendered, type Address } from "$lib/flux/address";
     import { bridge, maze } from "$lib/flux/maze";
     import { HALF_GIANT_COLOR, RACES, type Race } from "$lib/flux/races";
 
@@ -9,10 +10,13 @@
     // portes ; le franchir ouvre ses deux battants, et on plonge dans la lumière.
     // Les portes ne portent pas le nom de leur peuple : leurs phrases sont les seuls indices.
     let {
+        address = "il",
         onChoose,
         onApproach,
         onHover,
     }: {
+        /** Accord des phrases dévoilées (« Tu es né humain » / « née humaine »). */
+        address?: Address;
         onChoose: (race: Race) => void;
         /** On commence à avancer vers la porte, dont le centre est à (x, y) à l'écran. */
         onApproach?: (x: number, y: number) => void;
@@ -205,12 +209,12 @@
                 class="reveal"
                 role="dialog"
                 aria-modal="true"
-                aria-label="Portail des {selected.name}s"
+                aria-label="Portail des {gendered(selected.name)}s"
                 style="--c: {selected.color};"
                 in:fly={{ y: 16, duration: 350 }}
             >
-                <span class="reveal-name">{selected.name}</span>
-                <p>{selected.reveal}</p>
+                <span class="reveal-name">{gendered(selected.name, address)}</span>
+                <p>{gendered(selected.reveal, address)}</p>
                 <div class="actions">
                     <button class="btn" onclick={() => (selected = null)}>Revenir en arrière</button>
                     <button class="btn go" use:focusOnMount onclick={cross}>Franchir le portail</button>
@@ -487,10 +491,11 @@
         animation-duration: 4s;
     }
 
-    /* Le symbole du peuple, en grand et en filigrane, sur toute la porte. */
+    /* Le symbole du peuple, en grand et en filigrane, sur toute la porte. Ses marges suivent la
+       taille de la porte : petite porte ou grande, le symbole en garde la même part. */
     .emblem {
         position: absolute;
-        inset: 2.6rem 0.75rem 1.2rem;
+        inset: calc(var(--door-h) * 0.12) calc(var(--door-w) * 0.05) calc(var(--door-h) * 0.055);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -511,7 +516,7 @@
 
     /* Deux symboles l'un sur l'autre : chacun prend la moitié de la hauteur libre. */
     .emblem.pair .symbol {
-        width: min(88%, calc((var(--door-h) - 3.8rem) / 2));
+        width: min(88%, calc(var(--door-h) * 0.41));
     }
 
     .door:hover .symbol,
@@ -660,20 +665,32 @@
         }
     }
 
-    /* Téléphone : les trois portes en diagonale, chaque phrase dans l'espace laissé libre. La
-       lueur des demi-géants relie en biais les Géants (en haut) aux Humains (au milieu). */
+    /* Téléphone : les trois portes en diagonale, chaque phrase dans l'espace laissé libre. Chaque
+       porte a sa colonne, aussi large qu'elle : les rangées peuvent alors se chevaucher (OVERLAP),
+       et la hauteur gagnée revient aux portes. La lueur des demi-géants relie en biais les Géants
+       (en haut) aux Humains (au milieu). */
     @media (max-width: 860px) {
         .portals {
-            --door-h: clamp(5rem, calc((100svh - 17rem) / 3 - 0.8rem), 11rem);
-            --door-w: calc(var(--door-h) * 0.632);
-            --row-gap: clamp(0.4rem, 2svh, 1.2rem);
+            /* Les largeurs des portes (cqw) se mesurent sur celle des portails. */
+            container-type: inline-size;
         }
 
         .row {
+            --gap: 0.4rem;
+            --overlap: 0.12;
+            /* Une colonne de large au plus ; en hauteur, l'écran moins le titre (--head, posé par
+               la page) et le bouton du bas. */
+            --col: calc((100cqw - 2 * var(--gap)) / 3);
+            --door-w: clamp(
+                3.2rem,
+                min(var(--col), calc((100svh - var(--head, 8rem) - 7.5rem) / (3 - 2 * var(--overlap)) * 0.632)),
+                13rem
+            );
+            --door-h: calc(var(--door-w) / 0.632);
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            column-gap: 0.75rem;
-            row-gap: var(--row-gap);
+            column-gap: var(--gap);
+            row-gap: 0;
             position: relative;
             width: 100%;
         }
@@ -686,20 +703,24 @@
             width: auto;
             flex-direction: row;
             align-items: center;
-            gap: 0.9rem;
+            gap: 0.6rem;
         }
 
         .portal.geant {
             grid-area: 1 / 1 / 2 / 4;
         }
 
+        /* Chaque rangée remonte sous la précédente : les portes, chacune dans sa colonne, ne se
+           touchent pas, et les phrases restent au milieu de leur porte. */
         .portal.humain {
             grid-area: 2 / 2 / 3 / 4;
+            margin-top: calc(var(--door-h) * -1 * var(--overlap));
         }
 
         .portal.eternelle {
             grid-area: 3 / 1 / 4 / 4;
             flex-direction: row-reverse;
+            margin-top: calc(var(--door-h) * -1 * var(--overlap));
         }
 
         .frame {
@@ -717,18 +738,31 @@
             text-align: right;
         }
 
-        /* Part du centre de la porte des Géants vers celui des Humains. */
+        /* Sans survol au doigt : le symbole est un peu plus marqué d'emblée. */
+        .symbol {
+            opacity: 0.3;
+        }
+
+        .door:hover .symbol,
+        .door:focus-visible .symbol,
+        .selected .symbol {
+            opacity: 0.42;
+        }
+
+        /* Part du centre de la porte des Géants vers celui des Humains (une colonne plus loin, une
+           porte plus bas moins le chevauchement). */
         .bridge {
-            --dy: calc(var(--door-h) + var(--row-gap));
+            --dx: calc(var(--col) + var(--gap));
+            --dy: calc(var(--door-h) * (1 - var(--overlap)));
             position: absolute;
             top: calc(var(--door-h) / 2);
             left: calc(var(--door-w) / 2 - 1.2rem);
             z-index: -1;
             width: 2.4rem;
-            height: hypot(calc((100vw - 2rem) / 3 + 0.25rem), var(--dy));
+            height: hypot(var(--dx), var(--dy));
             margin: 0;
             transform-origin: 50% 0;
-            rotate: calc(-1 * atan2(calc((100vw - 2rem) / 3 + 0.25rem), var(--dy)));
+            rotate: calc(-1 * atan2(var(--dx), var(--dy)));
         }
 
         .link {

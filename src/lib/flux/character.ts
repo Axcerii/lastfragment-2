@@ -1,4 +1,5 @@
 import { STAT_KEYS, type StatBlock } from '$lib/game/stats';
+import type { Address } from './address';
 import { revealFlux, type FluxResult } from './quiz';
 import { lineageOf, type Race } from './races';
 
@@ -9,10 +10,18 @@ export const CHARACTER_DRAFT_KEY = 'flux_personnage';
 
 export type CharacterDraft = { name: string; description: string; stats: StatBlock };
 
-/** Nom tiré parmi les prénoms du flux, stats du certificat, peuple et flux en description. */
-export function characterDraft(result: FluxResult, race: Race | null, random: () => number = Math.random): CharacterDraft {
-	const flux = revealFlux(result);
-	const lineage = race ? lineageOf(race, result.halfGiant) : null;
+/**
+ * Nom tiré parmi les prénoms du flux, stats du certificat, peuple et flux en description (accordés
+ * comme le test s'est adressé au personnage).
+ */
+export function characterDraft(
+	result: FluxResult,
+	race: Race | null,
+	random: () => number = Math.random,
+	address: Address = 'il'
+): CharacterDraft {
+	const flux = revealFlux(result, address);
+	const lineage = race ? lineageOf(race, result.halfGiant, address) : null;
 	const name = flux.names[Math.floor(random() * flux.names.length)] ?? '';
 	const blessing = result.chaos
 		? 'Chaos'

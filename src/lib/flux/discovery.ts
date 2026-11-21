@@ -1,3 +1,4 @@
+import { isAddress, type Address } from './address';
 import type { FluxResult } from './quiz';
 import type { RaceId } from './races';
 
@@ -143,10 +144,12 @@ export const COUNTRIES: Country[] = [
 export const NEUTRAL_MASK = '/flux/vulcain-masque.webp';
 
 /**
- * Progression d'un visiteur, gardée dans son navigateur : constellation réussie, descriptions
- * des pays trouvés, puis race choisie et résultat du test de flux.
+ * Progression d'un visiteur, gardée dans son navigateur : comment s'adresser à son personnage,
+ * constellation réussie, descriptions des pays trouvés, puis race choisie et résultat du test.
  */
 export type DiscoveryProgress = {
+	/** Choisi à l'entrée ; absent des progressions d'avant ce choix (le masculin s'applique). */
+	address?: Address;
 	constellation: boolean;
 	found: Record<string, string>;
 	race?: RaceId;
@@ -154,3 +157,13 @@ export type DiscoveryProgress = {
 };
 
 export const STORAGE_KEY = 'flux_decouverte';
+
+/** Comment le don de flux s'adresse au personnage, d'après la progression gardée (masculin sinon). */
+export function savedAddress(): Address {
+	try {
+		const address = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')?.address;
+		return isAddress(address) ? address : 'il';
+	} catch {
+		return 'il';
+	}
+}

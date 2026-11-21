@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { STAT_KEYS, STATS, statPower, toScale, type StatBlock } from '$lib/game/stats';
-import { potential, revealFlux, scoreAnswers } from './quiz';
+import { drawStats, potential, revealFlux, scoreAnswers } from './quiz';
 import { FLUXES, QUESTIONS } from './quiz-data';
 import { RACES } from './races';
 
@@ -52,6 +52,13 @@ describe('certificat de flux', () => {
 		expect(result.chaos).toBe(true);
 		expect(result.stats.strength).toBe(194);
 		expect(result.stats.qdf).toBe(226);
+	});
+
+	it('Drii (D) nourrit la Maîtrise, Chronos (C) la Précision', () => {
+		// Hasard figé sur la dernière stat (Intelligence) : Maîtrise et Précision restent intactes.
+		const last = () => 0.999;
+		expect(drawStats({ D: 12 }, last)).toMatchObject({ maitrise: 60, accuracy: 20 });
+		expect(drawStats({ C: 12 }, last)).toMatchObject({ maitrise: 20, accuracy: 60 });
 	});
 
 	it('pentagone : 60 partout vaut 100 sur chaque axe', () => {

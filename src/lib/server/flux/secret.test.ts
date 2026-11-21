@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { gendered } from '$lib/flux/address';
 import { QUESTIONS } from '$lib/flux/quiz-data';
 import { RACES } from '$lib/flux/races';
 import { SECRET_DOOR, SECRET_PATH } from '$lib/flux/secret';
@@ -9,7 +10,7 @@ const path = () => {
 	const answers: number[] = [];
 	for (const step of SECRET_PATH) {
 		while (answers.length < step.question - 1) answers.push(0);
-		answers.push(QUESTIONS[step.question - 1].answers.findIndex((a) => a.text === step.answer));
+		answers.push(QUESTIONS[step.question - 1].answers.findIndex((a) => gendered(a.text) === step.answer));
 	}
 	return answers;
 };

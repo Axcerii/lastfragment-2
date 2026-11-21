@@ -1,11 +1,15 @@
-// Questions du test de flux (Quiz 2 : Quiz2Reponses/Quiz 2 - Feuille 1.csv), flux et citations repris
-// de la V1 (php/fluxDescriptions.php). Chaque réponse rapporte des lettres : voir $lib/flux/quiz.
+// Questions du test de flux (Quiz 2 : Quiz2Reponses/Quiz 2 - Feuille 1.csv), flux repris de
+// Quiz2Reponses/Résultats Flux - Flux - Résultats.csv, citations de la V1. Chaque réponse rapporte des
+// lettres : voir $lib/flux/quiz.
+//
+// Tout ce qui s'adresse au personnage s'accorde : « {masculin|féminin} », résolu à l'affichage par
+// gendered() ($lib/flux/address) selon le choix fait à l'entrée du don de flux.
 
 export type QuizQuestion = { text: string; answers: { text: string; letters: string }[] };
 
 export const QUESTIONS: QuizQuestion[] = [
 	{
-		text: "Tes paupières sont lourdes, une odeur douce et familière dilate tes narines, tu te réveilles, allongé, dans un champ de...",
+		text: "Tes paupières sont lourdes, une odeur douce et familière dilate tes narines, tu te réveilles, {allongé|allongée}, dans un champ de...",
 		answers: [
 			{ text: "Blé", letters: "EIK" },
 			{ text: "Maïs", letters: "AB" },
@@ -52,10 +56,10 @@ export const QUESTIONS: QuizQuestion[] = [
 	{
 		text: "Le bienfaiteur te demande comment tu as fini dans cette situation, tu prends une inspiration et tu essaies de te remémorer...",
 		answers: [
-			{ text: "Tu t'es endormi après une balade pour soigner une énième insomnie", letters: "AFJK" },
-			{ text: "Tu as poursuivi un scélérat et tu t'es écroulé de fatigue", letters: "GI" },
+			{ text: "Tu t'es {endormi|endormie} après une balade pour soigner une énième insomnie", letters: "AFJK" },
+			{ text: "Tu as poursuivi un scélérat et tu t'es {écroulé|écroulée} de fatigue", letters: "GI" },
 			{ text: "Tu as eu une soirée à la taverne qui est allée trop loin, et dont tu espères ne jamais te souvenir", letters: "DE" },
-			{ text: "Tu as été téléporté par une magie étrange, tu ne fais jamais rien d'inconscient", letters: "BCH" }
+			{ text: "Tu as été {téléporté|téléportée} par une magie étrange, tu ne fais jamais rien d'inconscient", letters: "BCH" }
 		]
 	},
 	{
@@ -70,10 +74,10 @@ export const QUESTIONS: QuizQuestion[] = [
 	{
 		text: "Sur ton chemin, tu croises un lac, tu y remplis ta gourde, en te penchant, tu peux y observer le reflet...",
 		answers: [
-			{ text: "d'un soldat en armure, perdu dans ce qu'il doit accomplir", letters: "DE" },
-			{ text: "d'un mercenaire à la recherche d'une fortune toujours plus importante", letters: "HIK" },
-			{ text: "d'un futur héros, qui a encore ses preuves à faire", letters: "BG" },
-			{ text: "d'un vagabond lambda sans aucune ambition", letters: "ACFJ" }
+			{ text: "{d'un soldat en armure, perdu dans ce qu'il doit accomplir|d'une soldate en armure, perdue dans ce qu'elle doit accomplir}", letters: "DE" },
+			{ text: "{d'un|d'une} mercenaire à la recherche d'une fortune toujours plus importante", letters: "HIK" },
+			{ text: "{d'un futur héros|d'une future héroïne}, qui a encore ses preuves à faire", letters: "BG" },
+			{ text: "{d'un vagabond|d'une vagabonde} lambda sans aucune ambition", letters: "ACFJ" }
 		]
 	},
 	{
@@ -91,7 +95,7 @@ export const QUESTIONS: QuizQuestion[] = [
 			{ text: "Le seul véritable Dieu, le Dieu Créateur", letters: "DH" },
 			{ text: "Le Dieu de la Vie pour qu'il t'accorde une bonne santé", letters: "CJ" },
 			{ text: "Le Dieu du Vent pour que ce dernier t'amène à bon port", letters: "FG" },
-			{ text: "Aucun dieu, tu n'es pas du genre religieux", letters: "ABEIK" }
+			{ text: "Aucun dieu, tu n'es pas du genre {religieux|religieuse}", letters: "ABEIK" }
 		]
 	},
 	{
@@ -115,8 +119,8 @@ export const QUESTIONS: QuizQuestion[] = [
 	{
 		text: "Le chemin est long, et la solitude est forte, heureusement, tu as pour t'accompagner...",
 		answers: [
-			{ text: "ton fidèle destrier, un vrai gourmand mais il t'a sorti des pires situations", letters: "BEK" },
-			{ text: "ton oiseau voyageur qui te permet de prendre contact avec ta famille sans être encombré", letters: "FGH" },
+			{ text: "ton fidèle destrier, un vrai gourmand mais il t'a {sorti|sortie} des pires situations", letters: "BEK" },
+			{ text: "ton oiseau voyageur qui te permet de prendre contact avec ta famille sans être {encombré|encombrée}", letters: "FGH" },
 			{ text: "ton chien de chasse, ton véritable meilleur ami", letters: "DJ" },
 			{ text: "ton casse-croûte, cette solitude est un véritable confort pour toi", letters: "ACI" }
 		]
@@ -126,7 +130,7 @@ export const QUESTIONS: QuizQuestion[] = [
 		answers: [
 			{ text: "prends ton arme, et tu cours aider la personne sans attendre", letters: "AFH" },
 			{ text: "récupères ton arme, et avances furtivement jusqu'à pouvoir évaluer le danger avant d'agir", letters: "DG" },
-			{ text: "fuis, tu n'es pas prêt à risquer ta vie pour sauver un inconnu", letters: "CK" },
+			{ text: "fuis, tu n'es pas {prêt|prête} à risquer ta vie pour sauver un inconnu", letters: "CK" },
 			{ text: "te rendors, ce n'est peut-être qu'un renard, et au pire, tu ne dois rien à qui que ce soit", letters: "BEIJ" }
 		]
 	},
@@ -136,7 +140,7 @@ export const QUESTIONS: QuizQuestion[] = [
 			{ text: "te poses et essaies de trouver une solution à cette énigme.", letters: "BDFH" },
 			{ text: "sors tes outils et essaies de contourner le circuit en crochetant le mécanisme", letters: "J" },
 			{ text: "frappes dedans avec ton arme pour forcer l'ouverture, parfois, ça marche", letters: "AEI" },
-			{ text: "pars, il est dangereux d'ouvrir des ruines nordiques sans être préparé", letters: "CGK" }
+			{ text: "pars, il est dangereux d'ouvrir des ruines nordiques sans être {préparé|préparée}", letters: "CGK" }
 		]
 	},
 	{
@@ -149,7 +153,7 @@ export const QUESTIONS: QuizQuestion[] = [
 		]
 	},
 	{
-		text: "Te voilà rentré chez toi après cette intense aventure, tu te poses dans une taverne, tu commandes...",
+		text: "Te voilà {rentré|rentrée} chez toi après cette intense aventure, tu te poses dans une taverne, tu commandes...",
 		answers: [
 			{ text: "un bon verre d'eau bien frais, pour te désaltérer après cette épopée", letters: "AFI" },
 			{ text: "une bière, pour te détendre et festoyer", letters: "DE" },
@@ -161,7 +165,7 @@ export const QUESTIONS: QuizQuestion[] = [
 		text: "Si tout cela était une mission officielle, tu aurais aimé avoir en récompense...",
 		answers: [
 			{ text: "une somme d'argent immense pour ne plus jamais avoir à repartir pour cela", letters: "CEK" },
-			{ text: "un équipement légendaire pour être prêt pour la prochaine escapade", letters: "GI" },
+			{ text: "un équipement légendaire pour être {prêt|prête} pour la prochaine escapade", letters: "GI" },
 			{ text: "un nouveau cerveau pour ne plus jamais retomber dans ces travers", letters: "DFJ" },
 			{ text: "rien, cette étrange aventure et le sourire des personnes sur le chemin en valaient la peine", letters: "ABH" }
 		]
@@ -169,12 +173,12 @@ export const QUESTIONS: QuizQuestion[] = [
 	{
 		text: "Finalement, tu t'allonges dans ton lit et tu repenses à ta vie, tu décides de te reprendre en main et de...",
 		answers: [
-			{ text: "véritablement passer tes classes et devenir un soldat de l'armée", letters: "D" },
-			{ text: "te réveiller, continuer à être un mercenaire à ton compte, mais le faire avec sérieux et conviction", letters: "C" },
-			{ text: "finalement abandonner, et devenir un brigand, le royaume n'a de cesse de te décevoir, tu vas prendre les armes et te révolter", letters: "IK" },
-			{ text: "devenir un aventurier, qui aidera son prochain et vivra grâce à son sourire et ses services", letters: "FH" },
-			{ text: "trouver la vérité sur le flux et la magie, devenir un scientifique, c'est ce qui te fait vibrer", letters: "BGJ" },
-			{ text: "abandonner la voie de l'épée et devenir un artisan, peut-être monteras-tu jusqu'à la bourgeoisie si tu es suffisamment capable", letters: "AE" }
+			{ text: "véritablement passer tes classes et devenir {un soldat|une soldate} de l'armée", letters: "D" },
+			{ text: "te réveiller, continuer à être {un|une} mercenaire à ton compte, mais le faire avec sérieux et conviction", letters: "C" },
+			{ text: "finalement abandonner, et devenir {un brigand|une brigande}, le royaume n'a de cesse de te décevoir, tu vas prendre les armes et te révolter", letters: "IK" },
+			{ text: "devenir {un aventurier|une aventurière}, qui aidera son prochain et vivra grâce à son sourire et ses services", letters: "FH" },
+			{ text: "trouver la vérité sur le flux et la magie, devenir {un|une} scientifique, c'est ce qui te fait vibrer", letters: "BGJ" },
+			{ text: "abandonner la voie de l'épée et devenir {un artisan|une artisane}, peut-être monteras-tu jusqu'à la bourgeoisie si tu es suffisamment capable", letters: "AE" }
 		]
 	}
 ];
@@ -184,595 +188,274 @@ export type FluxEntry = { dragons: [string, string]; name: string; names: string
 /** Flux né de deux dragons (dans un ordre ou dans l'autre). */
 export const FLUXES: FluxEntry[] = [
 	{
-		dragons: [
-			"Aqua",
-			"Aqua"
-		],
-		name: "Créateur d'Eau",
-		names: [
-			"Aqua"
-		],
-		description: "Vous êtes un Créateur d’Eau, vous serez à l’origine de torrents et de tsunamis. Il s’agit d’un flux plus utile que combatif ; cependant, utilisé avec créativité, ce pouvoir peut être dévastateur."
+		dragons: ["Aqua", "Aqua"],
+		name: "{Créateur|Créatrice} d'Eau",
+		names: ["Aqua"],
+		description: "Tu es {un descendant|une descendante} du Dieu de l'Eau pure. Ton pouvoir est de créer de l'eau. Un élément simple : tout le monde y voit son côté pratique, mais souvent, les plus ignorants n'arrivent pas à l'imaginer puissant lors d'un affrontement. Ce sera à toi de leur couper le souffle en leur montrant pourquoi l'Humanité a toujours craint le Déluge."
 	},
 	{
-		dragons: [
-			"Chronos",
-			"Aqua"
-		],
-		name: "Créateur de Slime",
-		names: [
-			"Noah",
-			"Kuro",
-			"Kroa"
-		],
-		description: "Vous êtes un Créateur de Slime, une substance entre le liquide et le solide qui ne lâche jamais sa cible. Aussi pratique qu’agaçant, ce pouvoir fera faire des cauchemars à certains adversaires."
+		dragons: ["Chronos", "Aqua"],
+		name: "{Créateur|Créatrice} d'Oxydation",
+		names: ["Noah", "Kuro", "Kroa"],
+		description: "Tu es {un descendant|une descendante} du Dieu du Temps et de l'Eau. Ton pouvoir est de créer de l'oxydation. Si la rouille n'est pour toi qu'un outil pour empoisonner, ne t'es-tu jamais demandé ce qu'il se passe quand les métaux dans le sang s'oxydent ? Non ? C'est bien normal. Cependant, sur Arthera, un seul de tes touchers te donnera la réponse à cette interrogation tordue."
 	},
 	{
-		dragons: [
-			"Drii",
-			"Aqua"
-		],
-		name: "Créateur de Vapeur",
-		names: [
-			"Drya",
-			"Ria",
-			"Kurii",
-			"Ahrii"
-		],
-		description: "Vous êtes un Créateur de Vapeur, capable de créer des brumes et des jets de vapeur aussi brûlants que de l’huile sur le feu. Bien qu’un peu handicapant, ce pouvoir est destructeur."
+		dragons: ["Drii", "Aqua"],
+		name: "{Créateur|Créatrice} de Vapeur",
+		names: ["Drya", "Ria", "Kurii", "Ahrii"],
+		description: "Tu es {un descendant|une descendante} du Dieu des Flammes et du Dieu de l'Eau. Ton pouvoir est de créer de la vapeur. Vas-tu réveiller l'assassin en toi, te camouflant dans cette épaisse fumée, ou vas-tu être {un mage réputé|une mage réputée} pour faire cuire les chevaliers les plus robustes malgré leurs protections clinquantes ? Arthera t'acceptera comme tu es, même si tu décides d'être {le plus grand cuiseur|la plus grande cuiseuse} de raviolis du pays."
 	},
 	{
-		dragons: [
-			"Goliath",
-			"Aqua"
-		],
-		name: "Créateur de Boue",
-		names: [
-			"Kugo",
-			"Ahli",
-			"Liha"
-		],
-		description: "Vous êtes un Créateur de Boue, capable de réaliser des bains et vagues de boue. À première vue inutile et sale, ce pouvoir utilisé à mauvais escient est ravageur."
+		dragons: ["Goliath", "Aqua"],
+		name: "{Créateur|Créatrice} de Boue",
+		names: ["Kugo", "Ahli", "Liha"],
+		description: "Tu es {un descendant|une descendante} du Dieu de l'Eau et du Dieu de la Terre. Ton pouvoir est la création de boue. Certains individus moqueront ton pouvoir car il est sale et manque de classe, ce qui te laissera le temps de les bétonner au sol, voire de les noyer sous ton flux. Il serait temps de rappeler aux personnes superficielles la disparition de régions entières à cause d'une simple coulée."
 	},
 	{
-		dragons: [
-			"Guizamark",
-			"Aqua"
-		],
-		name: "Créateur de Plante",
-		names: [
-			"Zaha",
-			"Maka",
-			"Maha",
-			"Kark"
-		],
-		description: "Vous êtes un Créateur de Plantes. Que ce soient des fleurs ou des arbres, laissez le pouvoir de la vie s’emparer de votre créativité pour devenir un puissant combattant."
+		dragons: ["Guizamark", "Aqua"],
+		name: "{Créateur|Créatrice} de Plante",
+		names: ["Zaha", "Maka", "Maha", "Kark"],
+		description: "Tu es {un descendant|une descendante} du Dieu de l'Eau et du Dieu de la Vie. Ton pouvoir est la création de plantes. Des fleurs empoisonnées, des ronces urticantes, des racines indéchirables... Ta puissance n'aura de limite que ta connaissance botanique. Je me demande comment tu utiliseras un pouvoir aussi vaste que celui-ci..."
 	},
 	{
-		dragons: [
-			"Lada",
-			"Aqua"
-		],
-		name: "Créateur de Glace",
-		names: [
-			"Laha",
-			"Daha",
-			"Kuda",
-			"Kula"
-		],
-		description: "Vous êtes un Créateur de Glace. Un matériau fragile qui peut s’avérer tranchant et dangereux. Un pouvoir subtil, simple et efficace."
+		dragons: ["Lada", "Aqua"],
+		name: "{Créateur|Créatrice} de Glace",
+		names: ["Laha", "Daha", "Kuda", "Kula"],
+		description: "Tu es {un descendant|une descendante} du Dieu de l'Eau et du Vent. Ton pouvoir te permet de générer de la glace. Un flux élémentaire simple, et pourtant son nombre d'usages n'a de limite que ta créativité. Une magie à double tranchant, aussi efficace pour neutraliser tes adversaires que pour ralentir tes propres mouvements."
 	},
 	{
-		dragons: [
-			"Pestia",
-			"Aqua"
-		],
-		name: "Créateur de Nuage",
-		names: [
-			"Tiha",
-			"Tiku",
-			"Sepia"
-		],
-		description: "Vous êtes un Créateur de Nuage. À vous de vous entraîner afin de leur faire cracher des torrents jusqu’aux éclairs. Un flux nécessitant une forte dévotion, mais le pouvoir acquis en vaut la chandelle."
+		dragons: ["Pestia", "Aqua"],
+		name: "{Créateur|Créatrice} de Nuage",
+		names: ["Tiha", "Tiku", "Sepia"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et du Dieu de l'Eau. Ton pouvoir te permet de fabriquer des nuages. Seront-ils orageux ? Pluvieux ? Nombreux ? Lourds ? Légers ? Un pouvoir versatile nécessitant une grande créativité et une connaissance aiguë de la météo. En seras-tu digne ? Ou deviendras-tu {un paysan|une paysanne} avec des terres efficaces 24/24, peu importent les saisons ?"
 	},
 	{
-		dragons: [
-			"Pura",
-			"Aqua"
-		],
-		name: "Créateur de Résine",
-		names: [
-			"Hapu",
-			"Raha",
-			"Ra",
-			"Kara"
-		],
-		description: "Vous êtes un Créateur de Résine, qu’elle soit liquide ou solide, utilisez votre créativité pour bloquer vos adversaires et les transformer en œuvres d’art morbides."
+		dragons: ["Pura", "Aqua"],
+		name: "{Créateur|Créatrice} de Résine",
+		names: ["Hapu", "Raha", "Ra", "Kara"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Force et du Dieu de l'Eau. Ton pouvoir est de créer de la résine. Une magie colorée pour couler les cercueils les plus créatifs avant d'enterrer tes cibles. Ce flux est aussi bon défensivement qu'offensivement : ses limites sont déterminées par ta créativité à utiliser un élément alternant entre le solide et le liquide aussi rapidement que le béton moderne."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Aqua"
-		],
-		name: "Créateur de Poison Liquide",
-		names: [
-			"Zaha",
-			"Hashi",
-			"Shiku",
-			"Kuri"
-		],
-		description: "Vous êtes un Créateur de Poison Liquide. Mortel ou paralysant, à vous de vous démener pour créer les infusions adéquates à chaque situation."
+		dragons: ["Shizari", "Aqua"],
+		name: "{Créateur|Créatrice} de Poison Liquide",
+		names: ["Zaha", "Hashi", "Shiku", "Kuri"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et du Dieu de l'Eau. Ton pouvoir est de créer du poison liquide. Entre les remèdes des apothicaires et les venins mortels, ton flux ne laisse aucune chance à ceux qui sous-estiment la pureté d'un liquide. Une flasque suffit à transformer un banquet en tragédie silencieuse. La convoitise de ton pouvoir par autrui sera le fardeau que tu transporteras."
 	},
 	{
-		dragons: [
-			"Chronos",
-			"Chronos"
-		],
-		name: "Accélérateur Temporel",
-		names: [
-			"Chronos",
-			"Kro",
-			"Nos",
-			"Son"
-		],
-		description: "Vous êtes un Accélérateur Temporel. Vous pouvez viser des zones dans lesquelles le temps sera accéléré. Un pouvoir qui semble surpuissant au premier abord mais extrêmement subtil à maîtriser. Un flux rare dont les bons utilisateurs le sont encore plus."
+		dragons: ["Chronos", "Chronos"],
+		name: "{Accélérateur Temporel|Accélératrice Temporelle}",
+		names: ["Chronos", "Kro", "Nos", "Son"],
+		description: "Tu es {un descendant|une descendante} du Dieu du Temps. Ton pouvoir est l'accélération temporelle. Un flux d'une rareté inouïe qui semble semer le chaos d'un simple clin d'œil. Si d'autres voient en toi {un prodige|une prodige} capable de plier les secondes à sa volonté, ils oublieront les années de pratique qui t'ont {mené|menée} à cette maîtrise. {Seul un véritable maître|Seule une véritable maîtresse} de l'effort et de la patience arrivera à dompter le don de Chronos."
 	},
 	{
-		dragons: [
-			"Drii",
-			"Chronos"
-		],
-		name: "Créateur de Météorite",
-		names: [
-			"Driinos",
-			"Riinos",
-			"Kronii"
-		],
-		description: "Tel Chicxulub, vous aurez une puissance dévastatrice, un flux rare d’une complexité immense, vous devrez sans doute vous entraîner toute votre vie pour parfaire ce pouvoir. Un pouvoir aussi dangereux pour son utilisateur que pour ses ennemis."
+		dragons: ["Drii", "Chronos"],
+		name: "{Créateur|Créatrice} de Météorite",
+		names: ["Driinos", "Riinos", "Kronii"],
+		description: "Tu es {un descendant|une descendante} du Dieu des Flammes et du Dieu du Temps. Ton pouvoir est de créer des météorites. Tel un cataclysme ancien, tu copieras le ciel en invoquant des masses incandescentes soumises aux lois de la gravité. Un flux d'une puissance dévastatrice et d'une rareté absolue, aussi dangereux pour tes ennemis que pour toi-même. Combien de personnes arriveras-tu à éliminer avant que cette même force mette un point final à ton histoire ?"
 	},
 	{
-		dragons: [
-			"Goliath",
-			"Chronos"
-		],
-		name: "Créateur de Fossile",
-		names: [
-			"Linos",
-			"Gonos",
-			"Lianos",
-			"Kroli"
-		],
-		description: "Vous êtes un Créateur de Fossiles. Un flux rare qui dépend de la connaissance et de l’imagination de son utilisateur. Peut-être qu’un jour vous serez le premier à faire renaître ces géants d’antan."
+		dragons: ["Goliath", "Chronos"],
+		name: "{Créateur|Créatrice} de Fossile",
+		names: ["Linos", "Gonos", "Lianos", "Kroli"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Terre et du Dieu du Temps. Ton pouvoir est de créer des fossiles. Tu manipules la mémoire pétrifiée de la terre et des âges révolus. Ce flux rare exige une imagination et une érudition sans faille pour redonner forme à ce que la poussière du temps a oublié. Seras-tu {celui|celle} qui fera renaître les géants d'antan ?"
 	},
 	{
-		dragons: [
-			"Guizamark",
-			"Chronos"
-		],
-		name: "Soigneur",
-		names: [
-			"Zanos",
-			"Noma",
-			"Kroma"
-		],
-		description: "Vous êtes un Soigneur. Votre flux permet d’accélérer la récupération d’une plaie ou d’une maladie. Un flux extrêmement rare, très recherché. Deviendrez-vous le soigneur d’une contrée entière ou un combattant immortel ? À vous de choisir."
+		dragons: ["Guizamark", "Chronos"],
+		name: "{Soigneur|Soigneuse}",
+		names: ["Zanos", "Noma", "Kroma"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Vie et du Dieu du Temps. Ton pouvoir est la guérison et l'accélération cellulaire. {Doté|Dotée} d'un flux rarissime et ardemment convoité, tu disposes du pouvoir de recoudre les chairs et de repousser la mort. Deviendras-tu {le bienfaiteur|la bienfaitrice} d'une contrée entière ou {un combattant immortel|une combattante immortelle} renaissant de ses cendres après chaque assaut ?"
 	},
 	{
-		dragons: [
-			"Lada",
-			"Chronos"
-		],
-		name: "Créateur de Poussière",
-		names: [
-			"Lanos",
-			"Danos",
-			"Nala",
-			"Dana"
-		],
-		description: "Vous êtes un Créateur de Poussière. Vous pouvez créer de la poussière de tout type. Un pouvoir étrangement rare, qui nécessitera sans doute beaucoup de réflexion à son porteur."
+		dragons: ["Lada", "Chronos"],
+		name: "{Créateur|Créatrice} de Poussière",
+		names: ["Lanos", "Danos", "Nala", "Dana"],
+		description: "Tu es {un descendant|une descendante} du Dieu du Vent et du Dieu du Temps. Ton pouvoir est de créer de la poussière. Un flux étrangement rare, où le souffle du vent et l'usure des âges se conjuguent. Ce qui semble n'être qu'une brume futile devient entre tes mains un outil d'aveuglement et de dégradation redoutable. Un flux subtil pour {celui|celle} qui saura s'en servir."
 	},
 	{
-		dragons: [
-			"Pestia",
-			"Chronos"
-		],
-		name: "Créateur de Mirage",
-		names: [
-			"Tiano",
-			"Kroya",
-			"Noya"
-		],
-		description: "Vous êtes un Créateur de Mirages. Vous pouvez ralentir la vitesse de la lumière afin de faire apparaître des images du passé. Un pouvoir très rare qui facilitera grandement le travail au marché noir…"
+		dragons: ["Pestia", "Chronos"],
+		name: "{Créateur|Créatrice} de Mirage",
+		names: ["Tiano", "Kroya", "Noya"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et de l'Espace et du Dieu du Temps. Ton pouvoir est de créer des mirages en ralentissant la vitesse de la lumière pour projeter des images du passé. Un pouvoir fascinant et rare qui fera des merveilles dans l'ombre et le secret. Duperas-tu tes futures cibles, ou réaliseras-tu le plus beau des spectacles ?"
 	},
 	{
-		dragons: [
-			"Pura",
-			"Chronos"
-		],
-		name: "Destructeur de Temps",
-		names: [
-			"Ranos",
-			"Krora",
-			"Nosu"
-		],
-		description: "Vous êtes un Destructeur de Temps. Vous pouvez stopper le temps dans une zone donnée. Un pouvoir rare possédant de fortes contraintes, qui est beaucoup plus dur à maîtriser que ce que l'on peut penser. Je me demande ce que vous en ferez."
+		dragons: ["Pura", "Chronos"],
+		name: "{Destructeur|Destructrice} de Temps",
+		names: ["Ranos", "Krora", "Nosu"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Force et du Dieu du Temps. Ton pouvoir est {le Destructeur|la Destructrice} de Temps, capable de figer le cours du monde dans une zone donnée. Un pouvoir d'une immense rareté aux contraintes tout aussi grandes, bien plus lourd à porter que la simple force physique. Quand le monde autour de toi sera figé, comment t'en sortiras-tu ?"
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Chronos"
-		],
-		name: "Créateur de Peste",
-		names: [
-			"Zanos",
-			"Shino",
-			"Rinos"
-		],
-		description: "Vous êtes un Créateur de Peste. Vous créez des monstres microscopiques pouvant mettre à mal le plus robuste des combattants. C’est un pouvoir extrêmement rare et dévastateur. Il nécessite une connaissance approfondie de la santé pour fonctionner à son plein potentiel."
+		dragons: ["Shizari", "Chronos"],
+		name: "{Créateur|Créatrice} de Peste",
+		names: ["Zanos", "Shino", "Rinos"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et du Dieu du Temps. Ton pouvoir est de créer la peste, générant des fléaux microscopiques capables d'abattre les plus robustes guerriers. Un flux terrifiant qui exige une science médicale poussée pour être libéré à son plein potentiel. Un pouvoir que certains auraient préféré bannir en temps de guerre."
 	},
 	{
-		dragons: [
-			"Drii",
-			"Drii"
-		],
-		name: "Créateur de Feu",
-		names: [
-			"Drii",
-			"Reed",
-			"Lily"
-		],
-		description: "Vous êtes un Créateur de Feu. Un pouvoir aussi simple qu’il est dangereux, aussi bien pour l’utilisateur que ses adversaires. Il s’agit d’un des flux les plus communs mais reste d’une grande puissance."
+		dragons: ["Drii", "Drii"],
+		name: "{Créateur|Créatrice} de Feu",
+		names: ["Drii", "Reed", "Lily"],
+		description: "Tu es {un descendant|une descendante} du Dieu des Flammes. Ton pouvoir est le feu pur. S'il s'agit de l'un des flux les plus communs d'Arthera, sa simplicité n'a d'égale que sa dangerosité mortelle. Entre la chaleur domestique et l'incendie dévastateur qui consume tout sur son passage, sauras-tu dompter la flamme sans te brûler les ailes ?"
 	},
 	{
-		dragons: [
-			"Goliath",
-			"Drii"
-		],
-		name: "Créateur de Magma",
-		names: [
-			"Gori",
-			"Dryath",
-			"Liry"
-		],
-		description: "Vous êtes un Créateur de Magma. Vous générez des roches d’une chaleur intense. Un pouvoir très dangereux pour quiconque le possède, mais tout aussi destructeur pour les lignes ennemies."
+		dragons: ["Goliath", "Drii"],
+		name: "{Créateur|Créatrice} de Magma",
+		names: ["Gori", "Dryath", "Liry"],
+		description: "Tu es {un descendant|une descendante} de la Terre et des Flammes. Ton pouvoir est de générer du magma en fusion. Une fournaise souterraine aussi destructrice pour les lignes ennemies que périlleuse pour ton propre équilibre. Quand la roche en pleurs s'abat sur tes opposants, reste-t-il seulement quelqu'un pour contester ta puissance ?"
 	},
 	{
-		dragons: [
-			"Guizamark",
-			"Drii"
-		],
-		name: "Créateur de Sang",
-		names: [
-			"Zari",
-			"Mari",
-			"Giri"
-		],
-		description: "Vous êtes un Créateur de Sang. Un flux étrange, similaire à celui de l’eau. À vous de vous démarquer en utilisant chaque composant de ce liquide sous toutes ses formes pour devenir un combattant remarquable."
+		dragons: ["Guizamark", "Drii"],
+		name: "{Créateur|Créatrice} de Sang",
+		names: ["Zari", "Mari", "Giri"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Vie et du Dieu des Flammes. Ton pouvoir est de créer et manipuler le sang. Un flux étrange, proche de l'eau en apparence, mais bien plus troublant à affronter. Si tu apprends à jouer avec chaque élément qui le compose, tu deviendras vite {un combattant redouté|une combattante redoutée} dans toutes les arènes d'Arthera."
 	},
 	{
-		dragons: [
-			"Lada",
-			"Drii"
-		],
-		name: "Créateur de Chaleur",
-		names: [
-			"Lari",
-			"Dari",
-			"Rida",
-			"Rila"
-		],
-		description: "Vous êtes un Créateur de Chaleur. Vous pouvez augmenter la chaleur d’un endroit à votre guise. Un pouvoir subtil qui vous permettra de faire connaître l’enfer à vos opposants, ou de devenir le plus grand cuisinier que ce monde ait connu."
+		dragons: ["Lada", "Drii"],
+		name: "{Créateur|Créatrice} de Chaleur",
+		names: ["Lari", "Dari", "Rida", "Rila"],
+		description: "Tu es {un descendant|une descendante} du Dieu du Vent et du Dieu des Flammes. Ton pouvoir est d'augmenter la chaleur autour de toi à ta guise. Un flux discret en apparence, mais redoutable : tu peux transformer l'air d'un champ de bataille en fournaise pour tes ennemis, ou simplement devenir {le plus grand cuisinier qu'Arthera ait jamais connu|la plus grande cuisinière qu'Arthera ait jamais connue}."
 	},
 	{
-		dragons: [
-			"Pestia",
-			"Drii"
-		],
-		name: "Créateur d'Éclairs",
-		names: [
-			"Drya",
-			"Rya",
-			"Tiry"
-		],
-		description: "Vous êtes un Créateur d'Éclairs. Foudroyez vos adversaires avec une vitesse hors du commun. Un pouvoir très puissant mais avec des contrecoups qui peuvent s’avérer fatals."
+		dragons: ["Pestia", "Drii"],
+		name: "{Créateur|Créatrice} d'Éclairs",
+		names: ["Drya", "Rya", "Tiry"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et du Dieu des Flammes. Ton pouvoir est de faire jaillir des éclairs. Tu frappes plus vite que l'œil ne peut suivre, mais une telle puissance a un prix : le moindre faux pas et le contrecoup de ton propre flux risque de te foudroyer sur place."
 	},
 	{
-		dragons: [
-			"Pura",
-			"Drii"
-		],
-		name: "Créateur de Flammes Ardentes",
-		names: [
-			"Rira",
-			"Dura",
-			"Lyra"
-		],
-		description: "Vous êtes un Créateur de Flammes Ardentes. Un pouvoir ayant une puissance supérieure à celle des flammes classiques, cependant très gourmand en flux et encore plus dangereux pour son utilisateur que celui des flammes. Certains maîtres de ce flux arrivent même à générer des flammes pouvant virer au bleu azur."
+		dragons: ["Pura", "Drii"],
+		name: "{Créateur|Créatrice} de Flammes Ardentes",
+		names: ["Rira", "Dura", "Lyra"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Force et du Dieu des Flammes. Ton pouvoir génère des flammes bien plus brûlantes que le feu ordinaire. Très gourmand en énergie et dangereux pour ton propre corps, ce flux demande un contrôle de fer. On raconte que les meilleurs maîtres arrivent à pousser leurs flammes jusqu'au bleu azur, capables de tout faire fondre en quelques secondes."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Drii"
-		],
-		name: "Créateur d'Os",
-		names: [
-			"Shiri",
-			"Zari",
-			"Lily"
-		],
-		description: "Vous êtes un Créateur d’Os. Bien que morbide, ce pouvoir possède de nombreuses qualités, seule votre imagination vous limitera. Vous ferez sans doute peur aux enfants, mais aussi à vos cibles."
+		dragons: ["Shizari", "Drii"],
+		name: "{Créateur|Créatrice} de Flammes Colorées",
+		names: ["Shiri", "Zari", "Lily"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et du Dieu des Flammes. Ton pouvoir te permet de créer des flammes colorées. Vertes, violettes ou pâles, elles changent de température et dégagent des fumées toxiques selon leur teinte. Les curieux y verront un joli spectacle, mais sur le terrain, tu pourras étouffer tes ennemis sans même les toucher."
 	},
 	{
-		dragons: [
-			"Goliath",
-			"Goliath"
-		],
-		name: "Créateur de Terre",
-		names: [
-			"Goliath"
-		],
-		description: "Vous êtes un Créateur de Terre. Un flux très commun mais avec énormément de possibilités. Une imagination débordante est importante pour maîtriser ce pouvoir. Avec de l’entraînement, même des rochers peuvent être générés."
+		dragons: ["Goliath", "Goliath"],
+		name: "{Créateur|Créatrice} de Terre",
+		names: ["Goliath"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Terre. Ton pouvoir est de créer de la terre et des roches. Beaucoup le jugent banal parce qu'il est répandu, mais tout dépend de ton imagination. D'un simple mur pour bloquer une flèche à des blocs de pierre capables d'écraser une escouade. Qu'ils n'oublient jamais qu'un Dieu a porté ce pouvoir."
 	},
 	{
-		dragons: [
-			"Guizamark",
-			"Goliath"
-		],
-		name: "Créateur de Coquillages",
-		names: [
-			"Goli",
-			"Zayath",
-			"Zalia",
-			"Mali"
-		],
-		description: "Vous êtes un Créateur de Coquillages. Un flux rare et très spécifique, à l’instar d’un animal, vous pourrez vous rendre indestructible et créer des lames aussi tranchantes que du verre."
+		dragons: ["Guizamark", "Goliath"],
+		name: "{Créateur|Créatrice} de Coquillages",
+		names: ["Goli", "Zayath", "Zalia", "Mali"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Vie et du Dieu de la Terre. Ton pouvoir est de créer des coquillages. Un flux rare et étrange qui te permet de t'enfermer dans une coquille presque impossible à briser, ou de façonner des lames aussi tranchantes que du verre. Sous-estimé au premier regard, délicieux au corps à corps."
 	},
 	{
-		dragons: [
-			"Lada",
-			"Goliath"
-		],
-		name: "Créateur de Sable",
-		names: [
-			"Dali",
-			"Gola",
-			"Dago"
-		],
-		description: "Vous êtes un Créateur de Sable. Ce flux, bien que commun, peut se révéler très puissant. Pour vos adversaires vous serez un démon venu du désert, capable de créer des tempêtes de sable à sa guise."
+		dragons: ["Lada", "Goliath"],
+		name: "{Créateur|Créatrice} de Sable",
+		names: ["Dali", "Gola", "Dago"],
+		description: "Tu es {un descendant|une descendante} du Dieu du Vent et du Dieu de la Terre. Ton pouvoir est de créer du sable. Bien qu'il soit assez courant, ce flux peut vite tourner au cauchemar pour tes adversaires. Aveugler une troupe entière ou lever une tempête en plein combat : pour eux, tu seras {un vrai démon|une vraie démone} du désert."
 	},
 	{
-		dragons: [
-			"Pestia",
-			"Goliath"
-		],
-		name: "Créateur de Cristaux",
-		names: [
-			"Gotia",
-			"Ai",
-			"Talia"
-		],
-		description: "Vous êtes un Créateur de Cristaux. On dit souvent que le diamant est le matériau le plus dur du monde, que ferez-vous avec un tel pouvoir ?"
+		dragons: ["Pestia", "Goliath"],
+		name: "{Créateur|Créatrice} de Cristaux",
+		names: ["Gotia", "Ai", "Talia"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et du Dieu de la Terre. Ton pouvoir est de faire pousser des cristaux. On dit souvent que le diamant est la matière la plus dure au monde : entre boucliers transparents, pièges coupants et armes de luxe, tu as de quoi escroquer autant que de découper tes cibles."
 	},
 	{
-		dragons: [
-			"Pura",
-			"Goliath"
-		],
-		name: "Créateur de Fer",
-		names: [
-			"Gora",
-			"Pulia",
-			"Raliath",
-			"Ralia"
-		],
-		description: "Vous êtes un Créateur de Fer. En un claquement de doigts, vous pourrez revêtir une armure impénétrable ou vous forger la plus grande des épées. Il s’agit d’un flux où l’imagination est très importante."
+		dragons: ["Pura", "Goliath"],
+		name: "{Créateur|Créatrice} de Fer",
+		names: ["Gora", "Pulia", "Raliath", "Ralia"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Force et du Dieu de la Terre. Ton pouvoir est de créer du fer. En un clin d'œil, tu peux te couvrir d'une armure solide ou forger une épée à ta mesure sans jamais passer par une forge. Avec un peu d'imagination, tu ne manqueras jamais d'armes ni de défenses."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Goliath"
-		],
-		name: "Créateur de Cendre",
-		names: [
-			"Zayath",
-			"Zalia",
-			"Shigo",
-			"Goshi"
-		],
-		description: "Vous êtes un Créateur de Cendre. Un pouvoir quelque peu rare, à vous et à votre imagination de déterminer son potentiel. Réduirez-vous le monde à l’image de votre flux ?"
+		dragons: ["Shizari", "Goliath"],
+		name: "{Créateur|Créatrice} de Sel",
+		names: ["Zayath", "Zalia", "Shigo", "Goshi"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et du Dieu de la Terre. Ton pouvoir est de créer du sel. Un grain blanc qui paraît inoffensif, mais qui assèche la terre et vide les corps de leur eau. Pendant que d'autres sortent les lames ou le feu, tu peux rendre un champ stérile ou épuiser tes ennemis sans verser une goutte de sang."
 	},
 	{
-		dragons: [
-			"Guizamark",
-			"Guizamark"
-		],
-		name: "Donneur de Vie",
-		names: [
-			"Guizamark"
-		],
-		description: "Vous êtes un Donneur de Vie. Un flux très rare qui vous permet d’insuffler la vie temporairement à des objets et leur donner des ordres. L’individu possédant ce flux possède aussi une grande force régénératrice."
+		dragons: ["Guizamark", "Guizamark"],
+		name: "{Donneur|Donneuse} de Vie",
+		names: ["Guizamark"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Vie. Ton pouvoir est le Don de Vie. Extrêmement rare, il te permet d'animer des objets pendant un temps pour leur donner des ordres, tout en offrant à ton corps une récupération hors norme. Une simple statue ou une épée posée au sol peut soudain devenir ton garde du corps."
 	},
 	{
-		dragons: [
-			"Lada",
-			"Guizamark"
-		],
-		name: "Créateur d'Ailes",
-		names: [
-			"Daza",
-			"Mala",
-			"Guida",
-			"Guila"
-		],
-		description: "Vous êtes un Créateur d’Ailes. Un flux très rare et très convoité permettant de créer des ailes de toutes tailles et formes. On raconte qu’une excellente maîtrise de ce pouvoir permettrait de créer des ailes si grandes qu’on pourrait s’envoler."
+		dragons: ["Lada", "Guizamark"],
+		name: "{Créateur|Créatrice} d'Ailes",
+		names: ["Daza", "Mala", "Guida", "Guila"],
+		description: "Tu es {un descendant|une descendante} du Dieu du Vent et du Dieu de la Vie. Ton pouvoir est de créer des ailes de toutes tailles et de toutes formes. Ce flux très rare attire toutes les convoitises, car on raconte qu'avec assez d'entraînement, il permet de s'envoler pour de bon. Sur Arthera, obtenir l'avantage des airs change toutes les règles du jeu."
 	},
 	{
-		dragons: [
-			"Pestia",
-			"Guizamark"
-		],
-		name: "Créateur d'Yeux",
-		names: [
-			"Giya",
-			"Zaya",
-			"Maya"
-		],
-		description: "Vous êtes un Créateur d’Yeux. Un flux aussi rare qu’il est morbide. Vous pouvez créer des yeux. Bien qu’il soit inutile en combat, on raconte que ceux capables de le maîtriser parfaitement arrivent à voir ce qu’observent les yeux créés. Je vous laisse réfléchir aux possibilités de ce pouvoir…"
+		dragons: ["Pestia", "Guizamark"],
+		name: "{Créateur|Créatrice} d'Yeux",
+		names: ["Giya", "Zaya", "Maya"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et du Dieu de la Vie. Ton pouvoir est de créer des yeux. Un flux aussi rare que dérangeant : inutile pour frapper un ennemi, mais redoutable pour l'espionnage. Ceux qui le maîtrisent arrivent à voir à travers chaque œil qu'ils ont caché dans un recoin. Aucun secret ne reste bien gardé très longtemps avec toi..."
 	},
 	{
-		dragons: [
-			"Pura",
-			"Guizamark"
-		],
-		name: "Créateur de Fibres Musculaires",
-		names: [
-			"Zara",
-			"Gira",
-			"Mara"
-		],
-		description: "Vous êtes un Créateur de Fibres Musculaires. Bien qu’un peu étrange, ce pouvoir vous permettrait de renforcer votre physique. Avec un brin de créativité, ce flux est sans doute plus fort qu’on ne le pense."
+		dragons: ["Pura", "Guizamark"],
+		name: "{Créateur|Créatrice} de Fibres Musculaires",
+		names: ["Zara", "Gira", "Mara"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Force et du Dieu de la Vie. Ton pouvoir est de créer des fibres musculaires. Un don un peu étrange au premier abord, mais qui te permet de renforcer ton corps ou de réparer un muscle déchiré en plein effort. Avec un peu d'astuce, ta puissance physique dépassera vite ce que les autres croient possible."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Guizamark"
-		],
-		name: "Immortel",
-		names: [
-			"Za",
-			"Shiza",
-			"Mashi",
-			"Shigi"
-		],
-		description: "Vous êtes Immortel. Un flux mythique qui n’a jamais existé, jusqu’à maintenant. Votre corps refuse de mourir, quels que soient les dégâts qu’il reçoit et la vieillesse qu’il subit. Vous finissez toujours par récupérer votre forme normale. Une bénédiction pour certains, un enfer pour d'autres."
+		dragons: ["Shizari", "Guizamark"],
+		name: "{Immortel|Immortelle}",
+		names: ["Za", "Shiza", "Mashi", "Shigi"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et du Dieu de la Vie. Ton pouvoir est l'Immortalité. Un flux légendaire qui n'avait jamais existé jusqu'à toi : ton corps refuse de mourir, peu importe les blessures ou le temps qui passe, et finit toujours par reprendre sa forme normale. Une bénédiction pour certains, un enfer si tu veux mon avis."
 	},
 	{
-		dragons: [
-			"Lada",
-			"Lada"
-		],
-		name: "Créateur de Vent",
-		names: [
-			"Lada",
-			"Dala"
-		],
-		description: "Vous êtes un Créateur de Vent. Un flux très commun mais à ne surtout pas sous-estimer. Peut-être qu’au début ce ne sera qu’une brise, mais avec de l’entraînement, cela conduira à un ouragan."
+		dragons: ["Lada", "Lada"],
+		name: "{Créateur|Créatrice} de Vent",
+		names: ["Lada", "Dala"],
+		description: "Tu es {un descendant|une descendante} du Dieu du Vent. Ton pouvoir est de créer du vent. C'est l'un des flux les plus répandus, mais il serait stupide de le prendre à la légère. Ce qui n'est au début qu'une simple brise peut devenir un véritable ouragan avec de l'entraînement. Prendras-tu ton envol en utilisant ce don de Lada ?"
 	},
 	{
-		dragons: [
-			"Pestia",
-			"Lada"
-		],
-		name: "Créateur de Typhon",
-		names: [
-			"Lydia",
-			"Daya",
-			"Pelia"
-		],
-		description: "Vous êtes un Créateur de Typhon. Un pouvoir dévastateur à utiliser avec précaution, pour le bien de son créateur et celui du monde."
+		dragons: ["Pestia", "Lada"],
+		name: "{Créateur|Créatrice} de Typhon",
+		names: ["Lydia", "Daya", "Pelia"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et du Dieu du Vent. Ton pouvoir est de déclencher des typhons. Un flux d'une puissance brute capable de ravager une zone entière en quelques instants. Le plus dur ne sera pas de vaincre tes ennemis, mais de garder le contrôle pour ne pas emporter tes propres alliés avec eux."
 	},
 	{
-		dragons: [
-			"Pura",
-			"Lada"
-		],
-		name: "Créateur de Tornade",
-		names: [
-			"Dara",
-			"Lara",
-			"Pula"
-		],
-		description: "Vous êtes un Créateur de Tornade. Balayez tous vos adversaires et leurs habitations d’un simple tour de bras. Un flux puissant, dévastateur et gourmand."
+		dragons: ["Pura", "Lada"],
+		name: "{Créateur|Créatrice} de Tornade",
+		names: ["Dara", "Lara", "Pula"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Force et du Dieu du Vent. Ton pouvoir est de créer des tornades. D'un simple geste, tu peux arracher des toits et balayer une troupe entière sur ton passage. C'est un flux spectaculaire et brutal, mais il vide ton énergie à toute vitesse si tu ne sais pas te retenir."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Lada"
-		],
-		name: "Créateur de Gaz",
-		names: [
-			"Laza",
-			"Shila",
-			"Shida",
-			"Lashi"
-		],
-		description: "Toxique, inflammable, explosif, à vous de connaître tous les types de gaz à votre disposition pour devenir un combattant inattrapable."
+		dragons: ["Shizari", "Lada"],
+		name: "{Créateur|Créatrice} de Gaz",
+		names: ["Laza", "Shila", "Shida", "Lashi"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et du Dieu du Vent. Ton pouvoir est de créer et contrôler les gaz. Toxiques, étouffants ou explosifs, ils sont souvent invisibles jusqu'à ce qu'il soit trop tard. Si tu prends le temps d'apprendre leurs effets, tu deviendras {un adversaire|une adversaire} impossible à attraper."
 	},
 	{
-		dragons: [
-			"Pestia",
-			"Pestia"
-		],
-		name: "Créateur de Lumière",
-		names: [
-			"Pestia",
-			"Tia"
-		],
-		description: "Vous êtes un Créateur de Lumière. Flashs aveuglants, illusions, intimidation : à vous de découvrir votre propre style avec ce pouvoir."
+		dragons: ["Pestia", "Pestia"],
+		name: "{Créateur|Créatrice} de Lumière",
+		names: ["Pestia", "Tia"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et de l'Espace. Ton pouvoir est de créer de la lumière. Éclairs aveuglants, fausses silhouettes ou signaux visibles à des lieues : ce flux brille autant par sa souplesse que par son prestige. À toi de trouver ton propre style pour éblouir tes adversaires au sens propre comme au figuré."
 	},
 	{
-		dragons: [
-			"Pura",
-			"Pestia"
-		],
-		name: "Créateur d'Orage",
-		names: [
-			"Tiara",
-			"Pera",
-			"Ratia"
-		],
-		description: "Vous êtes un Créateur d’Orage. Que la pluie, le vent et les éclairs grondent et répondent à votre appel. Un flux rare et dévastateur. Utilisez-le à bon escient."
+		dragons: ["Pura", "Pestia"],
+		name: "{Créateur|Créatrice} de Gravité",
+		names: ["Tiara", "Pera", "Ratia"],
+		description: "Tu es {un descendant|une descendante} de la Déesse de la Lumière et de l'Espace et du Dieu de la Force. Ton pouvoir te permet de modifier la gravité. Ceux qui pensent que tu ne sais que faire flotter des cailloux déchantent vite quand leur armure pèse soudain dix fois son poids. Un flux rare et redoutable, mais la moindre erreur de calcul te laissera saluer le Dieu de la Mort."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Pestia"
-		],
-		name: "Créateur d'Acide",
-		names: [
-			"Zaya",
-			"Shiya",
-			"Rya"
-		],
-		description: "Vous êtes un Créateur d’Acide. Un flux d’une extrême rareté mais d’un extrême danger. Prouvez que la destruction peut mener à autre chose que la désolation."
+		dragons: ["Shizari", "Pestia"],
+		name: "{Créateur|Créatrice} d'Acide",
+		names: ["Zaya", "Shiya", "Rya"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et de la Déesse de la Lumière. Ton pouvoir est de créer de l'acide. D'une grande rareté et tout aussi dangereux, ce liquide ronge le métal comme la pierre en quelques secondes. Tout le monde le voit comme un outil de destruction pure, mais entre tes mains, il peut aussi servir à nettoyer et repartir à zéro."
 	},
 	{
-		dragons: [
-			"Pura",
-			"Pura"
-		],
-		name: "Créateur de Force Pure",
-		names: [
-			"Pura"
-		],
-		description: "Vous êtes un Créateur de Force Pure. C’est un flux simple, augmentant votre force de frappe. Vous l’aurez compris, il est aussi simple que surpuissant. Faites-en bon usage et attention aux contrecoups."
+		dragons: ["Pura", "Pura"],
+		name: "{Créateur|Créatrice} de Force Pure",
+		names: ["Pura"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Force. Ton pouvoir est la Force Pure. Pas d'artifices ni d'effets compliqués : chaque coup que tu portes frappe avec une puissance démesurée. C'est direct et redoutable, à condition que ton corps soit assez solide pour encaisser le choc de tes propres attaques."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Pura"
-		],
-		name: "Créateur d'Armure Morbide",
-		names: [
-			"Zara",
-			"Shira",
-			"Shipu",
-			"Zaria"
-		],
-		description: "Vous êtes un Créateur d’Armure Morbide. C’est un flux complexe qui recouvre le corps d’un individu. Chaque coup que ce dernier recevra sera redirigé vers votre corps. Une armure pour lui, un enfer pour vous."
+		dragons: ["Shizari", "Pura"],
+		name: "{Créateur|Créatrice} de Putréfaction",
+		names: ["Zara", "Shira", "Shipu", "Zaria"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort et du Dieu de la Force. Ton pouvoir est la Putréfaction. Tu peux faire naître de la chair et des muscles en décomposition, humains ou animaux, avec les odeurs et les maladies qui les accompagnent. Un flux répugnant qui retourne l'estomac des plus braves avant même le début du duel."
 	},
 	{
-		dragons: [
-			"Shizari",
-			"Shizari"
-		],
-		name: "Annihilateur de Vie",
-		names: [
-			"Shiza",
-			"Shy",
-			"Shizari"
-		],
-		description: "Vous êtes un Annihilateur de Vie. D’un simple contact avec un individu, vous pouvez gangréner le corps d’autrui. Vous serez sûrement haï et fui pour ce pouvoir, mais sachez que peu d'individus arriveront à votre cheville."
+		dragons: ["Shizari", "Shizari"],
+		name: "{Annihilateur|Annihilatrice} de Vie",
+		names: ["Shiza", "Shy", "Shizari"],
+		description: "Tu es {un descendant|une descendante} du Dieu de la Mort. Ton pouvoir est d'annihiler la vie. Un simple contact de ta main suffit à faire pourrir et dépérir le corps de celui que tu touches. Les gens te fuiront et te craindront à cause de ce don, mais sur le terrain, presque personne n'osera croiser ta route."
 	}
 ];
 
@@ -785,7 +468,7 @@ export const QUOTES: Record<string, string> = {
 	Guizamark: "La vie, ce mystère que la nature tend à perpétuer...",
 	Lada: "Perfectionne ta brise avant de t'essayer à la tempête...",
 	Pestia: "Mon peuple a besoin que je le guide...",
-	Pura: "Sois fort, et rien de grave ne t'arrivera...",
+	Pura: "Sois {fort|forte}, et rien de grave ne t'arrivera...",
 	Shizari: "Je les ai tous découverts...",
 	Yinva: "Suis-moi, le monde que tu connais est si petit...",
 	Chaos: "Qui es-tu ?.."
