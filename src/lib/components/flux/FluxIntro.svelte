@@ -1,5 +1,6 @@
 <script lang="ts">
     import { cubicOut } from "svelte/easing";
+    import { fade } from "svelte/transition";
     import type { Address } from "$lib/flux/address";
     import { QUESTIONS } from "$lib/flux/quiz-data";
 
@@ -55,31 +56,132 @@
         else step = next;
     }
 
+    // Le contrat : la date du jour, puis une signature qui se trace avant de passer au choix.
+    const today = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+    // La signature : le Tout réduit à l'essentiel, un cercle tracé à main levée puis une croix
+    // droite (+) dedans. Chaque trait se dessine après le précédent (début et durée en s).
+    const SIGNATURE = [
+        { d: "M 98 7 C 116 4, 128 16, 127 30 C 126 45, 113 55, 99 54 C 84 53, 72 43, 73 29 C 74 15, 86 6, 104 9", start: 0, duration: 0.6 },
+        { d: "M 100 13 C 101 25, 99 37, 100 48", start: 0.65, duration: 0.25 },
+        { d: "M 81 31 C 93 30, 107 31, 119 29", start: 0.95, duration: 0.25 },
+    ];
+    const SIGN_MS = 1500;
+    let signed = $state(false);
+
+    async function sign() {
+        if (signed) return;
+        signed = true;
+        await new Promise((r) => setTimeout(r, reduced ? 0 : SIGN_MS));
+        leave("address");
+    }
+
+    // Motif de fond : les symboles des onze dragons en quinconce, blancs et très pâles.
+    const PATTERN_DRAGONS = ["Aqua", "Artrish", "Chronos", "Drii", "Goliath", "Guizamark", "Lada", "Pestia", "Pura", "Shizari", "Yinva"];
+    const COLS = 8;
+    const ROWS = 10;
+    const pattern = Array.from({ length: COLS * ROWS }, (_, n) => {
+        const row = Math.floor(n / COLS);
+        const col = n % COLS;
+        const dragon = PATTERN_DRAGONS[(col * 3 + row * 5) % PATTERN_DRAGONS.length];
+        return {
+            dragon,
+            x: ((col + (row % 2) * 0.5) / COLS) * 100,
+            y: (row / (ROWS - 1)) * 100,
+            delay: -((n * 0.73) % 9),
+        };
+    });
+
+    // Le contrat dépasse l'écran (téléphone, petit écran) : tant que la signature reste sous le
+    // bord, un signe invite à descendre ; le toucher y mène.
+    let signBelow = $state(false);
+    let signField: HTMLElement | null = null;
+
+    function watchSign(node: HTMLElement) {
+        signField = node;
+        // Dès que la signature dépasse, même en partie, du bas de l'écran.
+        const seen = new IntersectionObserver(([entry]) => {
+            signBelow = entry.boundingClientRect.bottom > window.innerHeight;
+        });
+        seen.observe(node);
+        // Premier état tout de suite, puis à chaque défilement (en plus de l'observateur).
+        const check = () => (signBelow = node.getBoundingClientRect().bottom > window.innerHeight);
+        check();
+        window.addEventListener("scroll", check, { passive: true });
+        window.addEventListener("resize", check);
+        return {
+            destroy() {
+                seen.disconnect();
+                window.removeEventListener("scroll", check);
+                window.removeEventListener("resize", check);
+                signField = null;
+                signBelow = false;
+            },
+        };
+    }
+
+    const toSign = () => signField?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+
     // La question prend le focus à l'arrivée du second écran (et non une des stèles : aucune n'est
     // proposée avant l'autre).
     const focusOnMount = (el: HTMLElement) => el.focus({ preventScroll: true });
 </script>
 
+<div class="pattern" aria-hidden="true">
+    {#each pattern as p, n (n)}
+        <span style="left: {p.x}%; top: {p.y}%; --icon: url('/icones/dragons/{p.dragon}.svg'); animation-delay: {p.delay}s;"></span>
+    {/each}
+</div>
+
+{#if signBelow && step === "lore"}
+    <div class="more" transition:fade={{ duration: 250 }}>
+        <button class="more-hint" onclick={toSign} aria-label="Descendre jusqu'à la signature">
+            <span class="chevrons" aria-hidden="true"><i></i><i></i></span>
+        </button>
+    </div>
+{/if}
+
 <section class="intro">
     {#if step === "lore"}
         <div class="screen" in:mist={{ duration: 800 }} out:mist={{ duration: 450, y: -18 }} onoutroend={gone}>
-            <div class="lore">
-                <p>
-                    Sur Arthera, le flux est un pouvoir légué dès la naissance par deux des dragons qui ont façonné le
-                    monde. Ce voyage va révéler le tien.
-                </p>
-                <ol class="steps">
-                    <li>Relie les onze dragons de la constellation.</li>
-                    <li>Retrouve le nom des terres de la carte.</li>
-                    <li>Franchis le portail de ton peuple.</li>
-                    <li>Réponds aux {QUESTIONS.length} questions qui t'attendent de l'autre côté.</li>
-                </ol>
-                <p>
-                    Il n'y a pas de mauvaise réponse. Au bout du chemin : ton flux, tes statistiques et de quoi créer
-                    ton personnage.
-                </p>
-            </div>
-            <button class="btn next" onclick={() => leave("address")}>Continuer</button>
+            <!-- Le texte, présenté comme un contrat : signer, c'est continuer. -->
+            <article class="contract">
+                <header class="contract-head">
+                    <span class="seal" aria-hidden="true"></span>
+                    <h2 class="title">Bienvenue sur Arthera.</h2>
+                </header>
+                <div class="lore">
+                    <p>
+                        Tu t'apprêtes à faire un pas dans un monde où la magie est reine : une magie que l'on appelle le flux. Ici, chacun naît avec un pouvoir déjà inscrit en lui. Ton caractère et ton ambition en forgent la nature, mais seule ta créativité lui donnera sa vraie puissance. Quelle pseudo-divinité d'Arthera a laissé sa marque dans ton sang ? Et jusqu'où iras-tu pour la développer ?
+                    </p>
+                    <p>
+                        C'est ce que nous allons voir. À l'issue de ces épreuves, tu recevras ton certificat de flux et pourras façonner le personnage que tu incarneras sur Arthera, telle une petite marionnette.
+                    </p>
+                    <p>
+                        Trêve de politesse : ton jugement commence maintenant. Bon courage.
+                    </p>
+                </div>
+                <footer class="sign">
+                    <p class="place">Fait sur Arthera,<br />le {today}</p>
+                    <div class="sign-field" use:watchSign>
+                        <span class="sign-label">Signature</span>
+                        <button class="signature" class:signed disabled={signed} onclick={sign}>
+                            {#if signed}
+                                <svg viewBox="0 0 200 60" aria-hidden="true">
+                                    {#each SIGNATURE as stroke, i (i)}
+                                        <path
+                                            d={stroke.d}
+                                            pathLength="100"
+                                            style="animation-delay: {stroke.start}s; animation-duration: {stroke.duration}s;"
+                                        />
+                                    {/each}
+                                </svg>
+                            {:else}
+                                <span class="sign-here">Continuer</span>
+                            {/if}
+                        </button>
+                    </div>
+                </footer>
+            </article>
         </div>
     {:else if step === "address"}
         <div class="screen" in:mist={{ duration: 800 }} out:mist={{ duration: 500, y: -18 }} onoutroend={gone}>
@@ -112,7 +214,251 @@
 </section>
 
 <style>
+    /* Motif des dragons, derrière tout l'écran d'entrée ; le centre reste dégagé pour le texte. */
+    .pattern {
+        position: fixed;
+        inset: -2rem;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+        mask: radial-gradient(ellipse 60% 55% at 50% 50%, transparent 35%, #000 85%);
+    }
+
+    .pattern span {
+        position: absolute;
+        width: clamp(2.2rem, 5vw, 3.4rem);
+        aspect-ratio: 1;
+        translate: -50% -50%;
+        background-color: var(--foreground);
+        mask: var(--icon) center / contain no-repeat;
+        opacity: 0.1;
+        animation: drift 9s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift {
+        from {
+            translate: -50% -50%;
+            opacity: 0.06;
+        }
+        to {
+            translate: -50% calc(-50% - 0.6rem);
+            opacity: 0.14;
+        }
+    }
+
+    /* Le contrat : une feuille au format A4 (210 × 297), aussi grande que la hauteur de l'écran le
+       permet ; son contenu se règle sur sa largeur (cqw). Sur un téléphone, la feuille garde au
+       moins ce format et s'allonge si le texte, lisible, ne tient pas. */
+    .contract {
+        position: relative;
+        box-sizing: border-box;
+        container-type: inline-size;
+        display: flex;
+        flex-direction: column;
+        width: min(100%, max(33rem, calc((100svh - var(--head, 6rem) - 3.5rem) * 210 / 297)));
+        aspect-ratio: 210 / 297;
+        margin: 0 auto;
+        padding: 8% 8% 6%;
+        border: 1px solid color-mix(in srgb, var(--aura) 55%, transparent);
+        border-radius: var(--radius);
+        background:
+            radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--aura) 9%, transparent), transparent 60%),
+            linear-gradient(180deg, rgba(24, 24, 22, 0.94), rgba(14, 14, 14, 0.94));
+        box-shadow:
+            0 0 30px rgba(0, 0, 0, 0.6),
+            0 0 18px color-mix(in srgb, var(--aura) 14%, transparent);
+    }
+
+    .contract::before {
+        content: "";
+        position: absolute;
+        inset: 0.45rem;
+        border: 1px solid color-mix(in srgb, var(--aura) 22%, transparent);
+        border-radius: 2px;
+        pointer-events: none;
+    }
+
+    .contract-head {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid color-mix(in srgb, var(--aura) 22%, transparent);
+    }
+
+    .seal {
+        width: clamp(2rem, 9cqw, 2.8rem);
+        aspect-ratio: 1;
+        background-color: var(--aura);
+        mask: url("/layout/Logo.svg") center / contain no-repeat;
+        opacity: 0.85;
+        filter: drop-shadow(0 0 6px color-mix(in srgb, var(--aura) 50%, transparent));
+    }
+
+    .title {
+        font-size: clamp(1.3rem, 6cqw, 2rem);
+        color: var(--foreground);
+    }
+
+    .sign {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem 2rem;
+        /* La signature reste au pied de la feuille. */
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid color-mix(in srgb, var(--aura) 22%, transparent);
+        text-align: left;
+    }
+
+    .place {
+        font-size: clamp(0.85rem, 3.2cqw, 1.05rem);
+        font-family: var(--titleFont);
+        font-style: italic;
+        color: var(--muted);
+        line-height: 1.35;
+    }
+
+    .sign-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin-left: auto;
+    }
+
+    .sign-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+
+    /* L'endroit où signer : une ligne, et « Signer ici » qui attend. Signé, le trait se dessine. */
+    .signature {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: min(15rem, 48cqw);
+        height: 3.4rem;
+        padding: 0;
+        color: var(--aura);
+        border: none;
+        border-bottom: 1px solid color-mix(in srgb, var(--aura) 70%, transparent);
+        border-radius: 0;
+        background: linear-gradient(to top, color-mix(in srgb, var(--aura) 8%, transparent), transparent 70%);
+        animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.6s backwards;
+        transition:
+            background-color 0.3s ease,
+            box-shadow 0.3s ease;
+    }
+
+    .signature:not(:disabled):hover,
+    .signature:focus-visible {
+        outline: none;
+        background-color: color-mix(in srgb, var(--aura) 10%, transparent);
+        box-shadow: 0 6px 14px -8px var(--aura);
+    }
+
+    .signature:disabled {
+        cursor: default;
+    }
+
+    /* « Continuer », le bouton d'action, posé sur la ligne de signature. */
+    .sign-here {
+        font-size: 1rem;
+        letter-spacing: 0.06em;
+        color: var(--foreground);
+        text-shadow: 0 0 10px color-mix(in srgb, var(--aura) 60%, transparent);
+    }
+
+
+    .signature svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    .signature path {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        filter: drop-shadow(0 0 4px color-mix(in srgb, var(--aura) 60%, transparent));
+        animation: write 0.6s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+    }
+
+    @keyframes write {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    /* Invitation à descendre jusqu'à la signature : une flèche seule, en bas de l'écran. */
+    .more {
+        position: fixed;
+        left: 50%;
+        bottom: max(1rem, env(safe-area-inset-bottom));
+        z-index: 6;
+        translate: -50% 0;
+    }
+
+    .more-hint {
+        display: grid;
+        place-items: center;
+        width: 2.8rem;
+        height: 2.8rem;
+        padding: 0;
+        border: none;
+        border-radius: 50%;
+        background: none;
+        filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.9));
+    }
+
+    .chevrons {
+        display: grid;
+        place-items: center;
+        width: 1.2rem;
+        height: 1.6rem;
+    }
+
+    .chevrons i {
+        grid-area: 1 / 1;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-right: 2px solid var(--Guizamark);
+        border-bottom: 2px solid var(--Guizamark);
+        rotate: 45deg;
+        animation: drop 1.4s ease-in-out infinite;
+    }
+
+    .chevrons i:last-child {
+        animation-delay: 0.7s;
+    }
+
+    @keyframes drop {
+        0% {
+            opacity: 0;
+            translate: 0 -0.45rem;
+        }
+        50% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+            translate: 0 0.35rem;
+        }
+    }
+
     .intro {
+        position: relative;
+        z-index: 1;
         /* La même lueur pour les deux stèles, à la couleur de Guizamark. Elles ont l'écran pour
            elles : aussi grandes que la hauteur (titre et question compris) le permet. */
         --aura: var(--Guizamark);
@@ -134,15 +480,11 @@
         display: flex;
         flex-direction: column;
         gap: 0.9rem;
+        margin-bottom: 1.2rem;
+        font-size: clamp(0.95rem, 3.9cqw, 1.1rem);
         line-height: 1.5;
         text-align: left;
         color: rgba(255, 255, 255, 0.85);
-    }
-
-    .next {
-        border-color: var(--aura);
-        box-shadow: 0 0 14px color-mix(in srgb, var(--aura) 45%, transparent);
-        animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.6s backwards;
     }
 
     .steps {
@@ -371,7 +713,6 @@
         }
 
         .lore {
-            font-size: 0.9rem;
             line-height: 1.45;
             gap: 0.7rem;
         }
@@ -393,9 +734,24 @@
         .float,
         .aura,
         .ground,
-        .next,
+        .pattern span,
+        .signature,
         .slot {
             animation: none;
+        }
+
+        .signature path {
+            animation: none;
+            stroke-dashoffset: 0;
+        }
+
+        .chevrons i {
+            animation: none;
+            opacity: 1;
+        }
+
+        .chevrons i:last-child {
+            display: none;
         }
     }
 </style>
