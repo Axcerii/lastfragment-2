@@ -1,4 +1,5 @@
 import { STAT_KEYS, STATS, statPower, toScale, type StatBlock, type StatKey } from '$lib/game/stats';
+import { gendered, type Address } from './address';
 import { FLUXES, QUESTIONS, QUOTES } from './quiz-data';
 
 // Calcul du don de flux, repris de la V1 (flux-resultat.php).
@@ -99,13 +100,15 @@ export function countLetters(answers: number[]): Record<string, number> {
 	return counts;
 }
 
-// Lettre qui nourrit chaque stat (V1). Vitesse et Intelligence partagent G, Furtivité et Santé J.
+// Lettre qui nourrit chaque stat (V1, sauf Drii et Chronos, inversés pour suivre la couleur de leur
+// stat : Drii = Maîtrise, Chronos = Précision). Vitesse et Intelligence partagent G, Furtivité et
+// Santé J.
 const STAT_LETTER: Record<StatKey, string> = {
-	maitrise: 'C',
+	maitrise: 'D',
 	strength: 'I',
 	defense: 'A',
 	vitesse: 'G',
-	accuracy: 'D',
+	accuracy: 'C',
 	perception: 'H',
 	furtivite: 'J',
 	charisme: 'B',
@@ -177,13 +180,13 @@ export function potential(stats: StatBlock): Record<PotentialAxis, number> {
 
 export type FluxReveal = { dragon: string; name: string; description: string; names: string[]; quote: string };
 
-/** Flux, description et citation du dragon pour un résultat. */
-export function revealFlux(result: Pick<FluxResult, 'first' | 'second' | 'chaos'>): FluxReveal {
+/** Flux, description et citation du dragon pour un résultat, accordés au personnage. */
+export function revealFlux(result: Pick<FluxResult, 'first' | 'second' | 'chaos'>, address: Address = 'il'): FluxReveal {
 	if (result.chaos)
 		return {
 			dragon: 'Chaos',
 			name: 'Chaos',
-			description: "QUI ES-TU ? POURQUOI ES-TU RENTRÉ DANS MON ANTRE ? SAIS-TU CE QUI T'ATTEND SI TU ME LIBÈRES ?",
+			description: gendered("QUI ES-TU ? POURQUOI ES-TU {RENTRÉ|RENTRÉE} DANS MON ANTRE ? SAIS-TU CE QUI T'ATTEND SI TU ME LIBÈRES ?", address),
 			names: ['Mad', 'Ness'],
 			quote: QUOTES.Chaos
 		};
@@ -194,10 +197,10 @@ export function revealFlux(result: Pick<FluxResult, 'first' | 'second' | 'chaos'
 	)!;
 	return {
 		dragon: result.first,
-		name: entry.name,
-		description: entry.description,
+		name: gendered(entry.name, address),
+		description: gendered(entry.description, address),
 		names: entry.names,
-		quote: QUOTES[result.first]
+		quote: gendered(QUOTES[result.first], address)
 	};
 }
 

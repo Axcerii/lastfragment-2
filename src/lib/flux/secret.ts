@@ -1,3 +1,4 @@
+import { gendered } from './address';
 import { QUESTIONS } from './quiz-data';
 import type { RaceId } from './races';
 
@@ -25,7 +26,7 @@ export const SECRET_DOOR: RaceId = 'eternelle';
 export type SecretStep = {
 	/** Numéro de la question (1 = la première) */
 	question: number;
-	/** Texte exact de la bonne réponse, tel qu'il est écrit dans quiz-data.ts */
+	/** Texte exact de la bonne réponse, tel qu'il s'affiche au masculin (quiz-data.ts, voir address.ts) */
 	answer: string;
 	/** Titre de l'onglet en survolant cette réponse */
 	title: string;
@@ -36,48 +37,50 @@ export type SecretStep = {
  * de la liste laisserait libre). Le titre d'une étape n'apparaît que si toutes les étapes d'avant
  * ont été suivies ; la dernière bonne réponse mène à la page secrète au lieu du certificat.
  *
+ * Chaque réponse est celle qu'un être omniscient choisirait. Sa place à l'écran varie d'une
+ * question à l'autre (en haut ou en bas, à gauche ou à droite), pour que le chemin ne se devine pas.
+ *
  * Le test `secret.test.ts` vérifie que chaque réponse existe bien dans sa question.
  */
-// À CONFIRMER : chemin d'exemple sur tout le test, à remplacer par celui du porteur du projet.
 export const SECRET_PATH: SecretStep[] = [
-	// 1. Tes paupières sont lourdes, une odeur douce et familière dilate tes narines, tu te réveilles, allongé, dans un champ de...
+	// 1. … tu te réveilles, allongé, dans un champ de... (la fleur du sommeil et des songes)
 	{ question: 1, answer: 'Coquelicots', title: 'Par ici.' },
-	// 2. Tu te relèves, tu dépoussières ton équipement, tu plisses les yeux vers l'horizon, le soleil...
-	{ question: 2, answer: "N'est plus visible", title: 'Par là.' },
-	// 3. Une ombre se glisse dans la pénombre jusqu'à toi, tes yeux finissent par s'adapter à la lumière. La silhouette est celle...
+	// 2. … tu plisses les yeux vers l'horizon, le soleil... (l'heure où tout est éclairé)
+	{ question: 2, answer: 'Est au zénith', title: 'Par là.' },
+	// 3. … La silhouette est celle... (la soif de tout savoir)
 	{ question: 3, answer: "d'une enfant un peu trop curieuse", title: 'Encore.' },
-	// 4. Observant ta confusion, la personne fouille dans sa besace et te tend...
+	// 4. … la personne fouille dans sa besace et te tend... (le fruit de la connaissance)
 	{ question: 4, answer: 'une pomme dans un état immaculé', title: 'Plus loin.' },
-	// 5. Ton premier réflexe en voyant cet acte de bonté innocent est...
-	{ question: 5, answer: 'de le refuser poliment.', title: 'Suis-moi.' },
-	// 6. Le bienfaiteur te demande comment tu as fini dans cette situation, tu prends une inspiration et tu essaies de te remémorer...
-	{ question: 6, answer: "Tu as été téléporté par une magie étrange, tu ne fais jamais rien d'inconscient", title: 'Ne t’arrête pas.' },
-	// 7. Il t'indique l'emplacement d'un village à proximité où tu pourras trouver de l'aide. Tu...
-	{ question: 7, answer: "ignores ce qu'il dit, le vagabondage a toujours été la meilleure des vertus", title: 'Par ici.' },
-	// 8. Sur ton chemin, tu croises un lac, tu y remplis ta gourde, en te penchant, tu peux y observer le reflet...
+	// 5. Ton premier réflexe en voyant cet acte de bonté innocent est... (il sait qu'il n'y a pas de piège)
+	{ question: 5, answer: "d'accepter et de le manger sans plus attendre", title: 'Suis-moi.' },
+	// 6. … tu essaies de te remémorer... (qui sait tout ne trouve jamais le sommeil)
+	{ question: 6, answer: "Tu t'es endormi après une balade pour soigner une énième insomnie", title: 'Ne t’arrête pas.' },
+	// 7. Il t'indique l'emplacement d'un village… Tu... (le chemin, il le connaît déjà)
+	{ question: 7, answer: 'remercies, mais tu préfères suivre ta propre voie et prendre un chemin que tu connais', title: 'Par ici.' },
+	// 8. … tu peux y observer le reflet... (qui a tout n'a plus rien à désirer)
 	{ question: 8, answer: "d'un vagabond lambda sans aucune ambition", title: 'Tu me vois ?' },
-	// 9. Au loin, le portail d'un hameau de campagne se dresse, tu t'en approches et y cherches de l'aide en...
-	{ question: 9, answer: "parcourant la ville à la recherche d'une carte, les autres ne doivent pas perdre leur temps à cause de ton erreur", title: 'Par là.' },
-	// 10. Tu passes devant l'église du village, tu te recueilles sur l'autel...
-	{ question: 10, answer: "Aucun dieu, tu n'es pas du genre religieux", title: 'Continue.' },
-	// 11. Tu as obtenu les informations dont tu avais besoin, tu planifies ton départ pour...
+	// 9. … y cherches de l'aide en... (il sait qui détient la réponse)
+	{ question: 9, answer: "parlant à un habitant de la zone, c'est le plus rapide et le plus simple", title: 'Par là.' },
+	// 10. … tu te recueilles sur l'autel... (il sait qui a créé le monde)
+	{ question: 10, answer: 'Le seul véritable Dieu, le Dieu Créateur', title: 'Continue.' },
+	// 11. … tu planifies ton départ pour... (il lit le monde plutôt que les horaires des hommes)
 	{ question: 11, answer: "tu regardes la position du soleil, et tu t'adaptes en fonction", title: 'Plus profond.' },
-	// 12. Tu te prépares à partir, tu récupères des vivres, tu resserres ton équipement et tu poses ta main sur ton arme de prédilection, ...
-	{ question: 12, answer: 'une simple dague, rapide, discrète, létale, un véritable utilitaire', title: 'Par ici.' },
-	// 13. Le chemin est long, et la solitude est forte, heureusement, tu as pour t'accompagner...
-	{ question: 13, answer: 'ton casse-croûte, cette solitude est un véritable confort pour toi', title: 'Écoute.' },
-	// 14. Dans ton sommeil, tu entends un cri de détresse provenant des bois à proximité de toi, tu...
-	{ question: 14, answer: "te rendors, ce n'est peut-être qu'un renard, et au pire, tu ne dois rien à qui que ce soit", title: 'Par là.' },
-	// 15. Dans ton périple, tu trouves une entrée de grotte avec une porte utilisant une technologie nordique, tu...
-	{ question: 15, answer: "pars, il est dangereux d'ouvrir des ruines nordiques sans être préparé", title: 'Tu chauffes, ici.' },
-	// 16. Tu te retrouves face à un meurtrier, il est grièvement blessé, tu...
-	{ question: 16, answer: "le laisses mourir, sans montrer d'émotion, il ne faut pas lui laisser le plaisir de t'affecter", title: 'Ne te retourne pas.' },
-	// 17. Te voilà rentré chez toi après cette intense aventure, tu te poses dans une taverne, tu commandes...
+	// 12. … ton arme de prédilection, ... (l'équilibre)
+	{ question: 12, answer: "une épée, l'arme des héros, équilibrée, pratique sans être encombrante", title: 'Par ici.' },
+	// 13. … tu as pour t'accompagner... (il lit dans les cœurs : seule la loyauté d'un chien est sans arrière-pensée)
+	{ question: 13, answer: 'ton chien de chasse, ton véritable meilleur ami', title: 'Écoute.' },
+	// 14. … un cri de détresse… tu... (il sait déjà ce qui l'attend dans les bois)
+	{ question: 14, answer: 'prends ton arme, et tu cours aider la personne sans attendre', title: 'Par là.' },
+	// 15. … une porte utilisant une technologie nordique, tu... (l'énigme n'en est pas une pour lui)
+	{ question: 15, answer: 'te poses et essaies de trouver une solution à cette énigme.', title: 'Tu chauffes, ici.' },
+	// 16. … face à un meurtrier, il est grièvement blessé, tu... (il connaît chaque vie, la sienne aussi)
+	{ question: 16, answer: 'abrèges ses souffrances, dans une tristesse profonde de devoir en arriver là', title: 'Ne te retourne pas.' },
+	// 17. … tu te poses dans une taverne, tu commandes... (l'insomnie, encore)
 	{ question: 17, answer: 'un petit thé, pour bien dormir ensuite', title: 'Presque.' },
-	// 18. Si tout cela était une mission officielle, tu aurais aimé avoir en récompense...
+	// 18. … tu aurais aimé avoir en récompense... (il ne manque de rien)
 	{ question: 18, answer: 'rien, cette étrange aventure et le sourire des personnes sur le chemin en valaient la peine', title: 'Encore un pas.' },
-	// 19. Finalement, tu t'allonges dans ton lit et tu repenses à ta vie, tu décides de te reprendre en main et de...
-	{ question: 19, answer: "trouver la vérité sur le flux et la magie, devenir un scientifique, c'est ce qui te fait vibrer", title: 'Entre.' },
+	// 19. … tu décides de te reprendre en main et de...
+	{ question: 19, answer: "trouver la vérité sur le flux et la magie, devenir un scientifique, c'est ce qui te fait vibrer", title: 'Entre.' }
 ];
 
 // ---- Mécanique (rien à régler en dessous).
@@ -108,7 +111,7 @@ export function consumeFromHome(): boolean {
 }
 
 const answerIndex = (step: SecretStep) =>
-	QUESTIONS[step.question - 1]?.answers.findIndex((a) => a.text === step.answer) ?? -1;
+	QUESTIONS[step.question - 1]?.answers.findIndex((a) => gendered(a.text) === step.answer) ?? -1;
 
 /** Vrai si les réponses données (indices, question par question) suivent le chemin jusqu'ici. */
 export function onSecretPath(answers: number[]): boolean {

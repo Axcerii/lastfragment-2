@@ -3,6 +3,7 @@
     import { goto } from "$app/navigation";
     import { fade, fly } from "svelte/transition";
     import Bar from "$lib/components/ui/Bar.svelte";
+    import type { Address } from "$lib/flux/address";
     import { CHARACTER_DRAFT_KEY, characterDraft } from "$lib/flux/character";
     import { POTENTIAL_AXES, potential, revealFlux, type FluxResult } from "$lib/flux/quiz";
     import { lineageOf, type Race } from "$lib/flux/races";
@@ -23,27 +24,30 @@
     let {
         result,
         race,
+        address = "il",
         intro = false,
         onRetry,
         onMap,
     }: {
         result: FluxResult;
         race: Race | null;
+        /** Accord du flux, de sa description et du peuple (« Créateur » / « Créatrice »…). */
+        address?: Address;
         /** Arrivée depuis le test : l'écran sort de la lumière du noyau. */
         intro?: boolean;
         onRetry: () => void;
         onMap: () => void;
     } = $props();
 
-    let flux = $derived(revealFlux(result));
+    let flux = $derived(revealFlux(result, address));
     // Le peuple, demi-géant compris : le géant n'a pas de flux, seulement un flux caché.
-    let lineage = $derived(race ? lineageOf(race, result.halfGiant) : null);
+    let lineage = $derived(race ? lineageOf(race, result.halfGiant, address) : null);
 
     // Le créateur de personnage reprend le nom (un des prénoms du flux), les stats, le peuple et
     // le flux : il lit ce brouillon en arrivant.
     function createCharacter() {
         try {
-            sessionStorage.setItem(CHARACTER_DRAFT_KEY, JSON.stringify(characterDraft(result, race)));
+            sessionStorage.setItem(CHARACTER_DRAFT_KEY, JSON.stringify(characterDraft(result, race, Math.random, address)));
         } catch {
             // Stockage indisponible : le créateur s'ouvre vide.
         }

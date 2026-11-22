@@ -1,6 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { fade } from "svelte/transition";
     import * as THREE from "three";
+    import { gendered, type Address } from "$lib/flux/address";
     import { LETTER_NAMES, leadingDragon } from "$lib/flux/quiz";
     import { QUESTIONS } from "$lib/flux/quiz-data";
     import { secretComplete, secretTitle } from "$lib/flux/secret";
@@ -16,6 +18,7 @@
     // réponse). Pas de post-traitement, aucun état Svelte touché pendant le rendu.
     let {
         color,
+        address = "il",
         favored = [],
         secret = false,
         onFinish,
@@ -23,6 +26,8 @@
         onTitle,
     }: {
         color: string;
+        /** Accord des questions et des réponses (« allongé » / « allongée »…), voir address.ts. */
+        address?: Address;
         /** Dragons favorisés par la race (voir races.ts) : ils comptent pour la couleur des ailes. */
         favored?: readonly string[];
         /** Secret éveillé (arrivée par l'accueil, bonne porte) : voir secret.ts. */
@@ -166,6 +171,37 @@
         if (!el) return scene3d.unfocus();
         const r = el.getBoundingClientRect();
         scene3d.focus(r.left + r.width / 2, r.top + r.height / 2);
+    }
+
+    // Écran étroit : les réponses défilent quand elles ne tiennent pas toutes (souvent la dernière
+    // question, et ses six réponses). Tant qu'il en reste sous le bord, un signe le dit.
+    let orbitEl = $state<HTMLElement | null>(null);
+    let moreBelow = $state(false);
+
+    function watchOverflow(node: HTMLElement) {
+        orbitEl = node;
+        const update = () => {
+            const scrolls = getComputedStyle(node).overflowY !== "visible";
+            moreBelow = scrolls && node.scrollHeight - node.scrollTop - node.clientHeight > 12;
+        };
+        const resize = new ResizeObserver(update);
+        resize.observe(node);
+        for (const child of node.children) resize.observe(child);
+        node.addEventListener("scroll", update, { passive: true });
+        update();
+        return {
+            destroy() {
+                resize.disconnect();
+                node.removeEventListener("scroll", update);
+                if (orbitEl === node) orbitEl = null;
+                moreBelow = false;
+            },
+        };
+    }
+
+    // Toucher le signe fait défiler jusqu'aux réponses suivantes.
+    function scrollMore() {
+        orbitEl?.scrollBy({ top: orbitEl.clientHeight * 0.6, behavior: reduced ? "auto" : "smooth" });
     }
 
     // Raccourcis : 1 à 6 pour répondre.
@@ -1251,13 +1287,13 @@
     {#key index}
         <h2 class="question" class:raised={phase !== "question"} aria-live="polite" bind:clientHeight={questionHeight}>
             <span class="count">Question {index + 1}</span>
-            <span class="text">{question.text}</span>
+            <span class="text">{gendered(question.text, address)}</span>
         </h2>
     {/key}
 
     {#if showAnswers}
         {#key index}
-            <div class="orbit" style="--qh: {questionHeight}px;">
+            <div class="orbit" style="--qh: {questionHeight}px;" use:watchOverflow>
                 {#each [question.answers.slice(0, split), question.answers.slice(split)] as side, s (s)}
                     <div class="side" class:right={s === 1}>
                         {#each side as answer, j (j)}
@@ -1281,7 +1317,7 @@
                                     onblur={() => hover(null)}
                                 >
                                     <span class="spark" aria-hidden="true"></span>
-                                    {answer.text}
+                                    {gendered(answer.text, address)}
                                 </button>
                             </div>
                         {/each}
@@ -1289,6 +1325,15 @@
                 {/each}
             </div>
         {/key}
+    {/if}
+
+    {#if moreBelow && phase === "answers"}
+        <div class="more" transition:fade={{ duration: 250 }}>
+            <button class="more-hint" onclick={scrollMore} aria-label="Faire défiler : d'autres réponses plus bas">
+                <span>D'autres réponses plus bas</span>
+                <span class="chevrons" aria-hidden="true"><i></i><i></i></span>
+            </button>
+        </div>
     {/if}
 
     <div class="flash" class:on={flash} aria-hidden="true"></div>
@@ -1624,11 +1669,86 @@
         }
     }
 
+    /* D'autres réponses sous le bord de l'écran : un voile en bas, et un signe qui invite à
+       faire défiler (le toucher fait défiler). */
+    .more {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: center;
+        padding: 3.5rem 1rem max(0.9rem, env(safe-area-inset-bottom));
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.92) 25%, rgba(0, 0, 0, 0.6) 60%, transparent);
+        pointer-events: none;
+    }
+
+    .more-hint {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.45rem 0.9rem 0.45rem 1.1rem;
+        font-size: 0.85rem;
+        letter-spacing: 0.04em;
+        color: var(--foreground);
+        border: 1px solid var(--c);
+        border-radius: 999px;
+        background: rgba(8, 8, 12, 0.9);
+        box-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent);
+        pointer-events: auto;
+    }
+
+    /* Deux chevrons qui descendent l'un après l'autre. */
+    .chevrons {
+        display: grid;
+        place-items: center;
+        width: 0.8rem;
+        height: 1.1rem;
+    }
+
+    .chevrons i {
+        grid-area: 1 / 1;
+        width: 0.5rem;
+        height: 0.5rem;
+        border-right: 2px solid var(--c);
+        border-bottom: 2px solid var(--c);
+        rotate: 45deg;
+        animation: drop 1.4s ease-in-out infinite;
+    }
+
+    .chevrons i:last-child {
+        animation-delay: 0.7s;
+    }
+
+    @keyframes drop {
+        0% {
+            opacity: 0;
+            translate: 0 -0.45rem;
+        }
+        50% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+            translate: 0 0.35rem;
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
         .slot,
         .track li.current,
         .track li.lit {
             animation: none;
+        }
+
+        .chevrons i {
+            animation: none;
+            opacity: 1;
+        }
+
+        .chevrons i:last-child {
+            display: none;
         }
     }
 </style>

@@ -3,6 +3,7 @@
     import { goto } from "$app/navigation";
     import { fade } from "svelte/transition";
     import Constellation from "$lib/components/flux/Constellation.svelte";
+    import FluxIntro from "$lib/components/flux/FluxIntro.svelte";
     import FluxJourney from "$lib/components/flux/FluxJourney.svelte";
     import FluxResult from "$lib/components/flux/FluxResult.svelte";
     import Portals from "$lib/components/flux/Portals.svelte";
@@ -17,6 +18,7 @@
         type DiscoveryProgress,
         type DragonName,
     } from "$lib/flux/discovery";
+    import { isAddress, type Address } from "$lib/flux/address";
     import { isFluxResult, scoreAnswers } from "$lib/flux/quiz";
     import { HALF_GIANT_CHANCE, raceById, type Race } from "$lib/flux/races";
     import { SECRET_DOOR, SECRET_TITLES, consumeFromHome } from "$lib/flux/secret";
@@ -35,8 +37,11 @@
         if (secret && (stage === "travel" || stage === "map")) return SECRET_TITLES.map;
         return "Don de flux : Last Fragment";
     });
-    let stage = $state<"constellation" | "travel" | "map" | "portals" | "journey" | "result">("constellation");
+    let stage = $state<"intro" | "constellation" | "travel" | "map" | "portals" | "journey" | "result">("constellation");
     let race = $derived(raceById(progress.race));
+    // Comment le test s'adresse au personnage, choisi à l'entrée. Une progression d'avant ce choix
+    // garde le masculin.
+    let address = $derived<Address>(progress.address ?? "il");
 
     // Voile de couleur quand on franchit un portail.
     let veil = $state<string | null>(null);
@@ -72,6 +77,7 @@
                 for (const c of COUNTRIES)
                     if (typeof saved.found?.[c.id] === "string") found[c.id] = saved.found[c.id];
                 progress = {
+                    address: isAddress(saved.address) ? saved.address : undefined,
                     constellation: saved.constellation === true,
                     found,
                     race: raceById(saved.race)?.id,
@@ -83,6 +89,9 @@
         }
         if (progress.result) stage = "result";
         else if (progress.constellation) stage = "map";
+        // Première visite (ou tout effacé) : l'entrée explique le voyage et demande comment
+        // s'adresser au personnage. Qui avait déjà commencé avant ce choix n'y repasse pas.
+        else if (!progress.address && !hasProgress) stage = "intro";
         mapShown = progress.constellation;
         ready = true;
     });
@@ -160,7 +169,15 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // Efface toute la progression (constellation, carte, race, résultat) : on repart du début.
+    // L'entrée est passée : le choix est gardé avec la progression, la constellation apparaît.
+    function chooseAddress(chosen: Address) {
+        progress.address = chosen;
+        save();
+        goTo("constellation");
+    }
+
+    // Efface toute la progression (adresse, constellation, carte, race, résultat) : on repart de
+    // l'entrée, qui redemande comment s'adresser au personnage.
     // Le secret reste éveillé si l'on est arrivé par l'accueil : c'est ce qui permet de le
     // trouver après avoir déjà fini le test.
     function reset() {
@@ -174,7 +191,7 @@
         progress = { constellation: false, found: {} };
         save();
         fromTest = false;
-        goTo("constellation");
+        goTo("intro");
     }
 
     // Le portail s'ouvre : un voile de sa couleur couvre l'écran, et le test commence derrière.
@@ -221,7 +238,7 @@
     }
 
     const SUBTITLES: Record<string, string> = {
-        constellation: "Les onze dragons attendent. Touche-les dans le bon ordre.",
+        constellation: "Les onze dragons attendent. Relie-les dans le bon ordre.",
         portals: "Trois portails. Un seul est le tien.",
     };
 </script>
@@ -261,9 +278,11 @@
             <h1>Don de flux</h1>
             {#if ready}
                 {#key stage}
-                    <p class="muted" in:fade={{ delay: 300 }}>
-                        {SUBTITLES[stage] ?? `Le monde s'ouvre à toi. ${knownCount} terres sur ${COUNTRIES.length} te sont connues.`}
-                    </p>
+                    {#if stage !== "intro"}
+                        <p class="muted" in:fade={{ delay: 300 }}>
+                            {SUBTITLES[stage] ?? `Le monde s'ouvre à toi. ${knownCount} terres sur ${COUNTRIES.length} te sont connues.`}
+                        </p>
+                    {/if}
                 {/key}
             {/if}
         </header>
@@ -276,6 +295,7 @@
     {#if ready && stage === "portals"}
         <div class="full" in:fade={{ duration: 600 }}>
             <Portals
+                {address}
                 onChoose={enter}
                 onApproach={(x, y) => (approach = { x, y })}
                 onHover={(door) => (hoverTitle = secret && door?.id === SECRET_DOOR ? SECRET_TITLES.door : undefined)}
@@ -284,14 +304,19 @@
         </div>
     {:else if ready && stage === "journey" && race}
         <div in:fade={{ duration: 800 }}>
-            <FluxJourney color={race.color} favored={race.favored} secret={secret && race.id === SECRET_DOOR} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
+            <FluxJourney color={race.color} {address} favored={race.favored} secret={secret && race.id === SECRET_DOOR} onFinish={finish} onSecret={toSecret} onTitle={(t) => (hoverTitle = t)} />
         </div>
     {:else if ready && stage === "result" && progress.result}
         <div class="full">
-            <FluxResult result={progress.result} {race} intro={fromTest} onRetry={() => goTo("portals")} onMap={() => goTo("map")} />
+            <FluxResult result={progress.result} {race} {address} intro={fromTest} onRetry={() => goTo("portals")} onMap={() => goTo("map")} />
+        </div>
+    {:else if ready && stage === "intro"}
+        <div class="full" in:fade={{ duration: 600 }}>
+            <FluxIntro onChoose={chooseAddress} />
         </div>
     {:else if ready}
-        <div class="stack">
+        <!-- En sortant de l'entrée (ou d'une autre étape), la constellation ou la carte se lève. -->
+        <div class="stack" in:fade={{ duration: 700 }}>
             {#if stage === "constellation"}
                 <div class="layer" out:fade={{ duration: 900 }}>
                     <Constellation onComplete={travel} />
@@ -601,6 +626,14 @@
 
     .full:has(:global(.portals)) {
         gap: 0.8rem;
+    }
+
+    /* Téléphone : les portes, chacune large d'une colonne, prennent aussi les marges. */
+    @media (max-width: 860px) {
+        main:has(:global(.portals)) {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
     }
 
     .portals-btn {

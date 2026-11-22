@@ -8,10 +8,10 @@ import { SECRET_DOOR, secretComplete } from '$lib/flux/secret';
 // qu'avec le cookie signé posé quand le chemin a été suivi jusqu'au bout (voir $lib/flux/secret).
 // Changer l'adresse à la main ou bricoler le navigateur ne suffit donc pas.
 
-/** Le texte de la page secrète. */
+/** Le texte de la page secrète, accordé dans le navigateur (« {masculin|féminin} », voir address.ts). */
 // À CONFIRMER : texte provisoire.
 export const SECRET_PAGE = {
-	title: 'Tu m’as suivi.',
+	title: 'Tu m’as {suivi|suivie}.',
 	paragraphs: [
 		'Peu de voyageurs prennent la peine de passer par la grande porte. Toi, tu l’as fait.',
 		'Ce que tu cherches n’est pas encore écrit. Reviens quand les fragments se seront assemblés.'
