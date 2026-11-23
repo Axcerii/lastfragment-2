@@ -8,6 +8,7 @@
     import { lockScroll } from "$lib/scrollLock";
     import { formatSerial, formatWear, rarityLabel, wearTier, type CopyView, type TemplateView } from "$lib/cards/types";
     import CollectibleCard from "./CollectibleCard.svelte";
+    import ArtistLink from "$lib/components/personnages/ArtistLink.svelte";
 
     let {
         template,
@@ -62,6 +63,9 @@
     <div class="info">
         <strong>{template.name}</strong>
         <span class="rarity">{rarityLabel(template.rarity)}{template.set ? ` · ${template.set.name}` : ""}</span>
+        {#if template.artist}
+            <span class="artist">Artiste : <ArtistLink href={template.artist} /></span>
+        {/if}
         {#if copy}
             <span class="muted">
                 {formatSerial(copy.serial, template.maxPrints)} · {wearTier(copy.wear).label} · {formatWear(copy.wear)}
@@ -144,6 +148,10 @@
         font-size: 0.8rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;
+    }
+
+    .artist {
+        font-size: 0.8rem;
     }
 
     .info .muted {

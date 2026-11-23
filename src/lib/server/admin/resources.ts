@@ -83,6 +83,7 @@ const resources: Resource[] = [
 		orderBy: { name: 'asc' },
 		fields: [
 			{ name: 'image', label: 'Portrait', type: 'image', folder: 'personnages', list: true, help: 'Facultatif : sans portrait, la silhouette par défaut est affichée.' },
+			{ name: 'artist', label: 'Artiste', type: 'link', help: 'Facultatif : lien vers l’artiste du portrait (Twitter/X, Instagram, site…), affiché sur la fiche.' },
 			{ name: 'name', label: 'Nom', type: 'text', required: true, list: true },
 			{ name: 'title', label: 'Titre', type: 'text', list: true },
 			{ name: 'country', label: 'Pays', type: 'select', options: option(Object.keys(COUNTRY_LABELS), COUNTRY_LABELS), required: true },
@@ -110,6 +111,7 @@ const resources: Resource[] = [
 		orderBy: { name: 'asc' },
 		fields: [
 			{ name: 'image', label: 'Illustration', type: 'image', folder: 'monsters', required: true, list: true },
+			{ name: 'artist', label: 'Artiste', type: 'link', help: 'Facultatif : lien vers l’artiste de l’illustration (Twitter/X, Instagram, site…), affiché sur la fiche.' },
 			{ name: 'name', label: 'Nom', type: 'text', required: true, list: true },
 			{ name: 'dragon', label: 'Descendance', type: 'dragons', list: true },
 			{ name: 'size', label: 'Taille', type: 'text' },

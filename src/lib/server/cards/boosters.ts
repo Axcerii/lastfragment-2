@@ -20,13 +20,15 @@ type Tx = Prisma.TransactionClient;
 export interface WalletView {
 	stock: number;
 	max: number;
+	/** Points de la boutique. */
+	points: number;
 	/** Arrivée du prochain booster (ISO), ou null si la réserve est pleine. */
 	nextAt: string | null;
 	minutes: number;
 	opened: number;
 }
 
-async function ensureWallet(playerId: number, rules: CardRules) {
+export async function ensureWallet(playerId: number, rules: CardRules) {
 	const existing = await prisma.cardWallet.findUnique({ where: { playerId } });
 	if (existing) return existing;
 	try {
@@ -47,16 +49,18 @@ export async function walletOf(playerId: number, rules?: CardRules): Promise<Wal
 	return {
 		stock: state.stock,
 		max: rules.max,
+		points: wallet.points,
 		nextAt: state.nextAt === null ? null : new Date(state.nextAt).toISOString(),
 		minutes: rules.minutes,
 		opened: wallet.opened
 	};
 }
 
-/** Séries dont la bannière est ouverte à cet instant. */
+/** Séries dont la bannière est ouverte à cet instant. Un booster spécial n'en fait jamais partie. */
 export function bannerWhere(now: Date): Prisma.CardSetWhereInput {
 	return {
 		active: true,
+		special: false,
 		AND: [
 			{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
 			{ OR: [{ endsAt: null }, { endsAt: { gt: now } }] }
@@ -93,14 +97,14 @@ export const ALL_PACK: PackView = { id: null, name: 'Booster All', color: '#cfdf
 const packView = (p: CardPack): PackView => ({ id: p.id, name: p.name, color: p.color, image: p.image, showText: p.showText });
 
 /** Paquets d'une série (ou du booster All) ; sans paquet dessiné, celui par défaut. */
-function packsOf(set: CardSet | null, packs: CardPack[]): PackView[] {
+export function packsOf(set: CardSet | null, packs: CardPack[]): PackView[] {
 	const own = packs.filter((p) => p.setId === (set?.id ?? null)).map(packView);
 	if (own.length) return own;
 	// Paquet par défaut : la bannière de la série dans la fenêtre, avec les textes du site.
 	return [set ? { id: null, name: set.name, color: set.color, image: null, showText: true, banner: set.banner } : ALL_PACK];
 }
 
-const PACK_ORDER = [{ sortOrder: 'asc' as const }, { id: 'asc' as const }];
+export const PACK_ORDER = [{ sortOrder: 'asc' as const }, { id: 'asc' as const }];
 
 export interface BannerChoice extends SetView {
 	/** Cartes différentes qui peuvent encore en tomber. */
@@ -129,7 +133,14 @@ export async function boosterChoices(): Promise<{ all: { pool: number; packs: Pa
  * l'incrément n'a lieu que sous la limite, et la ligne reste verrouillée jusqu'à la fin de la
  * transaction, donc deux tirages simultanés ne peuvent pas recevoir le même numéro.
  */
-export async function printCopy(tx: Tx, templateId: number, ownerId: number | null, origin: string): Promise<Card | null> {
+export async function printCopy(
+	tx: Tx,
+	templateId: number,
+	ownerId: number | null,
+	origin: string,
+	/** État imposé (clé de WEAR_TIERS) ; sinon tiré comme dans un booster. */
+	wearTier?: string
+): Promise<Card | null> {
 	const template = await tx.cardTemplate.findUnique({ where: { id: templateId }, select: { maxPrints: true } });
 	if (!template) return null;
 	const claimed = await tx.cardTemplate.updateMany({
@@ -138,14 +149,14 @@ export async function printCopy(tx: Tx, templateId: number, ownerId: number | nu
 	});
 	if (claimed.count !== 1) return null;
 	const { printed } = await tx.cardTemplate.findUniqueOrThrow({ where: { id: templateId }, select: { printed: true } });
-	return tx.card.create({ data: { templateId, ownerId, serial: printed, wear: drawWear(rand), origin } });
+	return tx.card.create({ data: { templateId, ownerId, serial: printed, wear: drawWear(rand, wearTier), origin } });
 }
 
 /** La réserve a changé entre sa lecture et son écriture (autre ouverture au même instant). */
-class WalletConflict extends Error {}
+export class WalletConflict extends Error {}
 
 /** Rejoue la transaction après un conflit : elle relit alors la réserve à jour. */
-async function withRetry<T>(run: () => Promise<T>): Promise<T> {
+export async function withRetry<T>(run: () => Promise<T>): Promise<T> {
 	for (let attempt = 0; ; attempt++) {
 		try {
 			return await run();
@@ -164,6 +175,8 @@ export interface OpenedBooster {
 	/** Modèles que le joueur ne possédait pas avant ce booster. */
 	fresh: number[];
 	wallet: WalletView;
+	/** Booster gardé (boutique) : combien il en reste de cette série ; null pour la réserve habituelle. */
+	held: number | null;
 }
 
 /** Ordre de révélation : de la moins rare à la plus rare, le meilleur pour la fin. */
@@ -179,13 +192,24 @@ async function revealed(ids: number[]): Promise<OwnedCard[]> {
 
 /**
  * Ouvre un booster. `packId` n'est que l'apparence choisie par le joueur : il doit appartenir à la
- * série (ou au booster All), mais ne change rien au tirage.
+ * série (ou au booster All), mais ne change rien au tirage. `held` : le booster vient de ceux que
+ * le joueur garde pour cette série (boutique) et non de sa réserve ; il s'ouvre même si la série
+ * n'est pas proposée (booster spécial, bannière fermée).
  */
-export async function openBooster(playerId: number, setId: number | null, packId: number | null = null): Promise<OpenedBooster> {
+export async function openBooster(
+	playerId: number,
+	setId: number | null,
+	packId: number | null = null,
+	held = false
+): Promise<OpenedBooster> {
 	const rules = await getRules();
 	const now = new Date();
 
-	if (setId !== null) {
+	if (held) {
+		if (setId === null) throw new CardError('Ce booster n’existe pas.', 404);
+		const kept = await prisma.cardHeldBooster.findUnique({ where: { playerId_setId: { playerId, setId } } });
+		if (!kept || kept.count < 1) throw new CardError('Tu n’as plus ce booster.', 409);
+	} else if (setId !== null) {
 		const set = await prisma.cardSet.findFirst({ where: { id: setId, ...bannerWhere(now) }, select: { id: true } });
 		if (!set) throw new CardError('Cette bannière n’est plus ouverte.', 404);
 	}
@@ -206,16 +230,26 @@ export async function openBooster(playerId: number, setId: number | null, packId
 	const { openingId, ids } = await withRetry(() =>
 		prisma.$transaction(
 			async (tx) => {
-				const current = await tx.cardWallet.findUniqueOrThrow({ where: { playerId } });
-				const state = accrue({ stock: current.stock, since: current.since.getTime() }, rules, now.getTime());
-				if (state.stock < 1) throw new CardError('Plus de booster en réserve : patiente jusqu’au prochain.', 409);
+				if (held) {
+					// Décompte sous condition : deux ouvertures simultanées ne prennent pas le même booster.
+					const claimed = await tx.cardHeldBooster.updateMany({
+						where: { playerId, setId: setId as number, count: { gte: 1 } },
+						data: { count: { decrement: 1 } }
+					});
+					if (claimed.count !== 1) throw new CardError('Tu n’as plus ce booster.', 409);
+					await tx.cardWallet.update({ where: { playerId }, data: { opened: { increment: 1 } } });
+				} else {
+					const current = await tx.cardWallet.findUniqueOrThrow({ where: { playerId } });
+					const state = accrue({ stock: current.stock, since: current.since.getTime() }, rules, now.getTime());
+					if (state.stock < 1) throw new CardError('Plus de booster en réserve : patiente jusqu’au prochain.', 409);
 
-				const next = consume(state, rules, now.getTime());
-				const claimed = await tx.cardWallet.updateMany({
-					where: { playerId, stock: current.stock, since: current.since },
-					data: { stock: next.stock, since: new Date(next.since), opened: { increment: 1 } }
-				});
-				if (claimed.count !== 1) throw new WalletConflict();
+					const next = consume(state, rules, now.getTime());
+					const claimed = await tx.cardWallet.updateMany({
+						where: { playerId, stock: current.stock, since: current.since },
+						data: { stock: next.stock, since: new Date(next.since), opened: { increment: 1 } }
+					});
+					if (claimed.count !== 1) throw new WalletConflict();
+				}
 
 				const left = pool.map((c) => ({ ...c }));
 				const picked: number[] = [];
@@ -252,7 +286,86 @@ export async function openBooster(playerId: number, setId: number | null, packId
 
 	const cards = await revealed(ids);
 	const fresh = [...new Set(cards.map((c) => c.template.id))].filter((id) => !owned.has(id));
-	return { openingId, cards, fresh, wallet: await walletOf(playerId, rules) };
+	const left = held
+		? ((await prisma.cardHeldBooster.findUnique({ where: { playerId_setId: { playerId, setId: setId as number } } }))?.count ?? 0)
+		: null;
+	return { openingId, cards, fresh, wallet: await walletOf(playerId, rules), held: left };
+}
+
+// ─── Boosters gardés (boutique) ──────────────────────────────────────────
+
+export interface HeldChoice extends SetView {
+	count: number;
+	special: boolean;
+	pool: number;
+	packs: PackView[];
+}
+
+/** Boosters de série que le joueur garde à part de sa réserve, avec leurs paquets. */
+export async function heldBoosters(playerId: number): Promise<HeldChoice[]> {
+	const rows = await prisma.cardHeldBooster.findMany({
+		where: { playerId, count: { gt: 0 } },
+		include: { set: true },
+		orderBy: { setId: 'desc' }
+	});
+	if (rows.length === 0) return [];
+	const [totals, packs] = await Promise.all([
+		setTotals(),
+		prisma.cardPack.findMany({ where: { setId: { in: rows.map((r) => r.setId) } }, orderBy: PACK_ORDER })
+	]);
+	const result: HeldChoice[] = [];
+	for (const row of rows) {
+		result.push({
+			...setView(row.set, totals),
+			count: row.count,
+			special: row.set.special,
+			pool: (await poolOf(row.setId)).length,
+			packs: packsOf(row.set, packs)
+		});
+	}
+	return result;
+}
+
+/**
+ * Ajoute des boosters à la réserve habituelle dans une transaction en cours (boutique), au-delà
+ * du maximum s'il le faut. Lève WalletConflict si la réserve a changé entre-temps : la transaction
+ * est alors rejouée par `withRetry`.
+ */
+export async function addStock(tx: Tx, playerId: number, amount: number, rules: CardRules) {
+	const wallet = await tx.cardWallet.findUniqueOrThrow({ where: { playerId } });
+	const state = accrue({ stock: wallet.stock, since: wallet.since.getTime() }, rules, Date.now());
+	const done = await tx.cardWallet.updateMany({
+		where: { playerId, stock: wallet.stock, since: wallet.since },
+		data: { stock: Math.max(0, Math.min(99, state.stock + amount)), since: new Date(state.since) }
+	});
+	if (done.count !== 1) throw new WalletConflict();
+}
+
+/** Le MJ donne (ou reprend, si `amount` est négatif) des boosters d'une série gardés à part. */
+export async function giftHeldBoosters(playerId: number, setId: number, amount: number) {
+	if (!(await prisma.cardSet.findUnique({ where: { id: setId }, select: { id: true } }))) throw new CardError('Série introuvable.', 404);
+	if (!(await prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new CardError('Joueur introuvable.', 404);
+	await prisma.$transaction(async (tx) => {
+		await tx.cardHeldBooster.upsert({
+			where: { playerId_setId: { playerId, setId } },
+			create: { playerId, setId, count: 0 },
+			update: {}
+		});
+		// Sous condition, pour ne jamais descendre sous zéro même avec deux clics simultanés.
+		if (amount >= 0) {
+			const added = await tx.cardHeldBooster.updateMany({
+				where: { playerId, setId, count: { lte: 99 - amount } },
+				data: { count: { increment: amount } }
+			});
+			if (added.count !== 1) await tx.cardHeldBooster.updateMany({ where: { playerId, setId }, data: { count: 99 } });
+		} else {
+			const taken = await tx.cardHeldBooster.updateMany({
+				where: { playerId, setId, count: { gte: -amount } },
+				data: { count: { decrement: -amount } }
+			});
+			if (taken.count !== 1) await tx.cardHeldBooster.updateMany({ where: { playerId, setId }, data: { count: 0 } });
+		}
+	});
 }
 
 // ─── Boosters ouverts mais pas regardés ──────────────────────────────────

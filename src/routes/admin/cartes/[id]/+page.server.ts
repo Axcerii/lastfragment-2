@@ -36,6 +36,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				job: true,
 				quote: true,
 				description: true,
+				artist: true,
 				statistics: true
 			}
 		}),
@@ -51,6 +52,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				dangerosity: true,
 				effect: true,
 				description: true,
+				artist: true,
 				statistics: true
 			}
 		}),
@@ -88,6 +90,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 					printed: template.printed,
 					sourceKind: template.sourceKind,
 					sourceId: template.sourceId,
+					artist: template.artist,
 					face: readFace(template.face, type, template.rarity)
 				}
 			: null,

@@ -25,7 +25,8 @@ export { RARITIES };
 export const RARITY_VALUES = [1, 2, 3, 4, 5] as const;
 /**
  * Les Unique ne comptent pas dans les 100 % d'un album : leur case n'apparaît qu'une fois la carte
- * obtenue, et fait passer l'album au-delà de 100 %.
+ * obtenue, et fait passer l'album au-delà de 100 %. Elles ne comptent pas non plus dans le total
+ * imprimé sur les cartes (« 057/071 ») : une Unique porte un numéro au-delà (« 073/071 »).
  */
 export const UNIQUE_RARITY = 5;
 
@@ -260,6 +261,8 @@ export interface TemplateView {
 	number: number | null;
 	set: { id: number; name: string; code: string; color: string; logo: string | null; total: number } | null;
 	face: CardFace;
+	/** Lien vers l'artiste de l'illustration (déjà vérifié), affiché sous le nom quand on ouvre la carte. */
+	artist: string | null;
 	/** Verso vidé par le serveur (voir server/cards/secrets.ts). */
 	sealed?: boolean;
 }

@@ -170,9 +170,13 @@ export function seesNumbers(token: RawToken, viewer: Viewer): boolean {
 	return viewer.isAdmin || token.revealed || isMine(token, viewer);
 }
 
-function gauge(current: number, max: number, exact: boolean): GaugeView {
+/**
+ * Jauge vue par quelqu'un. Sans maximum (fiche sans PV), il n'y a pas de jauge à montrer :
+ * le jeton n'est pas K.O. pour autant.
+ */
+function gauge(current: number, max: number, exact: boolean): GaugeView | null {
 	if (exact) return { current, max };
-	return { ratio: max > 0 ? Math.max(0, Math.min(1, current / max)) : 0 };
+	return max > 0 ? { ratio: Math.max(0, Math.min(1, current / max)) } : null;
 }
 
 function tokenView(token: RawToken, viewer: Viewer, raw: RawSession): TokenView {

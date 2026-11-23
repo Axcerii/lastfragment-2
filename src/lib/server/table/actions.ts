@@ -8,10 +8,12 @@ import {
 	ATTACK_STAT,
 	GAUGES,
 	MAX_ATTACK_POWER,
+	MAX_ROLL_BONUS,
 	OPPOSED_STAT,
 	OUTCOME_LABELS,
 	attackCost,
 	attackDamage,
+	bonusLabel,
 	effectiveDefense,
 	gaugeAlerts,
 	isDieValue,
@@ -501,7 +503,8 @@ const handlers: Record<string, Handler> = {
 				return { id: existing.id };
 			}
 			const s = await playerSource(refId ?? -1);
-			data = { ...s, kind: 'player', side: 'ally', revealed: true };
+			// Stats cachées aux autres joueurs par défaut ; le joueur voit toujours les siennes.
+			data = { ...s, kind: 'player', side: 'ally', revealed: false };
 		} else if (source === 'character') {
 			data = { ...(await characterSource(refId ?? -1)), kind: 'character', side: 'neutral', revealed: false };
 		} else if (source === 'monster') {
@@ -620,7 +623,7 @@ const handlers: Record<string, Handler> = {
 		await ctx.setGauge(token, gauge, value);
 	}),
 
-	/** Remet les jauges au maximum : un jeton, ou tous ceux de la partie. */
+	/** Remet les jauges (PV, QdF, END) au maximum : un jeton, ou tous ceux de la partie. */
 	'token.restore': admin(async (ctx, body) => {
 		const tokens = body.id
 			? [await ctx.token(body.id)]
@@ -633,6 +636,13 @@ const handlers: Record<string, Handler> = {
 			});
 		}
 		if (!body.id) await ctx.log('system', 'Tout le monde récupère ses forces.', { author: 'Table' });
+		else {
+			const [token] = tokens;
+			await ctx.log('system', `${ctx.name(token)} récupère toutes ses forces.`, {
+				author: 'Table',
+				hidden: token.hidden
+			});
+		}
 	}),
 
 	/** Relit la fiche d'origine (armure changée, passif activé…) sans toucher aux jauges actuelles. */
@@ -745,7 +755,9 @@ const handlers: Record<string, Handler> = {
 		const actor = await ctx.actor(body.tokenId);
 		const stat = statKey(body.stat);
 		const isAdmin = ctx.viewer.isAdmin;
-		const bonus = isAdmin ? int(body.bonus ?? 0, -100, 100) : 0;
+		// Bonus ou malus : le MJ l'applique en secret, un joueur le voit écrit au journal pour tous.
+		const bonus = int(body.bonus ?? 0, -MAX_ROLL_BONUS, MAX_ROLL_BONUS);
+		const shownBonus = !isAdmin && bonus ? ` (${bonusLabel(bonus)})` : '';
 		// Comme dans le simulateur V1, l'armure ne compte pas dans les jets opposés.
 		const own = statForRoll(stat, statsOf(actor)[stat] - (actor.armor as StatBlock)[stat]) + bonus;
 		const typed = manualRoll(body.manual, 100);
@@ -756,7 +768,7 @@ const handlers: Record<string, Handler> = {
 
 		if (!body.targetId) {
 			const outcome = soloOutcome(roll, own);
-			await ctx.log('stat', `Jet de ${s.label} de ${ctx.name(actor)} : ${roll}${note} — ${OUTCOME_LABELS[outcome]}`, {
+			await ctx.log('stat', `Jet de ${s.label} de ${ctx.name(actor)}${shownBonus} : ${roll}${note} — ${OUTCOME_LABELS[outcome]}`, {
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden,
 				data: {
 					manual,
@@ -780,13 +792,15 @@ const handlers: Record<string, Handler> = {
 
 		await ctx.log(
 			'opposed',
-			`${s.label} de ${ctx.name(actor)} contre ${t.label} de ${ctx.name(target)} : ${roll}${note} — ${OUTCOME_LABELS[outcome]}`,
+			`${s.label} de ${ctx.name(actor)}${shownBonus} contre ${t.label} de ${ctx.name(target)} : ${roll}${note} — ${OUTCOME_LABELS[outcome]}`,
 			{
 				hidden: (isAdmin && Boolean(body.hidden)) || actor.hidden || target.hidden,
 				data: {
 					manual,
 					dice: [{ faces: 100, value: roll }],
-					detail: `${s.abbr} ${own} contre ${t.abbr} ${other} · seuil ${threshold} · chance ${chance} %`,
+					detail: `${s.abbr} ${own}${bonus ? ` (bonus ${signed(bonus)})` : ''} contre ${t.abbr} ${other}${
+						targetBonus ? ` (bonus ${signed(targetBonus)})` : ''
+					} · seuil ${threshold} · chance ${chance} %`,
 					publicDetail: `Chance estimée : ${chance} %`
 				}
 			}
@@ -805,7 +819,9 @@ const handlers: Record<string, Handler> = {
 		const power = int(body.power ?? 1, 1, MAX_ATTACK_POWER);
 		const isAdmin = ctx.viewer.isAdmin;
 		const multiplier = isAdmin ? num(body.multiplier, 1, 0, 10) : 1;
-		const attackBonus = isAdmin ? int(body.attackBonus ?? 0, -100, 100) : 0;
+		// Bonus ou malus d'attaque : secret pour le MJ, écrit au journal quand un joueur se l'applique.
+		const attackBonus = int(body.attackBonus ?? 0, -MAX_ROLL_BONUS, MAX_ROLL_BONUS);
+		const shownBonus = !isAdmin && attackBonus ? `, ${bonusLabel(attackBonus)}` : '';
 		const defenseBonus = isAdmin ? int(body.defenseBonus ?? 0, -100, 100) : 0;
 
 		const attackStat = ATTACK_STAT[kind];
@@ -860,7 +876,7 @@ const handlers: Record<string, Handler> = {
 			: '';
 		const log = await ctx.log(
 			'attack',
-			`${ctx.name(attacker)} ${verb} ${ctx.name(target)}${withText} (puissance ${power}) : ${rollText} → ${damage} dégâts`,
+			`${ctx.name(attacker)} ${verb} ${ctx.name(target)}${withText} (puissance ${power}${shownBonus}) : ${rollText} → ${damage} dégâts`,
 			{
 				hidden,
 				data: {

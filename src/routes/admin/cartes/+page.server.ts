@@ -1,3 +1,4 @@
+import { safeArtistLink } from '$lib/artist';
 import { fail } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import { requireAdmin } from '$lib/server/auth';
@@ -85,6 +86,8 @@ export const actions: Actions = {
 					maxPrints: null,
 					sourceKind: prefill.sourceKind,
 					sourceId: prefill.sourceId,
+					// Artiste repris de la fiche, s'il y est renseigné (et un lien valide).
+					artist: safeArtistLink(prefill.artist),
 					face
 				});
 			try {

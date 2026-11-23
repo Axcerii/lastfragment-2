@@ -1,5 +1,5 @@
 <script lang="ts">
-    // Jeu de cartes : navigation entre boosters, collection, échanges et joueurs. Sur ordinateur,
+    // Jeu de cartes : navigation entre boosters, collection, boutique, échanges et joueurs. Sur ordinateur,
     // un sélecteur collant en haut dont la pastille glisse d'un onglet à l'autre ; sur téléphone,
     // une barre fixe en bas de l'écran, à portée du pouce, avec un trait lumineux qui suit.
     import { page } from "$app/state";
@@ -11,6 +11,7 @@
     const LINKS = [
         { href: "/cartes", label: "Boosters", icon: "◇" },
         { href: "/cartes/collection", label: "Collection", icon: "▦" },
+        { href: "/cartes/boutique", label: "Boutique", icon: "✦" },
         { href: "/cartes/echanges", label: "Échanges", icon: "⇄" },
         { href: "/cartes/joueurs", label: "Joueurs", icon: "♜" },
     ];
@@ -209,6 +210,31 @@
         .pill.ready,
         .icon {
             transition: none;
+        }
+    }
+
+    /* Tablettes et petits écrans : les cinq onglets se resserrent pour tenir sur une ligne. */
+    @media (min-width: 701px) and (max-width: 1100px) {
+        .cards-nav {
+            gap: 0.6rem;
+        }
+
+        .tabs a {
+            gap: 0.35rem;
+            padding: 0.55rem 0.8rem;
+            font-size: 0.92rem;
+        }
+    }
+
+    @media (min-width: 701px) and (max-width: 860px) {
+        .tabs a {
+            padding: 0.5rem 0.6rem;
+            font-size: 0.85rem;
+        }
+
+        /* L'Espace MJ reste dans le menu du site. */
+        .mj {
+            display: none;
         }
     }
 

@@ -230,7 +230,8 @@ export async function ensurePlayerToken(sessionId: number, playerId: number) {
 			name: source.name,
 			image: source.image,
 			side: 'ally',
-			revealed: true,
+			// Stats cachées aux autres joueurs par défaut ; le joueur voit toujours les siennes.
+			revealed: false,
 			...cell,
 			stats: source.stats,
 			armor: source.armor,

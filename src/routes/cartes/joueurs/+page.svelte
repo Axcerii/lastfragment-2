@@ -1,6 +1,6 @@
 <script lang="ts">
-    // Classement des collectionneurs au nombre de cartes possédées : podium pour les trois premiers,
-    // puis la liste. Toucher un joueur ouvre sa collection.
+    // Classement des collectionneurs au nombre de cartes différentes, puis au nombre de cartes :
+    // podium pour les trois premiers, puis la liste. Toucher un joueur ouvre sa collection.
     import { matches } from "$lib/components/table/MediaPicker.svelte";
     import { portrait } from "$lib/game/labels";
 
@@ -31,7 +31,7 @@
             <a class="mine panel" href="/cartes/collection">
                 <span class="muted">Ta place</span>
                 <strong>{me.cards > 0 ? `#${me.rank}` : "—"}</strong>
-                <span class="muted">{plural(me.cards, "carte")}</span>
+                <span class="muted">{plural(me.distinct, "différente")} · {plural(me.cards, "carte")}</span>
             </a>
         {/if}
     </header>
@@ -45,8 +45,8 @@
                         <span class="crown" aria-hidden="true">{i === 0 ? "♛" : ""}</span>
                         <img src={portrait(p.portrait)} alt="" loading="lazy" />
                         <strong class="name">{p.name}</strong>
-                        <span class="total">{p.cards}</span>
-                        <span class="muted small">{plural(p.distinct, "différente")}</span>
+                        <span class="total">{p.distinct}</span>
+                        <span class="muted small">{plural(p.distinct, "différente")} · {plural(p.cards, "carte")}</span>
                         <span class="block" aria-label="Rang {p.rank}">{p.rank}</span>
                     </a>
                 </li>
@@ -64,9 +64,9 @@
                     <img src={portrait(player.portrait)} alt="" loading="lazy" />
                     <span class="text">
                         <strong>{player.name}{player.id === data.me ? " (toi)" : ""}</strong>
-                        <span class="muted small">{plural(player.distinct, "différente")}</span>
+                        <span class="muted small">{plural(player.cards, "carte")} en tout</span>
                     </span>
-                    <span class="count"><strong>{player.cards}</strong><span class="muted small">carte{player.cards > 1 ? "s" : ""}</span></span>
+                    <span class="count"><strong>{player.distinct}</strong><span class="muted small">différente{player.distinct > 1 ? "s" : ""}</span></span>
                 </a>
                 {#if player.id !== data.me}
                     <a class="trade" href="/cartes/echanges/nouveau?avec={player.id}" aria-label="Échanger avec {player.name}" title="Échanger">⇄</a>

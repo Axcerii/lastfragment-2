@@ -3,6 +3,7 @@
     // son usure, et tous ses propriétaires successifs.
     import { enhance } from "$app/forms";
     import CollectibleCard from "$lib/components/cards/CollectibleCard.svelte";
+    import ArtistLink from "$lib/components/personnages/ArtistLink.svelte";
     import {
         CARD_TYPES,
         formatSerial,
@@ -46,6 +47,7 @@
         <span class="kicker" style="color: var(--rarity-{t.rarity})">{rarityLabel(t.rarity)} · {CARD_TYPES[t.type].label}</span>
         <h1>{t.name}</h1>
         {#if t.face.subtitle}<p class="muted">{t.face.subtitle}</p>{/if}
+        {#if t.artist}<p class="artist">Artiste : <ArtistLink href={t.artist} /></p>{/if}
 
         <dl>
             <div><dt>N° de série</dt><dd>{formatSerial(c.serial, t.maxPrints)}</dd></div>
@@ -113,6 +115,9 @@
                 <li>
                     <time>{date(e.at)}</time>
                     <span>
+                        {#if e.kind === "boutique"}
+                            {#if e.from}Cédée en boutique par <strong>{e.from}</strong>{:else}Obtenue en boutique par <strong>{e.to ?? "?"}</strong>{/if}
+                        {:else}
                         {EVENTS[e.kind] ?? e.kind}
                         {#if e.kind === "echange" || e.kind === "transfert"}
                             de <strong>{e.from ?? "?"}</strong> à <strong>{e.to ?? "?"}</strong>
@@ -120,6 +125,7 @@
                             <strong>{e.from ?? "?"}</strong>
                         {:else}
                             <strong>{e.to ?? "?"}</strong>
+                        {/if}
                         {/if}
                     </span>
                 </li>
@@ -169,6 +175,10 @@
     h1 {
         font-size: 2.4rem;
         line-height: 1.05;
+    }
+
+    .artist {
+        font-size: 0.9rem;
     }
 
     h2 {

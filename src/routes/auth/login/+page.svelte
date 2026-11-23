@@ -53,6 +53,10 @@
 			{#if form?.error}
 				<p class="message-error" role="alert">{form.error}</p>
 			{/if}
+			<p class="cgu">
+				En créant un compte, vous acceptez les
+				<a href="/cgu" target="_blank" rel="noopener">conditions générales d'utilisation</a>.
+			</p>
 			<Cta text="S'inscrire" />
 		</form>
 		<div class="separateur"></div>
@@ -134,6 +138,16 @@
 
 	h2 {
 		font-size: 32px;
+	}
+
+	.cgu {
+		font-size: 0.9rem;
+		color: var(--muted);
+	}
+
+	.cgu a {
+		color: var(--accent);
+		text-decoration: underline;
 	}
 
 	.form-image {

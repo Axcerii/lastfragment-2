@@ -57,6 +57,7 @@
                 { keys: ["H"], label: "Cacher / montrer aux joueurs" },
                 { keys: ["N"], label: "Cacher / montrer son nom" },
                 { keys: ["S"], label: "Révéler / masquer ses stats" },
+                { keys: ["R"], label: "Remettre PV, QdF et Endurance au max" },
                 { keys: ["O"], label: "Ajouter à / retirer de l'ordre de passage" },
                 { keys: ["Ctrl", "D"], label: "Dupliquer" },
                 { keys: ["Suppr"], label: "Retirer du plateau" },

@@ -1,12 +1,15 @@
 <script lang="ts">
     import MjPanel from "$lib/components/game/MjPanel.svelte";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
+    import ArtistLink from "$lib/components/personnages/ArtistLink.svelte";
+    import { safeArtistLink } from "$lib/artist";
     import { parseDragons } from "$lib/game/labels";
 
     let { data, form } = $props();
 
     let monster = $derived(data.monster);
     let dragons = $derived(parseDragons(monster.dragon));
+    let artist = $derived(safeArtistLink(monster.artist));
 
     const MAX_DANGER = 10;
 </script>
@@ -51,6 +54,12 @@
                         {monster.dangerosity} / {MAX_DANGER}
                     </dd>
                 </div>
+                {#if artist}
+                    <div>
+                        <dt>Artiste</dt>
+                        <dd><ArtistLink href={artist} /></dd>
+                    </div>
+                {/if}
             </dl>
             <div class="effect">
                 <h2>Effet</h2>

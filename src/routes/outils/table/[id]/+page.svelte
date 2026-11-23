@@ -267,6 +267,7 @@
             else if (selected && key === "n" && selected.kind !== "player") {
                 client.act("token.update", { id: selected.id, nameHidden: !selected.nameHidden });
             } else if (selected && key === "s") client.act("token.update", { id: selected.id, revealed: !selected.revealed });
+            else if (selected && key === "r") client.act("token.restore", { id: selected.id });
             else if (selected && key === "o") toggleOrder(selected);
             else if (selected && (e.key === "Delete" || e.key === "Backspace")) {
                 if (confirm(`Retirer ${selected.name} du plateau ?`)) client.act("token.delete", { id: selected.id });

@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { error } from '@sveltejs/kit';
 import { VIRTUAL_TYPES, type Field, type Option } from '$lib/admin/fields';
+import { parseArtistLink } from '$lib/artist';
 import { pairKey } from '$lib/game/badges';
 import { parseEffects } from '$lib/game/bonus';
 import { normalizeDescent, parseDragons } from '$lib/game/labels';
@@ -228,6 +229,12 @@ async function readColumns(resource: Resource, form: FormData, creating: boolean
 			case 'dragons':
 				data[field.name] = normalizeDescent(raw);
 				break;
+			case 'link': {
+				const link = parseArtistLink(raw);
+				if (!link.ok) throw new FormError(link.error);
+				data[field.name] = link.value;
+				break;
+			}
 			case 'weaponBonus': {
 				// Une valeur X par bonus (« weaponBonus_ignore-defense ») ; vide ou 0 : pas de bonus.
 				const values: Record<string, number> = {};

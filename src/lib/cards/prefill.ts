@@ -18,6 +18,7 @@ export interface CharacterSource {
 	job: string | null;
 	quote: string | null;
 	description: string;
+	artist: string | null;
 	stats: StatBlock;
 }
 
@@ -31,6 +32,7 @@ export interface MonsterSource {
 	dangerosity: number;
 	effect: string;
 	description: string;
+	artist: string | null;
 	stats: StatBlock;
 }
 
@@ -50,6 +52,8 @@ export interface Prefill {
 	rarity?: number;
 	sourceKind: 'personnage' | 'monstre' | 'objet';
 	sourceId: number;
+	/** Artiste repris de la fiche (personnage, monstre), s'il y est renseigné. */
+	artist?: string | null;
 	face: Partial<CardFace>;
 }
 
@@ -102,6 +106,7 @@ export function fromCharacter(c: CharacterSource): Prefill {
 		type: 'personnage',
 		sourceKind: 'personnage',
 		sourceId: c.id,
+		artist: c.artist,
 		face: {
 			subtitle: cut(c.title, FACE_LIMITS.subtitle),
 			dragons: c.dragon,
@@ -127,6 +132,7 @@ export function fromMonster(m: MonsterSource): Prefill {
 		type: 'monstre',
 		sourceKind: 'monstre',
 		sourceId: m.id,
+		artist: m.artist,
 		face: {
 			subtitle: `Danger ${m.dangerosity}`,
 			dragons: m.dragon,

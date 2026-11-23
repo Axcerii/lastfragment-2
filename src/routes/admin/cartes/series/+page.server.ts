@@ -33,6 +33,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			banner: s.banner,
 			color: s.color,
 			active: s.active,
+			special: s.special,
 			startsAt: s.startsAt?.toISOString() ?? null,
 			endsAt: s.endsAt?.toISOString() ?? null,
 			sortOrder: s.sortOrder,

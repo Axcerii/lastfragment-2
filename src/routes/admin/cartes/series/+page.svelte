@@ -18,6 +18,7 @@
         banner: null,
         color: "#e5b8cc",
         active: false,
+        special: false,
         startsAt: null,
         endsAt: null,
         sortOrder: 0,
@@ -27,6 +28,7 @@
     };
 
     function status(s: SetRow) {
+        if (s.special) return "Spécial";
         if (!s.active) return "Fermée";
         const now = Date.now();
         if (s.startsAt && new Date(s.startsAt).getTime() > now) return "Programmée";
@@ -85,7 +87,12 @@
                 <ImageInput name="logo" value={s.logo} label="Logo" />
             </div>
             <div class="foot">
-                <label class="check"><input type="checkbox" name="active" checked={s.active} /> Booster proposé aux joueurs</label>
+                <span class="checks">
+                    <label class="check"><input type="checkbox" name="active" checked={s.active} /> Booster proposé aux joueurs</label>
+                    <label class="check" title="Hors de la vitrine des boosters : il ne s’obtient qu’en boutique">
+                        <input type="checkbox" name="special" checked={s.special} /> Booster spécial (boutique seulement)
+                    </label>
+                </span>
                 <button class="btn btn-accent">{s.id ? "Enregistrer" : "Créer la série"}</button>
             </div>
         </form>
@@ -170,6 +177,17 @@
     .b-Programmée {
         border-color: var(--secondary);
         color: var(--secondary);
+    }
+
+    .b-Spécial {
+        border-color: var(--rarity-5);
+        color: var(--rarity-5);
+    }
+
+    .checks {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
     }
 
     .small {
