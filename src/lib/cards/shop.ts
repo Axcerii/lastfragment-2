@@ -2,9 +2,12 @@
 // sans base de données. Partagé entre l'éditeur du MJ, la page des joueurs et le serveur, testé
 // dans shop.test.ts.
 //
-// Le prix se paie en points et/ou en cartes. Chaque ligne de cartes dit combien il en faut et ce
+// La monnaie de la boutique s'appelle « fragments » (symbole : le logo du Tout) ; en base et dans
+// le JSON des offres, le champ garde son nom technique `points`.
+//
+// Le prix se paie en fragments et/ou en cartes. Chaque ligne de cartes dit combien il en faut et ce
 // qu'elles doivent être : une carte précise (son modèle), ou des critères (rareté, état d'usure,
-// série), chacun facultatif. La récompense donne des points, des boosters de la réserve, des
+// série), chacun facultatif. La récompense donne des fragments, des boosters de la réserve, des
 // boosters d'une série gardés à part (boosters spéciaux) et des cartes neuves, précises ou tirées
 // au hasard parmi celles qui conviennent.
 
@@ -140,7 +143,7 @@ function readCriteria(raw: Record<string, unknown>): CardCriteria | string {
 export function parsePrice(raw: unknown): Parsed<ShopPrice> {
 	if (!isRecord(raw)) return { ok: false, error: 'Prix illisible.' };
 	const points = int(raw.points, 0, SHOP_LIMITS.points, 0);
-	if (points === undefined || points === null) return { ok: false, error: `Points de 0 à ${SHOP_LIMITS.points}.` };
+	if (points === undefined || points === null) return { ok: false, error: `Fragments de 0 à ${SHOP_LIMITS.points}.` };
 	const list = raw.cards ?? [];
 	if (!Array.isArray(list)) return { ok: false, error: 'Prix illisible.' };
 	if (list.length > SHOP_LIMITS.priceLines) return { ok: false, error: `${SHOP_LIMITS.priceLines} lignes de cartes au plus.` };
@@ -160,7 +163,7 @@ export function parseReward(raw: unknown): Parsed<ShopReward> {
 	if (!isRecord(raw)) return { ok: false, error: 'Récompense illisible.' };
 	const points = int(raw.points, 0, SHOP_LIMITS.points, 0);
 	const boosters = int(raw.boosters, 0, SHOP_LIMITS.boosters, 0);
-	if (points === undefined || points === null) return { ok: false, error: `Points de 0 à ${SHOP_LIMITS.points}.` };
+	if (points === undefined || points === null) return { ok: false, error: `Fragments de 0 à ${SHOP_LIMITS.points}.` };
 	if (boosters === undefined || boosters === null) return { ok: false, error: `De 0 à ${SHOP_LIMITS.boosters} boosters.` };
 
 	const heldList = raw.held ?? [];
@@ -347,4 +350,8 @@ export function rewardCardLabel(card: RewardCard, names: ShopNames): string {
 	return `${card.count} carte${card.count > 1 ? 's' : ''} au hasard${parts.length ? ` · ${parts.join(' · ')}` : ''}${wear}`;
 }
 
-export const pointsLabel = (n: number) => `${n.toLocaleString('fr-FR')} point${n > 1 ? 's' : ''}`;
+/** « 12 fragments » : la monnaie de la boutique (champ `points`). */
+export const fragmentsLabel = (n: number) => `${n.toLocaleString('fr-FR')} fragment${n > 1 ? 's' : ''}`;
+
+/** Symbole des fragments : le logo du Tout, celui du site. */
+export const FRAGMENT_ICON = '/layout/Logo.svg';

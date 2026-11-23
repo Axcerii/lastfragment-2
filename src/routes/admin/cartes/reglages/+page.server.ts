@@ -4,6 +4,7 @@ import { requireAdmin } from '$lib/server/auth';
 import { accrue } from '$lib/cards/booster';
 import { giftBoosters } from '$lib/server/cards/boosters';
 import { CardError, getRules, RULE_BOUNDS, saveRules } from '$lib/server/cards/settings';
+import { giftFragments } from '$lib/server/cards/shop';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -24,6 +25,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			login: p.login,
 			cards: p._count.cards,
 			opened: p.cardWallet?.opened ?? 0,
+			fragments: p.cardWallet?.points ?? 0,
 			stock: p.cardWallet
 				? accrue({ stock: p.cardWallet.stock, since: p.cardWallet.since.getTime() }, rules, now).stock
 				: null
@@ -67,6 +69,31 @@ export const actions: Actions = {
 			throw e;
 		}
 		return { message: 'Réglages enregistrés.' };
+	},
+
+	/** Fragments offerts (ou repris) à un joueur, ou à tous. */
+	fragments: async ({ request, locals }) => {
+		requireAdmin(locals);
+		const form = await request.formData();
+		const amount = Math.round(Number(form.get('amount')));
+		const target = String(form.get('playerId') ?? '');
+		const ids =
+			target === 'tous'
+				? (await prisma.player.findMany({ select: { id: true } })).map((p) => p.id)
+				: /^\d{1,9}$/.test(target)
+					? [Number(target)]
+					: [];
+		if (ids.length === 0) return fail(400, { error: 'Choisis un joueur, ou « Tous les joueurs ».' });
+		try {
+			const served = await giftFragments(ids, amount);
+			const n = Math.abs(amount).toLocaleString('fr-FR');
+			return {
+				message: `${amount > 0 ? '+' : '−'}${n} fragment${Math.abs(amount) > 1 ? 's' : ''} pour ${served > 1 ? `${served} joueurs` : '1 joueur'}.`
+			};
+		} catch (e) {
+			if (e instanceof CardError) return fail(e.status, { error: e.message });
+			throw e;
+		}
 	},
 
 	gift: async ({ request, locals }) => {
