@@ -353,5 +353,58 @@ export function rewardCardLabel(card: RewardCard, names: ShopNames): string {
 /** « 12 fragments » : la monnaie de la boutique (champ `points`). */
 export const fragmentsLabel = (n: number) => `${n.toLocaleString('fr-FR')} fragment${n > 1 ? 's' : ''}`;
 
+// ─── Objets montrés ──────────────────────────────────────────────────────
+
+/**
+ * Un objet d'une offre tel que la boutique le dessine : une vignette et un nombre (« ×5 »).
+ * `card` : une carte précise ; `criteria` : des cartes à céder qui répondent à des critères ;
+ * `random` : des cartes reçues au hasard ; `pack` : des boosters d'une série ; `booster` : des
+ * boosters de la réserve ; `fragments` : la monnaie (`count` est alors le montant).
+ */
+export type ShopItem =
+	| { kind: 'card'; count: number; label: string; templateId: number; line?: number }
+	| { kind: 'criteria'; count: number; label: string; rarity: number | null; rarityUp: boolean; line: number }
+	| { kind: 'random'; count: number; label: string; rarity: number | null }
+	| { kind: 'pack'; count: number; label: string; setId: number }
+	| { kind: 'booster'; count: number; label: string }
+	| { kind: 'fragments'; count: number; label: string };
+
+const boostersLabel = (n: number) => `${n} booster${n > 1 ? 's' : ''}`;
+
+/** Ce que le joueur reçoit, le plus marquant d'abord (le premier fait la vignette de l'offre). */
+export function rewardItems(reward: ShopReward, names: ShopNames): ShopItem[] {
+	const items: ShopItem[] = [];
+	const cards = [...reward.cards].sort((a, b) => Number(!!b.templateId) - Number(!!a.templateId));
+	for (const card of cards) {
+		const label = rewardCardLabel(card, names);
+		items.push(
+			card.templateId
+				? { kind: 'card', count: card.count, label, templateId: card.templateId }
+				: { kind: 'random', count: card.count, label, rarity: card.rarity }
+		);
+	}
+	for (const h of reward.held) {
+		items.push({ kind: 'pack', count: h.count, label: `${boostersLabel(h.count)} « ${names.set(h.setId) ?? 'Série supprimée'} »`, setId: h.setId });
+	}
+	if (reward.boosters) items.push({ kind: 'booster', count: reward.boosters, label: `${boostersLabel(reward.boosters)} dans ta réserve` });
+	if (reward.points) items.push({ kind: 'fragments', count: reward.points, label: fragmentsLabel(reward.points) });
+	return items;
+}
+
+/** Ce que le joueur cède : les fragments, puis chaque ligne de cartes (`line` : son rang dans le prix). */
+export function priceItems(price: ShopPrice, names: ShopNames): ShopItem[] {
+	const items: ShopItem[] = [];
+	if (price.points) items.push({ kind: 'fragments', count: price.points, label: fragmentsLabel(price.points) });
+	price.cards.forEach((line, i) => {
+		const label = priceLineLabel(line, names);
+		items.push(
+			line.templateId
+				? { kind: 'card', count: line.count, label, templateId: line.templateId, line: i }
+				: { kind: 'criteria', count: line.count, label, rarity: line.rarity, rarityUp: line.rarityUp, line: i }
+		);
+	});
+	return items;
+}
+
 /** Symbole des fragments : le logo du Tout, celui du site. */
 export const FRAGMENT_ICON = '/layout/Logo.svg';

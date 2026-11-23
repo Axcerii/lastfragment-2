@@ -6,8 +6,10 @@ import {
 	matchesCriteria,
 	parsePrice,
 	parseReward,
+	priceItems,
 	priceLineLabel,
 	rewardCardLabel,
+	rewardItems,
 	suggestCards,
 	type CopyFacts,
 	type PriceLine
@@ -163,5 +165,47 @@ describe('boutique : textes', () => {
 		expect(rewardCardLabel({ count: 2, templateId: null, setId: 1, rarity: 4, wear: null }, names)).toBe(
 			'2 cartes au hasard · Légendaires · Arc 1'
 		);
+	});
+});
+
+describe('boutique : objets montrés', () => {
+	it('range la récompense : cartes précises, au hasard, boosters de série, réserve, fragments', () => {
+		const items = rewardItems(
+			{
+				points: 40,
+				boosters: 2,
+				held: [{ setId: 1, count: 1 }],
+				cards: [
+					{ count: 3, templateId: null, setId: 1, rarity: 3, wear: null },
+					{ count: 1, templateId: 7, setId: null, rarity: null, wear: null }
+				]
+			},
+			names
+		);
+		expect(items.map((i) => [i.kind, i.count])).toEqual([
+			['card', 1],
+			['random', 3],
+			['pack', 1],
+			['booster', 2],
+			['fragments', 40]
+		]);
+		expect(items.map((i) => i.label)).toEqual([
+			'1 × Lyra',
+			'3 cartes au hasard · Rares · Arc 1',
+			'1 booster « Arc 1 »',
+			'2 boosters dans ta réserve',
+			'40 fragments'
+		]);
+		expect(rewardItems({ points: 0, boosters: 0, held: [], cards: [] }, names)).toEqual([]);
+	});
+
+	it('détaille le prix : fragments puis chaque ligne, avec son rang', () => {
+		const items = priceItems({ points: 120, cards: [line(5, { rarity: 3, rarityUp: true }), line(2, { templateId: 7 })] }, names);
+		expect(items).toEqual([
+			{ kind: 'fragments', count: 120, label: '120 fragments' },
+			{ kind: 'criteria', count: 5, label: '5 cartes Rares ou plus', rarity: 3, rarityUp: true, line: 0 },
+			{ kind: 'card', count: 2, label: '2 × Lyra', templateId: 7, line: 1 }
+		]);
+		expect(priceItems({ points: 0, cards: [] }, names)).toEqual([]);
 	});
 });
