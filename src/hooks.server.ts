@@ -5,6 +5,11 @@ import { cardsVisibleTo } from '$lib/server/cards/settings';
 const UNSAFE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 export const handle: Handle = async ({ event, resolve }) => {
+	// Une adresse qui commence par « // » est refusée avant d'atteindre les routes : avec use:enhance,
+	// SvelteKit 2 pouvait en faire une redirection vers un autre site (GHSA-pfhg-q3qv-9q6r, corrigé
+	// seulement en SvelteKit 3). Aucune page du site n'a d'adresse de cette forme.
+	if (event.url.pathname.startsWith('//')) return new Response('Page introuvable.', { status: 404 });
+
 	// SvelteKit ne contrôle l'origine que des formulaires : on l'étend aux requêtes JSON
 	// (actions de la table de jeu, médiathèque) et au flux temps réel, qu'une autre origine ne
 	// doit jamais pouvoir ouvrir avec le cookie du joueur.
