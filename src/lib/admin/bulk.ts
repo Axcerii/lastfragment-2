@@ -1,6 +1,7 @@
 // Édition rapide des personnages : les colonnes modifiables en masse et leur validation.
 // Partagé entre le navigateur (tableau) et le serveur (contrôle avant enregistrement).
 
+import { parseArtistLink } from '$lib/artist';
 import { COUNTRY_LABELS, normalizeDescent, RACE_LABELS } from '$lib/game/labels';
 import type { Option } from './fields';
 
@@ -12,7 +13,8 @@ export type BulkField = {
 	/** Colonne affichée tant que le MJ ne l'a pas masquée. */
 	shown: boolean;
 } & (
-	| { type: 'text'; required?: boolean; nullable?: boolean }
+	/** `link` : lien http(s) vers un artiste, vide = `null`. */
+	| { type: 'text'; required?: boolean; nullable?: boolean; link?: boolean }
 	| { type: 'select'; options: Option[] }
 	| { type: 'dragons' }
 	/** `flag` : entier 0/1 en base ; `boolean` : vrai booléen. */
@@ -33,6 +35,7 @@ export const BULK_FIELDS: BulkField[] = [
 	{ name: 'country', label: 'Pays', type: 'select', options: options(COUNTRY_LABELS), shown: true },
 	{ name: 'dragon', label: 'Descendance', type: 'dragons', shown: true },
 	{ name: 'category', label: 'Tags', type: 'text', shown: false },
+	{ name: 'artist', label: 'Artiste (lien)', type: 'text', nullable: true, link: true, shown: false },
 	{ name: 'visibility', label: 'Visible', type: 'flag', shown: true },
 	{ name: 'current', label: 'Arc actuel', type: 'flag', shown: false },
 	{ name: 'dead', label: 'Mort', type: 'boolean', shown: false },
@@ -83,6 +86,7 @@ export function parseEditable(
 			return { ok: true, value: normalizeDescent(value) };
 		case 'text': {
 			if (typeof value !== 'string') return { ok: false, error: `« ${field.label} » : valeur invalide.` };
+			if (field.link) return parseArtistLink(value);
 			const text = value.trim();
 			if (text.length > MAX_TEXT) return { ok: false, error: `« ${field.label} » dépasse ${MAX_TEXT} caractères.` };
 			if (!text && field.required) return { ok: false, error: `« ${field.label} » ne peut pas être vide.` };
@@ -99,5 +103,5 @@ export interface BulkChange {
 	after: BulkValue;
 }
 
-/** Plafond d'une seule sauvegarde : 12 colonnes pour un peu plus de 400 personnages. */
-export const MAX_BULK_CHANGES = 5000;
+/** Plafond d'une seule sauvegarde : 13 colonnes pour un peu plus de 400 personnages. */
+export const MAX_BULK_CHANGES = 5500;

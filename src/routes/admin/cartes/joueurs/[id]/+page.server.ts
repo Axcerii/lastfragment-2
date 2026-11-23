@@ -1,7 +1,8 @@
 import { error, fail } from '@sveltejs/kit';
 import { requireAdmin } from '$lib/server/auth';
 import { moveCardsOf, playerCards, readIds, removeCardsOf, replayOpening, unpinCardsOf } from '$lib/server/cards/admin';
-import { giftBoosters, setBoosterStock } from '$lib/server/cards/boosters';
+import { giftBoosters, giftHeldBoosters, setBoosterStock } from '$lib/server/cards/boosters';
+import { setPoints } from '$lib/server/cards/shop';
 import { giveCard } from '$lib/server/cards/copies';
 import { CardError } from '$lib/server/cards/settings';
 import type { Actions, PageServerLoad } from './$types';
@@ -59,6 +60,37 @@ export const actions: Actions = {
 			return failWith(e);
 		}
 		return { message: `Réserve fixée à ${stock} booster${stock > 1 ? 's' : ''}.` };
+	},
+
+	/** Fixe les points de boutique. */
+	points: async ({ request, locals, params }) => {
+		requireAdmin(locals);
+		const id = playerId(params.id);
+		const points = intField(await request.formData(), 'points', 0, 999_999);
+		if (points === null) return fail(400, { error: 'Points entre 0 et 999 999.' });
+		try {
+			await setPoints(id, points);
+		} catch (e) {
+			return failWith(e);
+		}
+		return { message: `Points fixés à ${points}.` };
+	},
+
+	/** Donne (ou reprend) des boosters d'une série, gardés à part de la réserve. */
+	held: async ({ request, locals, params }) => {
+		requireAdmin(locals);
+		const id = playerId(params.id);
+		const form = await request.formData();
+		const setId = intField(form, 'setId', 1, 999_999);
+		const amount = intField(form, 'amount', -50, 50);
+		if (!setId) return fail(400, { error: 'Choisis une série.' });
+		if (!amount) return fail(400, { error: 'Nombre de boosters entre -50 et 50 (hors 0).' });
+		try {
+			await giftHeldBoosters(id, setId, amount);
+		} catch (e) {
+			return failWith(e);
+		}
+		return { message: `${amount > 0 ? '+' : ''}${amount} booster${Math.abs(amount) > 1 ? 's' : ''} de série.` };
 	},
 
 	/** Donne des exemplaires neufs d'une carte. */

@@ -2,8 +2,10 @@
     import MjPanel from "$lib/components/game/MjPanel.svelte";
     import Showcase from "$lib/components/cards/Showcase.svelte";
     import PatternBackground from "$lib/components/layout/PatternBackground.svelte";
+    import ArtistLink from "$lib/components/personnages/ArtistLink.svelte";
     import CensorScreen from "$lib/components/personnages/CensorScreen.svelte";
     import CharacterPlusCountry from "$lib/components/personnages/CharacterPlusCountry.svelte";
+    import { safeArtistLink } from "$lib/artist";
     import { COUNTRY_LABELS, RACE_LABELS, parseDragons, splitTags } from "$lib/game/labels";
 
     let { data, form } = $props();
@@ -13,6 +15,8 @@
     let censored = $derived(character.censored && !data.user?.isAdmin);
     let tags = $derived(splitTags(character.category));
     let dragons = $derived(parseDragons(character.dragon));
+    // Le portrait reste visible sur une fiche censurée : son artiste est crédité dans tous les cas.
+    let artist = $derived(safeArtistLink(character.artist));
 </script>
 
 <svelte:head>
@@ -43,6 +47,9 @@
                 {#if tags.length > 0}
                     <p><span>Tags</span> : {tags.join(", ")}</p>
                 {/if}
+            {/if}
+            {#if artist}
+                <p><span>Artiste</span> : <ArtistLink href={artist} /></p>
             {/if}
             {#if character.dead}
                 <p class="status">Décédé</p>

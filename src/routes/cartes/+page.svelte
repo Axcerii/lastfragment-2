@@ -4,6 +4,8 @@
     // paquets tiré au hasard. Un toucher ouvre sa fiche, d'où on l'ouvre ; l'ouverture se joue en
     // plein écran. Un booster ouvert mais pas regardé jusqu'au bout (page quittée,
     // réseau coupé) est reproposé en haut de la page : ses cartes sont déjà dans la collection.
+    // Les boosters obtenus en boutique sont gardés à part, au-dessus de la vitrine : ils ne
+    // prennent rien dans la réserve, et un booster spécial ne s'obtient que là.
     import { enhance } from "$app/forms";
     import { invalidateAll } from "$app/navigation";
     import BoosterOpening from "$lib/components/cards/BoosterOpening.svelte";
@@ -15,7 +17,8 @@
 
     let { data } = $props();
 
-    type Booster = { setId: number | null; title: string; code: string; packs: PackView[] };
+    /** `held` : un booster gardé (boutique), décompté de ceux de sa série et non de la réserve. */
+    type Booster = { setId: number | null; title: string; code: string; packs: PackView[]; held?: boolean };
     type Opening = {
         booster: Booster;
         openingId: number | null;
@@ -32,6 +35,8 @@
         endsAt: string | null;
         progress: { owned: number; total: number } | null;
         disabled: boolean;
+        count?: number;
+        special?: boolean;
     };
 
     let opening = $state<Opening | null>(null);
@@ -77,16 +82,46 @@
         }
         return list;
     });
+    // Boosters gardés (boutique), chacun sous son premier paquet.
+    let kept = $derived.by((): Shown[] =>
+        data.guest
+            ? []
+            : data.held.map((h) => ({
+                  setId: h.id,
+                  title: h.name,
+                  code: h.code,
+                  packs: h.packs,
+                  pack: h.packs[0],
+                  description: h.description,
+                  total: h.pool,
+                  endsAt: null,
+                  progress: data.progress[h.id] ?? null,
+                  disabled: h.pool === 0,
+                  held: true,
+                  count: h.count,
+                  special: h.special,
+              })),
+    );
+
+    /** Boosters disponibles pour ce booster : ceux gardés de sa série, ou la réserve. */
+    function stockOf(booster: Booster): number {
+        if (data.guest) return 0;
+        if (booster.held) return data.held.find((h) => h.id === booster.setId)?.count ?? 0;
+        return data.wallet.stock;
+    }
+
     let openForm: HTMLFormElement | undefined = $state();
     let seenForm: HTMLFormElement | undefined = $state();
     let formSetId = $state("");
     let formPackId = $state("");
+    let formHeld = $state("");
     let seenId = $state("");
 
     function open(booster: Booster) {
-        if (data.guest || data.wallet.stock < 1 || opening) return;
+        const stock = stockOf(booster);
+        if (data.guest || stock < 1 || opening) return;
         detail = null;
-        opening = { booster, openingId: null, cards: null, fresh: [], error: null, remaining: data.wallet.stock - 1 };
+        opening = { booster, openingId: null, cards: null, fresh: [], error: null, remaining: stock - 1 };
     }
 
     /** Paquet choisi : le tirage part pendant que le joueur découpe le paquet. */
@@ -94,6 +129,7 @@
         if (!opening) return;
         formSetId = opening.booster.setId === null ? "" : String(opening.booster.setId);
         formPackId = pack.id === null ? "" : String(pack.id);
+        formHeld = opening.booster.held ? "1" : "";
         queueMicrotask(() => openForm?.requestSubmit());
     }
 
@@ -108,18 +144,25 @@
         fresh: number[];
     }) {
         if (data.guest || opening) return;
-        // « Ouvrir un autre » à la fin reprend la même série, avec tous ses paquets.
-        const packs =
-            unseen.setId === null
-                ? data.choices.all.packs
-                : (data.choices.banners.find((b) => b.id === unseen.setId)?.packs ?? [unseen.pack]);
+        // « Ouvrir un autre » à la fin reprend la même série, avec tous ses paquets : depuis la
+        // réserve si la série est proposée, sinon parmi les boosters gardés de cette série.
+        const banner = unseen.setId === null ? null : data.choices.banners.find((b) => b.id === unseen.setId);
+        const keptSet = unseen.setId === null || banner ? null : data.held.find((h) => h.id === unseen.setId);
+        const packs = unseen.setId === null ? data.choices.all.packs : (banner?.packs ?? keptSet?.packs ?? [unseen.pack]);
+        const booster: Booster = {
+            setId: unseen.setId,
+            title: unseen.title,
+            code: unseen.code,
+            packs: [unseen.pack, ...packs.filter((p) => p.id !== unseen.pack.id)],
+            held: !!keptSet,
+        };
         opening = {
-            booster: { setId: unseen.setId, title: unseen.title, code: unseen.code, packs: [unseen.pack, ...packs.filter((p) => p.id !== unseen.pack.id)] },
+            booster,
             openingId: unseen.openingId,
             cards: unseen.cards,
             fresh: unseen.fresh,
             error: null,
-            remaining: data.wallet.stock,
+            remaining: unseen.setId === null || banner || keptSet ? stockOf(booster) : 0,
         };
     }
 
@@ -213,6 +256,31 @@
             {/if}
         </section>
 
+        {#if kept.length}
+            <section class="packs kept" aria-label="Boosters de la boutique">
+                <h2>Tes boosters de la boutique</h2>
+                <div class="shelf">
+                    {#each kept as booster, i (booster.setId)}
+                        <button
+                            type="button"
+                            class="pack"
+                            class:off={booster.disabled}
+                            style="--c: {booster.pack.color}"
+                            onclick={() => (detail = booster)}
+                            aria-label="{booster.title} : {booster.count} en réserve"
+                        >
+                            <span class="model">
+                                <PackModel pack={booster.pack} title={booster.title} code={booster.code} width="min(8.5rem, 34vw)" delay={i * -1.3} />
+                                <span class="held-count">×{booster.count}</span>
+                            </span>
+                            <span class="name">{booster.title}</span>
+                            <span class="muted small">{booster.special ? "Booster spécial" : booster.code}</span>
+                        </button>
+                    {/each}
+                </div>
+            </section>
+        {/if}
+
         <section class="packs" aria-label="Boosters">
             <h2>Boosters</h2>
             {#if showcase.length}
@@ -263,11 +331,12 @@
                         cards: OwnedCard[];
                         fresh: number[];
                         wallet: { stock: number };
+                        held: number | null;
                     };
                     opening.openingId = opened.openingId;
                     opening.cards = opened.cards;
                     opening.fresh = opened.fresh;
-                    opening.remaining = opened.wallet.stock;
+                    opening.remaining = opened.held ?? opened.wallet.stock;
                 } else if (result.type === "failure") {
                     opening.error = String(result.data?.error ?? "Ouverture impossible.");
                 } else {
@@ -277,6 +346,7 @@
         >
             <input type="hidden" name="setId" value={formSetId} />
             <input type="hidden" name="packId" value={formPackId} />
+            <input type="hidden" name="held" value={formHeld} />
         </form>
         <form bind:this={seenForm} method="POST" action="?/seen" hidden use:enhance={() => async () => {}}>
             <input type="hidden" name="openingId" value={seenId} />
@@ -295,10 +365,11 @@
         total={d.total}
         endsAt={d.endsAt}
         progress={d.progress}
-        stock={data.wallet.stock}
-        nextAt={data.wallet.nextAt}
+        stock={stockOf(d)}
+        nextAt={d.held ? null : data.wallet.nextAt}
         disabled={d.disabled}
-        onopen={() => open({ setId: d.setId, title: d.title, code: d.code, packs: [d.pack, ...d.packs.filter((p) => p.id !== d.pack.id)] })}
+        onopen={() =>
+            open({ setId: d.setId, title: d.title, code: d.code, packs: [d.pack, ...d.packs.filter((p) => p.id !== d.pack.id)], held: d.held })}
         onclose={() => (detail = null)}
     />
 {/if}
@@ -477,7 +548,25 @@
     }
 
     .model {
+        position: relative;
         padding-bottom: 0.9rem;
+    }
+
+    /* Nombre de boosters gardés de la série, en pastille sur le paquet. */
+    .held-count {
+        position: absolute;
+        top: -0.4rem;
+        right: -0.6rem;
+        z-index: 2;
+        min-width: 2rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--background);
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-align: center;
+        box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.5);
     }
 
     .name {

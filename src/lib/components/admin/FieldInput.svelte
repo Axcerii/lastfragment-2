@@ -4,6 +4,7 @@
     import StatsEditor from "$lib/components/game/StatsEditor.svelte";
     import Toggle from "$lib/components/ui/Toggle.svelte";
     import type { Field, Option } from "$lib/admin/fields";
+    import { MAX_ARTIST_LINK } from "$lib/artist";
     import { parsePair } from "$lib/game/badges";
     import { DRAGONS } from "$lib/game/labels";
     import { emptyStats } from "$lib/game/stats";
@@ -36,6 +37,8 @@
 
         {#if field.type === "text"}
             <input {id} type="text" name={field.name} value={value ?? ""} required={field.required} />
+        {:else if field.type === "link"}
+            <input {id} type="text" inputmode="url" name={field.name} value={value ?? ""} maxlength={MAX_ARTIST_LINK} placeholder="https://x.com/pseudo" required={field.required} />
         {:else if field.type === "number"}
             <input {id} type="number" name={field.name} value={value ?? 0} required={field.required} />
         {:else if field.type === "password"}

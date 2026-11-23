@@ -101,10 +101,17 @@
             {/if}
         {/each}
         {#if isAdmin}
-            <label class="amount">
-                Montant
-                <input type="number" min="1" bind:value={amount} />
-            </label>
+            <div class="gauge-tools">
+                <button
+                    class="btn btn-small btn-accent"
+                    title="Remet PV, QdF et Endurance au maximum (raccourci : R)"
+                    onclick={() => client.act("token.restore", { id: token.id })}>Tout remettre au max</button
+                >
+                <label class="amount">
+                    Montant
+                    <input type="number" min="1" bind:value={amount} />
+                </label>
+            </div>
         {/if}
     </div>
 
@@ -178,9 +185,6 @@
                 {#if !editing}
                     <button class="btn btn-small" onclick={startEdit}>Modifier les stats</button>
                 {/if}
-                <button class="btn btn-small" onclick={() => client.act("token.restore", { id: token.id })}>
-                    Jauges au max
-                </button>
                 {#if token.kind !== "custom"}
                     <button
                         class="btn btn-small"
@@ -272,6 +276,14 @@
         min-height: 26px;
         width: 26px;
         padding: 0;
+    }
+
+    .gauge-tools {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
     }
 
     .amount {

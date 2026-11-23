@@ -103,6 +103,28 @@
                 <button class="btn">Fixer</button>
             </form>
             <p class="muted small">Ajouter peut dépasser le maximum. Fixer la réserve relance le compteur du prochain booster.</p>
+
+            <h3>Boutique</h3>
+            <form method="POST" action="?/points" use:enhance={keep} class="row">
+                <label class="grow">Points <input name="points" type="number" min="0" max="999999" value={data.points} /></label>
+                <button class="btn">Fixer</button>
+            </form>
+            {#if data.held.length}
+                <p class="small">
+                    Boosters gardés :
+                    {#each data.held as h, i (h.setId)}{i ? ", " : ""}<b>{h.count}</b> « {h.name} »{h.special ? " (spécial)" : ""}{/each}
+                </p>
+            {/if}
+            {#if data.sets.length}
+                <form method="POST" action="?/held" use:enhance={keep} class="row">
+                    <select name="setId" aria-label="Série du booster">
+                        {#each data.sets as s (s.id)}<option value={s.id}>{s.name}{s.special ? " (spécial)" : ""}</option>{/each}
+                    </select>
+                    <input name="amount" type="number" min="-50" max="50" value="1" aria-label="Nombre de boosters de série" />
+                    <button class="btn">Donner</button>
+                </form>
+                <p class="muted small">Boosters d’une série gardés à part : ils s’ouvrent même si la série n’est pas proposée.</p>
+            {/if}
         </section>
 
         <section class="panel give">
@@ -180,7 +202,7 @@
                                     <td>{c.template.set ? `${c.template.set} ${padNumber(c.template.number)}` : "—"}</td>
                                     <td class="num">{formatSerial(c.serial, c.template.maxPrints)}</td>
                                     <td class="num" title={wearTier(c.wear).label}>{formatWear(c.wear)}</td>
-                                    <td>{c.origin === "mj" ? "Don du MJ" : "Booster"}</td>
+                                    <td>{c.origin === "mj" ? "Don du MJ" : c.origin === "boutique" ? "Boutique" : "Booster"}</td>
                                     <td class="num">{date(c.obtainedAt)}</td>
                                 </tr>
                             {:else}
@@ -275,6 +297,12 @@
 
     h2 {
         font-size: 1.2rem;
+    }
+
+    h3 {
+        font-size: 1rem;
+        margin-top: 0.5rem;
+        color: var(--accent);
     }
 
     .columns {

@@ -19,6 +19,8 @@ export interface Option {
 export type Field = Base &
 	(
 		| { type: 'text' | 'textarea' | 'number' | 'boolean' | 'password' }
+		/** Lien vers l'artiste d'une illustration : http(s) seulement, vide = `null`. */
+		| { type: 'link' }
 		/** Entier 0/1 en base, présenté comme un interrupteur. */
 		| { type: 'flag' }
 		| { type: 'select'; options: Option[]; numeric?: boolean }

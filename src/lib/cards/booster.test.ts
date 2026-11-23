@@ -156,6 +156,20 @@ describe('usure', () => {
 		}
 	});
 
+	it('reste dans l’état imposé (récompense de la boutique)', () => {
+		const random = seeded(4);
+		for (const tier of WEAR_TIERS) {
+			for (let i = 0; i < 300; i++) {
+				const wear = drawWear(random, tier.key);
+				expect(wear).toBeGreaterThanOrEqual(tier.min);
+				expect(wear).toBeLessThan(tier.max);
+				expect(wearTier(wear).key).toBe(tier.key);
+			}
+		}
+		// Un état inconnu revient au tirage normal, sans planter.
+		expect(drawWear(random, 'parfaite')).toBeLessThan(1);
+	});
+
 	it('nomme les tranches', () => {
 		expect(wearTier(0.01).label).toBe('Neuve');
 		expect(wearTier(0.07).label).toBe('Quasi neuve');

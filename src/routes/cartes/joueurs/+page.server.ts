@@ -14,15 +14,17 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const different = new Map<number, number>();
 	for (const row of distinct) different.set(row.ownerId!, (different.get(row.ownerId!) ?? 0) + 1);
 
-	// Classement au nombre de cartes possédées ; à égalité, même rang (1, 2, 2, 4).
+	// Classement au nombre de cartes différentes, puis au nombre de cartes ; à égalité sur les deux,
+	// même rang (1, 2, 2, 4).
 	const sorted = players
 		.map((p) => ({ ...collectorView(p), cards: total.get(p.id) ?? 0, distinct: different.get(p.id) ?? 0 }))
-		.sort((a, b) => b.cards - a.cards || b.distinct - a.distinct || a.name.localeCompare(b.name));
+		.sort((a, b) => b.distinct - a.distinct || b.cards - a.cards || a.name.localeCompare(b.name));
 	let rank = 0;
 	return {
 		me: user.id,
 		players: sorted.map((p, i) => {
-			if (i === 0 || p.cards !== sorted[i - 1].cards) rank = i + 1;
+			const prev = sorted[i - 1];
+			if (i === 0 || p.distinct !== prev.distinct || p.cards !== prev.cards) rank = i + 1;
 			return { ...p, rank };
 		})
 	};

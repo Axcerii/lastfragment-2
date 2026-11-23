@@ -91,7 +91,7 @@ export async function playerCards(playerId: number) {
 	});
 	if (!player) throw new CardError('Joueur introuvable.', 404);
 
-	const [rules, cards, openings, templates, players, pendingTrades] = await Promise.all([
+	const [rules, cards, openings, templates, players, pendingTrades, held, sets] = await Promise.all([
 		getRules(),
 		prisma.card.findMany({
 			where: { ownerId: playerId },
@@ -114,7 +114,13 @@ export async function playerCards(playerId: number) {
 			orderBy: { login: 'asc' },
 			select: { id: true, login: true, character: { select: { name: true } } }
 		}),
-		prisma.cardTrade.count({ where: { status: 'attente', OR: [{ fromId: playerId }, { toId: playerId }] } })
+		prisma.cardTrade.count({ where: { status: 'attente', OR: [{ fromId: playerId }, { toId: playerId }] } }),
+		prisma.cardHeldBooster.findMany({
+			where: { playerId, count: { gt: 0 } },
+			include: { set: { select: { name: true, special: true } } },
+			orderBy: { setId: 'asc' }
+		}),
+		prisma.cardSet.findMany({ orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }], select: { id: true, name: true, special: true } })
 	]);
 
 	// Réserve lue sans être créée : ouvrir cette page ne doit pas offrir les boosters de départ.
@@ -160,6 +166,9 @@ export async function playerCards(playerId: number) {
 						opened: wallet.opened
 					}
 				: null,
+		points: wallet?.points ?? 0,
+		held: held.map((h) => ({ setId: h.setId, name: h.set.name, special: h.set.special, count: h.count })),
+		sets,
 		rules: { max: rules.max, minutes: rules.minutes, starter: rules.starter },
 		copies,
 		stats: {

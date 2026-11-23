@@ -149,8 +149,9 @@ export function drawBooster(pool: PoolCard[], rules: DrawRules, randomInt: Rando
 }
 
 /** Usure d'un nouvel exemplaire, entre 0 et 1 (exclu), à six décimales. */
-export function drawWear(randomInt: RandomInt): number {
-	const tier = weightedPick([...WEAR_TIERS], (t) => t.weight, randomInt);
+export function drawWear(randomInt: RandomInt, tierKey?: string): number {
+	// État imposé (récompense de la boutique) : seule la valeur dans la tranche est tirée.
+	const tier = WEAR_TIERS.find((t) => t.key === tierKey) ?? weightedPick([...WEAR_TIERS], (t) => t.weight, randomInt);
 	const steps = Math.round((tier.max - tier.min) * 1_000_000);
 	const value = tier.min + randomInt(steps) / 1_000_000;
 	return Math.round(value * 1_000_000) / 1_000_000;

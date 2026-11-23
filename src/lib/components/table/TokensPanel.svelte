@@ -131,6 +131,14 @@
                         <span class="muted">· {SIDE_LABELS[token.side]}{token.hidden ? " · caché" : ""}</span>
                     </button>
                     <button
+                        class="btn btn-small"
+                        title="Remettre PV, QdF et Endurance au maximum"
+                        aria-label="Remettre {token.name} au max"
+                        onclick={() => client.act("token.restore", { id: token.id })}
+                    >
+                        Max
+                    </button>
+                    <button
                         class="btn btn-small btn-players"
                         title={token.hidden ? "Montrer aux joueurs" : "Cacher aux joueurs"}
                         onclick={() => client.act("token.update", { id: token.id, hidden: !token.hidden })}

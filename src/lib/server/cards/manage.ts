@@ -4,6 +4,7 @@
 
 import { Prisma } from '@prisma/client';
 import { isCardType, isTemplateStatus, type CardType, type TemplateStatus } from '$lib/cards/types';
+import { parseArtistLink } from '$lib/artist';
 import { checkNumbering } from '$lib/cards/numbering';
 import { prisma } from '../prisma';
 import { UploadError } from '../uploads';
@@ -36,6 +37,8 @@ export interface TemplateInput {
 	maxPrints: number | null;
 	sourceKind: string | null;
 	sourceId: number | null;
+	/** Lien vers l'artiste de l'illustration, déjà vérifié (http/https). */
+	artist: string | null;
 	/** Séries dont les boosters donnent aussi cette carte (en plus de la sienne). */
 	boosters: number[];
 	face: unknown;
@@ -53,6 +56,8 @@ export function readTemplateForm(form: FormData): TemplateInput {
 		throw new CardError('Données de la carte illisibles.');
 	}
 	const sourceKind = String(form.get('sourceKind') ?? '');
+	const artist = parseArtistLink(form.get('artist'));
+	if (!artist.ok) throw new CardError(artist.error);
 	return {
 		name: line(form.get('name'), 40),
 		type: isCardType(type) ? type : 'personnage',
@@ -65,6 +70,7 @@ export function readTemplateForm(form: FormData): TemplateInput {
 		maxPrints: intOrNull(form.get('maxPrints'), 1, 1_000_000),
 		sourceKind: SOURCE_KINDS.includes(sourceKind) ? sourceKind : null,
 		sourceId: intOrNull(form.get('sourceId'), 1, 1e9),
+		artist: artist.value,
 		boosters: [
 			...new Set(
 				form
@@ -129,6 +135,7 @@ export async function saveTemplate(id: number | null, input: TemplateInput): Pro
 		maxPrints: input.maxPrints,
 		sourceKind: input.sourceKind,
 		sourceId: input.sourceKind ? input.sourceId : null,
+		artist: input.artist,
 		face: face as unknown as Prisma.InputJsonValue
 	};
 	// Boosters supplémentaires : des séries existantes, sans la sienne (elle y tombe déjà).
@@ -165,6 +172,7 @@ export async function duplicateTemplate(id: number): Promise<number> {
 			maxPrints: source.maxPrints,
 			sourceKind: source.sourceKind,
 			sourceId: source.sourceId,
+			artist: source.artist,
 			face: source.face as Prisma.InputJsonValue,
 			boosters: { create: source.boosters.map((b) => ({ setId: b.setId })) }
 		}
@@ -191,6 +199,8 @@ export interface SetInput {
 	banner: string | null;
 	color: string;
 	active: boolean;
+	/** Booster spécial : hors de la vitrine, il ne s'obtient qu'en boutique. */
+	special: boolean;
 	startsAt: Date | null;
 	endsAt: Date | null;
 	sortOrder: number;
@@ -226,6 +236,7 @@ export async function readSetForm(form: FormData): Promise<SetInput> {
 		banner: await setImage(form.get('banner'), 'large'),
 		color: /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : '#e5b8cc',
 		active: form.get('active') === 'on',
+		special: form.get('special') === 'on',
 		startsAt: dateOrNull(form.get('startsAt')),
 		endsAt: dateOrNull(form.get('endsAt')),
 		sortOrder: intOrNull(form.get('sortOrder'), 0, 9999) ?? 0

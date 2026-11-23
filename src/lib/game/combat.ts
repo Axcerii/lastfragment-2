@@ -134,6 +134,15 @@ export function successChance(threshold: number): number {
 	return 101 - needed;
 }
 
+/** Bonus ou malus qu'un joueur peut ajouter à son propre jet (de −100 à +100). */
+export const MAX_ROLL_BONUS = 100;
+
+/** « bonus +10 », « malus −5 », ou rien pour 0 : écrit au journal quand un joueur se l'applique. */
+export function bonusLabel(value: number): string {
+	if (!value) return '';
+	return value > 0 ? `bonus +${value}` : `malus −${Math.abs(value)}`;
+}
+
 // ─── Jauges ──────────────────────────────────────────────────────────────────
 
 export const GAUGES = ['pv', 'qdf', 'endurance'] as const;

@@ -138,3 +138,12 @@ describe('jets saisis à la main', () => {
 		expect(parseDieValues('4, 6+1')).toEqual([4, 6, 1]);
 	});
 });
+
+describe('bonusLabel', () => {
+	it('écrit un bonus, un malus, ou rien', async () => {
+		const { bonusLabel } = await import('./combat');
+		expect(bonusLabel(10)).toBe('bonus +10');
+		expect(bonusLabel(-5)).toBe('malus −5');
+		expect(bonusLabel(0)).toBe('');
+	});
+});

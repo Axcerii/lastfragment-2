@@ -2,8 +2,10 @@
     import {
         ATTACK_COST_STAT,
         MAX_ATTACK_POWER,
+        MAX_ROLL_BONUS,
         OPPOSED_STAT,
         attackCost,
+        bonusLabel,
         powerRollBonus,
         type AttackKind,
     } from "$lib/game/combat";
@@ -60,6 +62,10 @@
     let statReady = $derived(!manualRolls || validRoll(statRoll, 100));
     let attackReady = $derived(!manualRolls || validRoll(attackRoll, 20));
 
+    // Bonus ou malus qu'un joueur s'applique : écrit au journal, puis remis à zéro après le jet.
+    const clampBonus = (value: unknown) =>
+        Math.max(-MAX_ROLL_BONUS, Math.min(MAX_ROLL_BONUS, Math.trunc(Number(value) || 0)));
+
     // ─── Jet de stat ───
     let stat = $state<StatKey>("perception");
     let targetStat = $state<StatKey>(OPPOSED_STAT.perception);
@@ -79,12 +85,15 @@
             stat,
             targetId: opposed ? targetId : undefined,
             targetStat: opposed ? targetStat : undefined,
-            bonus,
+            bonus: clampBonus(bonus),
             targetBonus,
             hidden,
             manual: manualRolls ? statRoll : undefined,
         });
-        if (done) statRoll = null;
+        if (done) {
+            statRoll = null;
+            if (!isAdmin) bonus = 0;
+        }
     }
 
     // ─── Attaque ───
@@ -120,16 +129,37 @@
             kind,
             power: safePower,
             multiplier,
-            attackBonus,
+            attackBonus: clampBonus(attackBonus),
             defenseBonus,
             hidden,
             manual: manualRolls ? attackRoll : undefined,
         });
-        if (done) attackRoll = null;
+        if (done) {
+            attackRoll = null;
+            if (!isAdmin) attackBonus = 0;
+        }
     }
 
     const nameOf = (id: number | null) => tokens.find((t) => t.id === id)?.name ?? "—";
 </script>
+
+{#snippet playerBonus(id: string, label: string, get: () => number, set: (value: number) => void)}
+    <div class="player-bonus">
+        <label for={id}>{label}</label>
+        <input
+            {id}
+            type="number"
+            min={-MAX_ROLL_BONUS}
+            max={MAX_ROLL_BONUS}
+            step="1"
+            placeholder="0"
+            bind:value={get, set}
+        />
+        <span class="muted small">
+            {clampBonus(get()) ? `« ${bonusLabel(clampBonus(get()))} » sera écrit au journal.` : "Écrit au journal s'il y en a un."}
+        </span>
+    </div>
+{/snippet}
 
 <div class="actions">
     {#if actors.length === 0}
@@ -198,6 +228,8 @@
                         <label>Bonus cible <input type="number" bind:value={targetBonus} /></label>
                     {/if}
                 </div>
+            {:else}
+                {@render playerBonus("stat-bonus", "Bonus / malus", () => bonus, (v) => (bonus = v))}
             {/if}
             {#if manualRolls}
                 <label>
@@ -262,6 +294,8 @@
                     <label>Bonus att. <input type="number" bind:value={attackBonus} /></label>
                     <label>Bonus déf. <input type="number" bind:value={defenseBonus} /></label>
                 </div>
+            {:else}
+                {@render playerBonus("attack-bonus", "Bonus / malus d'attaque", () => attackBonus, (v) => (attackBonus = v))}
             {/if}
             <p class="muted small">
                 {#if powerRollBonus(safePower)}+{powerRollBonus(safePower)} au jet · {/if}Coût : {cost}
@@ -385,5 +419,20 @@
 
     .weapon-bonus {
         color: var(--foreground);
+    }
+
+    .player-bonus {
+        display: grid;
+        grid-template-columns: auto 6rem;
+        align-items: center;
+        gap: 0.2rem 0.5rem;
+    }
+
+    .player-bonus label {
+        font-size: 0.8rem;
+    }
+
+    .player-bonus span {
+        grid-column: 1 / -1;
     }
 </style>

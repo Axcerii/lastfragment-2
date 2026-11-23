@@ -24,12 +24,14 @@
         FRAMES,
         RARITIES,
         TEMPLATE_STATUSES,
+        UNIQUE_RARITY,
         wearTier,
         type CardLook,
         type CardType,
         type TemplateStatus,
     } from "$lib/cards/types";
     import { DRAGONS, dragonText, type Dragon } from "$lib/game/labels";
+    import { MAX_ARTIST_LINK } from "$lib/artist";
 
     let { data, form } = $props();
 
@@ -48,6 +50,7 @@
         maxPrints: number;
         sourceKind: string | null;
         sourceId: number | null;
+        artist: string;
         face: ReturnType<typeof defaultFace>;
     };
 
@@ -67,6 +70,7 @@
             maxPrints: t?.maxPrints ?? 100,
             sourceKind: t?.sourceKind ?? null,
             sourceId: t?.sourceId ?? null,
+            artist: t?.artist ?? "",
             face: JSON.parse(JSON.stringify(t?.face ?? defaultFace())),
         };
     }
@@ -104,7 +108,15 @@
         name: draft.name,
         number: draft.setId ? draft.number : null,
         maxPrints: draft.limited ? draft.maxPrints : null,
-        set: set ? { code: set.code, color: set.color, logo: set.logo, total: Math.max(set.total, draft.number ?? 0) } : null,
+        // Les Unique ne comptent pas dans le total : leur numéro peut le dépasser (« 073/071 »).
+        set: set
+            ? {
+                  code: set.code,
+                  color: set.color,
+                  logo: set.logo,
+                  total: draft.rarity >= UNIQUE_RARITY ? set.total : Math.max(set.total, draft.number ?? 0),
+              }
+            : null,
         face: draft.face,
     });
 
@@ -137,6 +149,7 @@
         }
         draft.sourceKind = prefill.sourceKind;
         draft.sourceId = prefill.sourceId;
+        if (prefill.artist) draft.artist = prefill.artist;
         draft.face = { ...draft.face, accent: CARD_TYPES[prefill.type].accent, ...prefill.face } as Draft["face"];
     }
 
@@ -364,6 +377,15 @@
                     <label class="field">
                         <span>Sous-titre <small>{draft.face.subtitle.length}/{FACE_LIMITS.subtitle}</small></span>
                         <input bind:value={draft.face.subtitle} maxlength={FACE_LIMITS.subtitle} placeholder="La lame d'Augeaime" />
+                    </label>
+                    <label class="field">
+                        <span>Artiste <small>lien affiché sous le nom quand on ouvre la carte, pas sur la carte</small></span>
+                        <input
+                            bind:value={draft.artist}
+                            inputmode="url"
+                            maxlength={MAX_ARTIST_LINK}
+                            placeholder="https://x.com/pseudo"
+                        />
                     </label>
                     <div class="field">
                         <span>Type</span>
@@ -683,6 +705,7 @@
                 <input type="hidden" name="maxPrints" value={draft.limited ? draft.maxPrints : ""} />
                 <input type="hidden" name="sourceKind" value={draft.sourceKind ?? ""} />
                 <input type="hidden" name="sourceId" value={draft.sourceId ?? ""} />
+                <input type="hidden" name="artist" value={draft.artist} />
                 <input type="hidden" name="face" value={faceJson} />
 
                 <span class="state" role="status">

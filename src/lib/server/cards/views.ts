@@ -6,11 +6,13 @@ import {
 	isCardType,
 	isTemplateStatus,
 	readFace,
+	UNIQUE_RARITY,
 	type CopyView,
 	type OwnedCard,
 	type SetView,
 	type TemplateView
 } from '$lib/cards/types';
+import { safeArtistLink } from '$lib/artist';
 import { prisma } from '../prisma';
 
 export const COPY_INCLUDE = {
@@ -22,11 +24,14 @@ type TemplateRow = CardTemplate & { set: CardSet | null };
 type OwnerRow = { id: number; character: { name: string } | null };
 type CopyRow = Card & { template: TemplateRow; owner: OwnerRow | null };
 
-/** Nombre de cartes visibles (publiées ou retirées) par série : le « 120 » de « 012/120 ». */
+/**
+ * Nombre de cartes visibles (publiées ou retirées) par série, hors Unique : le « 120 » de « 012/120 ».
+ * Une Unique garde son numéro, au-delà du total (« 123/120 »).
+ */
 export async function setTotals(): Promise<Map<number, number>> {
 	const rows = await prisma.cardTemplate.groupBy({
 		by: ['setId'],
-		where: { status: { not: 'brouillon' }, setId: { not: null } },
+		where: { status: { not: 'brouillon' }, setId: { not: null }, rarity: { lt: UNIQUE_RARITY } },
 		_count: { _all: true }
 	});
 	return new Map(rows.map((r) => [r.setId as number, r._count._all]));
@@ -53,7 +58,8 @@ export function templateView(t: TemplateRow, totals: Map<number, number>): Templ
 					total: totals.get(t.set.id) ?? 0
 				}
 			: null,
-		face: readFace(t.face, type, t.rarity)
+		face: readFace(t.face, type, t.rarity),
+		artist: safeArtistLink(t.artist)
 	};
 }
 

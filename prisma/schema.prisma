@@ -94,7 +94,7 @@ model Player {
   money       Int    @default(0) @db.Int
 
   // Relations
-  character      Character?     @relation(fields: [characterId], references: [id])
+  character      Character?         @relation(fields: [characterId], references: [id])
   itemsInPlayer  ItemInPlayer[]
   badgesFusions  BadgeFusion[]
   badges         PlayerBadge[]
@@ -104,10 +104,12 @@ model Player {
   cards          Card[]
   cardWallet     CardWallet?
   cardOpenings   CardOpening[]
-  cardEventsFrom CardEvent[]    @relation("CardEventFrom")
-  cardEventsTo   CardEvent[]    @relation("CardEventTo")
-  tradesSent     CardTrade[]    @relation("CardTradeFrom")
-  tradesReceived CardTrade[]    @relation("CardTradeTo")
+  cardEventsFrom CardEvent[]        @relation("CardEventFrom")
+  cardEventsTo   CardEvent[]        @relation("CardEventTo")
+  tradesSent     CardTrade[]        @relation("CardTradeFrom")
+  tradesReceived CardTrade[]        @relation("CardTradeTo")
+  cardPurchases  CardShopPurchase[]
+  heldBoosters   CardHeldBooster[]
 
   @@index([characterId], map: "players_character_id_index")
   @@map("players")
@@ -133,6 +135,8 @@ model Character {
   // Fiche « teaser » : visible dans la liste mais contenu masqué pour les joueurs
   censored    Boolean @default(false)
   quote       String? @db.VarChar(400)
+  // Lien vers l'artiste du portrait (Twitter/X, Instagram, site…), affiché sur la fiche s'il est renseigné
+  artist      String? @db.VarChar(255)
   // Armure choisie par le MJ (ids de `armors`, une par emplacement), sans passer par un inventaire
   armorIds    Json?   @map("armor_ids")
 
@@ -147,19 +151,21 @@ model Character {
 }
 
 model Monster {
-  id          Int    @id @default(autoincrement())
-  visibility  Int    @db.SmallInt
-  name        String @db.VarChar(255)
-  dragon      String @db.VarChar(255)
-  size        String @db.VarChar(255)
-  weight      String @db.VarChar(255)
-  dangerosity Int    @db.Int
-  image       String @db.VarChar(255)
-  effect      String @db.Text
-  description String @db.Text
-  current     Int    @db.SmallInt
+  id          Int     @id @default(autoincrement())
+  visibility  Int     @db.SmallInt
+  name        String  @db.VarChar(255)
+  dragon      String  @db.VarChar(255)
+  size        String  @db.VarChar(255)
+  weight      String  @db.VarChar(255)
+  dangerosity Int     @db.Int
+  image       String  @db.VarChar(255)
+  effect      String  @db.Text
+  description String  @db.Text
+  current     Int     @db.SmallInt
+  // Lien vers l'artiste de l'illustration (Twitter/X, Instagram, site…), affiché sur la fiche s'il est renseigné
+  artist      String? @db.VarChar(255)
   // Armure choisie par le MJ (ids de `armors`, une par emplacement)
-  armorIds    Json?  @map("armor_ids")
+  armorIds    Json?   @map("armor_ids")
 
   // Relations
   statistics Statistic?
@@ -600,6 +606,8 @@ model CardSet {
   active      Boolean   @default(false)
   startsAt    DateTime? @map("starts_at")
   endsAt      DateTime? @map("ends_at")
+  // Booster spécial : jamais dans la vitrine des boosters, il ne s'obtient qu'en boutique
+  special     Boolean   @default(false)
   sortOrder   Int       @default(0) @map("sort_order")
   createdAt   DateTime  @default(now()) @map("created_at")
 
@@ -609,6 +617,7 @@ model CardSet {
   packs     CardPack[]
   // Cartes d'autres séries (ou hors série) qui tombent aussi de ce booster
   extras    CardTemplateBooster[]
+  held      CardHeldBooster[]
 
   @@map("card_sets")
 }
@@ -657,6 +666,8 @@ model CardTemplate {
   printed    Int      @default(0)
   // Recto, verso et finition : voir CardFace dans cards/types.ts, nettoyé par server/cards/face.ts
   face       Json
+  // Lien vers l'artiste de l'illustration, affiché sous le nom de la carte quand on l'ouvre
+  artist     String?  @db.VarChar(255)
   // Fiche d'origine, pour reprendre ses données (personnage, monstre, objet)
   sourceKind String?  @map("source_kind") @db.VarChar(12)
   sourceId   Int?     @map("source_id")
@@ -741,6 +752,8 @@ model CardWallet {
   stock    Int
   since    DateTime
   opened   Int      @default(0)
+  // Points de la boutique, gagnés en y cédant des cartes ou donnés par le MJ
+  points   Int      @default(0)
 
   // Relations
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
@@ -828,4 +841,63 @@ model CardSettings {
   rates           Json
 
   @@map("card_settings")
+}
+
+// Boosters d'une série gardés par un joueur (obtenus en boutique), à part de sa réserve habituelle.
+// Ils s'ouvrent même si la série n'est pas proposée (booster spécial, bannière fermée).
+model CardHeldBooster {
+  playerId Int @map("player_id")
+  setId    Int @map("set_id")
+  count    Int @default(0)
+
+  // Relations
+  player Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  set    CardSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, setId])
+  @@index([setId])
+  @@map("card_held_boosters")
+}
+
+// Offre de la boutique : ce que le joueur cède (cartes, points) contre ce qu'il reçoit (points,
+// cartes, boosters). `price` et `reward` : voir ShopPrice et ShopReward dans cards/shop.ts,
+// vérifiés à l'écriture et relus à chaque échange.
+model CardShopOffer {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(80)
+  description String?   @db.VarChar(300)
+  price       Json
+  reward      Json
+  // Offre visible des joueurs ; `startsAt` / `endsAt` bornent une offre temporaire
+  active      Boolean   @default(false)
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  // Échanges possibles par joueur, et en tout (null : sans limite)
+  perPlayer   Int?      @map("per_player")
+  stock       Int?
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  purchases CardShopPurchase[]
+
+  @@map("card_shop_offers")
+}
+
+// Échange conclu en boutique, pour les limites de l'offre et l'historique : exemplaires cédés et
+// reçus, points et boosters (voir PurchaseDetail dans cards/shop.ts).
+model CardShopPurchase {
+  id        Int      @id @default(autoincrement())
+  offerId   Int      @map("offer_id")
+  playerId  Int      @map("player_id")
+  detail    Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  offer  CardShopOffer @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  player Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([offerId, playerId])
+  @@index([playerId])
+  @@map("card_shop_purchases")
 }

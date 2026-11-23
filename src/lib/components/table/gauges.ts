@@ -1,10 +1,13 @@
 import type { GaugeView, TokenView } from '$lib/table/types';
 
-/** Remplissage d'une jauge entre 0 et 1, qu'on en connaisse les chiffres ou non. */
+/**
+ * Remplissage d'une jauge entre 0 et 1, qu'on en connaisse les chiffres ou non. `null` sans jauge,
+ * y compris quand son maximum est 0 (fiche sans PV) : un tel jeton n'est jamais montré K.O.
+ */
 export function gaugeRatio(gauge: GaugeView | null): number | null {
 	if (!gauge) return null;
 	if ('ratio' in gauge) return gauge.ratio;
-	return gauge.max > 0 ? Math.max(0, Math.min(1, gauge.current / gauge.max)) : 0;
+	return gauge.max > 0 ? Math.max(0, Math.min(1, gauge.current / gauge.max)) : null;
 }
 
 export const GAUGE_INFO = {

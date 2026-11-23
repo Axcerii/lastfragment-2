@@ -16,8 +16,8 @@
 		"seed:combat": "node prisma/seed-combat.mjs"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-node": "^5.5.7",
-		"@sveltejs/kit": "^2.22.0",
+		"@sveltejs/adapter-node": "^5.5.8",
+		"@sveltejs/kit": "^2.70.4",
 		"@sveltejs/vite-plugin-svelte": "^6.0.0",
 		"@types/three": "^0.187.0",
 		"svelte": "^5.0.0",
