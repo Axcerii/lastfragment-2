@@ -5,6 +5,7 @@
         open = $bindable(false),
         title,
         side = false,
+        wide = false,
         id,
         children,
     }: {
@@ -12,6 +13,8 @@
         title: string;
         /** Panneau qui glisse depuis la droite, pleine hauteur, au lieu d'une fenêtre centrée. */
         side?: boolean;
+        /** Fenêtre centrée plus large (deux colonnes côte à côte). */
+        wide?: boolean;
         id?: string;
         children: Snippet;
     } = $props();
@@ -30,6 +33,7 @@
     bind:this={dialog}
     {id}
     class:side
+    class:wide
     onclose={() => (open = false)}
     onclick={(e) => {
         // Un clic sur le fond (le dialog lui-même, hors de son contenu) ferme la fenêtre.
@@ -56,6 +60,10 @@
         color: var(--foreground);
         width: min(40rem, 92vw);
         max-height: 85dvh;
+    }
+
+    dialog.wide {
+        width: min(54rem, 94vw);
     }
 
     dialog.side {

@@ -61,6 +61,8 @@ export interface ShopSet {
 export interface ShopRefs {
 	templates: Record<number, TemplateView>;
 	sets: Record<number, ShopSet>;
+	/** Paquet du booster « All », pour dessiner les boosters de la réserve (page des joueurs). */
+	allPack?: PackView;
 }
 
 /** Modèles et séries cités par ces offres, vus par `canRead` (verso scellé sinon). */
@@ -170,11 +172,15 @@ export async function shopFor(viewer: Viewer): Promise<{ offers: ShopOfferView[]
 		});
 	}
 	// Les séries et cartes des offres cachées ne partent pas avec la page.
-	const shown = { templates: {} as ShopRefs['templates'], sets: {} as ShopRefs['sets'] };
+	const shown: ShopRefs = { templates: {}, sets: {} };
 	for (const view of views) {
 		const used = offerRefs(view.price, view.reward);
 		for (const id of used.templates) shown.templates[id] = refs.templates[id];
 		for (const id of used.sets) shown.sets[id] = refs.sets[id];
+	}
+	if (views.some((v) => v.reward.boosters > 0)) {
+		const allPacks = await prisma.cardPack.findMany({ where: { setId: null }, orderBy: PACK_ORDER });
+		shown.allPack = packsOf(null, allPacks)[0];
 	}
 	return { offers: views, refs: shown };
 }
