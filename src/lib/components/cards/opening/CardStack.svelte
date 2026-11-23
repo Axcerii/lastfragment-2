@@ -8,12 +8,15 @@
     // deux arrivent pareil, et la couleur n'éclate qu'au retournement.
     import { untrack } from "svelte";
     import { formatSerial, formatWear, rarityLabel, wearTier, type OwnedCard } from "$lib/cards/types";
+    import { FRAGMENT_ICON } from "$lib/cards/shop";
+    import Icon from "$lib/components/ui/Icon.svelte";
     import CollectibleCard from "../CollectibleCard.svelte";
     import { vibrate } from "./feedback";
 
     let {
         cards,
         fresh = [],
+        bonus = {},
         inPack = false,
         active = true,
         shown = $bindable(null),
@@ -21,6 +24,8 @@
     }: {
         cards: OwnedCard[];
         fresh?: number[];
+        /** Fragments gagnés par les doublons, par exemplaire. */
+        bonus?: Record<number, number>;
         /** Encore dans le paquet : un peu plus bas, sans interaction. */
         inPack?: boolean;
         /** Révélation en cours : la carte du dessus se manipule et sa légende s'affiche. */
@@ -130,7 +135,12 @@
             <strong>Une carte à l’envers…</strong>
             <span class="rarity mystery">Touche-la pour la retourner</span>
         {:else}
-            {#if fresh.includes(top.template.id)}<span class="new">Nouvelle !</span>{/if}
+            {#if bonus[top.copy.id]}
+                <span class="dupe">
+                    Doublon · +{bonus[top.copy.id]}
+                    <Icon src={FRAGMENT_ICON} color="currentColor" size="0.95em" label="fragments" />
+                </span>
+            {:else if fresh.includes(top.template.id)}<span class="new">Nouvelle !</span>{/if}
             <strong>{top.template.name}</strong>
             <span class="rarity" style="color: var(--rarity-{top.template.rarity})">{rarityLabel(top.template.rarity)}</span>
             <span class="muted details">
@@ -263,6 +273,21 @@
         border-radius: 999px;
         background: var(--accent);
         color: var(--background);
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    /* Doublon : les fragments gagnés, à la couleur de la monnaie. */
+    .dupe {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.1rem 0.6rem;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--rarity-4) 22%, transparent);
+        border: 1px solid color-mix(in srgb, var(--rarity-4) 60%, transparent);
+        color: var(--rarity-4);
         font-size: 0.7rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;

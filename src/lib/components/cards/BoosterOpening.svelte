@@ -12,6 +12,8 @@
     import { lockScroll } from "$lib/scrollLock";
     import { isGodPack } from "$lib/cards/booster";
     import type { OwnedCard, PackView } from "$lib/cards/types";
+    import { FRAGMENT_ICON, fragmentsLabel } from "$lib/cards/shop";
+    import Icon from "$lib/components/ui/Icon.svelte";
     import CollectibleCard from "./CollectibleCard.svelte";
     import CardStack from "./opening/CardStack.svelte";
     import CrystalIntro from "./opening/CrystalIntro.svelte";
@@ -24,6 +26,7 @@
         packs,
         cards,
         fresh = [],
+        bonus = {},
         error = null,
         remaining = 0,
         count = 5,
@@ -41,6 +44,8 @@
         /** null tant que le serveur n'a pas répondu. */
         cards: OwnedCard[] | null;
         fresh?: number[];
+        /** Fragments gagnés par les doublons, par exemplaire (déjà crédités par le serveur). */
+        bonus?: Record<number, number>;
         error?: string | null;
         /** Boosters encore en réserve après celui-ci. */
         remaining?: number;
@@ -66,6 +71,7 @@
     // God Pack : reconnu à ses raretés (Légendaires et au moins une Unique), annoncé à la révélation.
     let god = $derived(!!cards && isGodPack(cards.map((c) => c.template.rarity)));
     let best = $derived(cards ? Math.max(1, ...cards.map((c) => c.template.rarity)) : 1);
+    let earned = $derived(Object.values(bonus).reduce((sum, n) => sum + n, 0));
     // Halo de fond : la couleur de la carte visible, de plus en plus vive avec la rareté ; au
     // récapitulatif, celle de la meilleure carte.
     let aura = $derived(phase === "reveal" ? shown : phase === "summary" && cards?.length ? best : null);
@@ -152,6 +158,7 @@
                     <CardStack
                         {cards}
                         {fresh}
+                        {bonus}
                         inPack={phase === "intro"}
                         active={phase === "reveal"}
                         bind:shown
@@ -198,10 +205,22 @@
                 {#each cards as card (card.copy.id)}
                     <a class="pulled" href="/cartes/carte/{card.copy.id}">
                         <CollectibleCard card={card.template} copy={card.copy} lite tilt="hover" glow={card.template.rarity >= 4} />
-                        {#if fresh.includes(card.template.id)}<span class="new">Nouvelle</span>{/if}
+                        {#if bonus[card.copy.id]}
+                            <span class="dupe">
+                                +{bonus[card.copy.id]}
+                                <Icon src={FRAGMENT_ICON} color="currentColor" size="0.95em" label="fragments" />
+                            </span>
+                        {:else if fresh.includes(card.template.id)}<span class="new">Nouvelle</span>{/if}
                     </a>
                 {/each}
             </div>
+            {#if earned > 0}
+                <p class="earned">
+                    Doublons : +{fragmentsLabel(earned)}
+                    <Icon src={FRAGMENT_ICON} color="var(--rarity-4)" size="1.1rem" />
+                    <a href="/cartes/boutique">à dépenser en boutique</a>
+                </p>
+            {/if}
             <div class="actions">
                 {#if onagain && remaining > 0}
                     <button type="button" class="btn btn-accent" onclick={onagain}>
@@ -485,6 +504,40 @@
         font-size: 0.7rem;
         letter-spacing: 0.1em;
         text-transform: uppercase;
+    }
+
+    .dupe {
+        position: absolute;
+        top: -0.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.1rem 0.6rem;
+        border-radius: 999px;
+        background: #2a2416;
+        border: 1px solid var(--rarity-4);
+        color: var(--rarity-4);
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .earned {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        color: var(--rarity-4);
+    }
+
+    .earned a {
+        color: var(--muted);
+        font-size: 0.85rem;
+        text-decoration: underline;
     }
 
     .actions {

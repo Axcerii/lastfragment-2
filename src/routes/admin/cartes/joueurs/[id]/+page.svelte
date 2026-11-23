@@ -13,15 +13,19 @@
     // ─── Cartes : filtre et sélection ───
     let query = $state("");
     let rarity = $state(0);
+    let order = $state<"carte" | "usee" | "neuve">("carte");
     let selected = $state<number[]>([]);
 
     const normalize = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
     let shown = $derived(
-        data.copies.filter(
-            (c) =>
-                (!rarity || c.template.rarity === rarity) &&
-                (!query || normalize(`${c.template.name} ${c.template.set ?? ""} ${c.serial}`).includes(normalize(query))),
-        ),
+        data.copies
+            .filter(
+                (c) =>
+                    (!rarity || c.template.rarity === rarity) &&
+                    (!query || normalize(`${c.template.name} ${c.template.set ?? ""} ${c.serial}`).includes(normalize(query))),
+            )
+            // Par carte (ordre du serveur), ou par état : les plus usées d'abord ou les mieux conservées.
+            .sort((a, b) => (order === "usee" ? b.wear - a.wear : order === "neuve" ? a.wear - b.wear : 0)),
     );
     let allShown = $derived(shown.length > 0 && shown.every((c) => selected.includes(c.id)));
 
@@ -104,9 +108,13 @@
             </form>
             <p class="muted small">Ajouter peut dépasser le maximum. Fixer la réserve relance le compteur du prochain booster.</p>
 
-            <h3>Boutique</h3>
+            <h3>Fragments <span class="muted small">(monnaie de la boutique) : <b>{data.points.toLocaleString("fr-FR")}</b></span></h3>
+            <form method="POST" action="?/fragments" use:enhance={keep} class="row">
+                <label class="grow">Ajouter / retirer <input name="amount" type="number" min="-100000" max="100000" value="10" /></label>
+                <button class="btn btn-accent">Donner</button>
+            </form>
             <form method="POST" action="?/points" use:enhance={keep} class="row">
-                <label class="grow">Points <input name="points" type="number" min="0" max="999999" value={data.points} /></label>
+                <label class="grow">Montant exact <input name="points" type="number" min="0" max="999999" value={data.points} /></label>
                 <button class="btn">Fixer</button>
             </form>
             {#if data.held.length}
@@ -154,6 +162,11 @@
                 <select bind:value={rarity} aria-label="Rareté">
                     <option value={0}>Toutes raretés</option>
                     {#each RARITIES as label, i (label)}<option value={i + 1}>{label}</option>{/each}
+                </select>
+                <select bind:value={order} aria-label="Ordre">
+                    <option value="carte">Par carte</option>
+                    <option value="usee">État : plus usées d’abord</option>
+                    <option value="neuve">État : mieux conservées d’abord</option>
                 </select>
             </div>
         </header>

@@ -24,6 +24,8 @@
         openingId: number | null;
         cards: OwnedCard[] | null;
         fresh: number[];
+        /** Fragments des doublons, par exemplaire. */
+        bonus: Record<number, number>;
         error: string | null;
         remaining: number;
     };
@@ -121,7 +123,7 @@
         const stock = stockOf(booster);
         if (data.guest || stock < 1 || opening) return;
         detail = null;
-        opening = { booster, openingId: null, cards: null, fresh: [], error: null, remaining: stock - 1 };
+        opening = { booster, openingId: null, cards: null, fresh: [], bonus: {}, error: null, remaining: stock - 1 };
     }
 
     /** Paquet choisi : le tirage part pendant que le joueur découpe le paquet. */
@@ -142,6 +144,7 @@
         pack: PackView;
         cards: OwnedCard[];
         fresh: number[];
+        bonus: Record<number, number>;
     }) {
         if (data.guest || opening) return;
         // « Ouvrir un autre » à la fin reprend la même série, avec tous ses paquets : depuis la
@@ -161,6 +164,7 @@
             openingId: unseen.openingId,
             cards: unseen.cards,
             fresh: unseen.fresh,
+            bonus: unseen.bonus,
             error: null,
             remaining: unseen.setId === null || banner || keptSet ? stockOf(booster) : 0,
         };
@@ -332,10 +336,12 @@
                         fresh: number[];
                         wallet: { stock: number };
                         held: number | null;
+                        bonus: Record<number, number>;
                     };
                     opening.openingId = opened.openingId;
                     opening.cards = opened.cards;
                     opening.fresh = opened.fresh;
+                    opening.bonus = opened.bonus;
                     opening.remaining = opened.held ?? opened.wallet.stock;
                 } else if (result.type === "failure") {
                     opening.error = String(result.data?.error ?? "Ouverture impossible.");
@@ -381,6 +387,7 @@
         packs={opening.booster.packs}
         cards={opening.cards}
         fresh={opening.fresh}
+        bonus={opening.bonus}
         error={opening.error}
         remaining={opening.remaining}
         count={data.guest ? 5 : data.count}

@@ -8,7 +8,7 @@ import { db, resetDb } from './testing/fake-db';
 
 vi.mock('$lib/server/prisma', async () => ({ prisma: (await import('./testing/fake-db')).fakePrisma }));
 
-const { redeemOffer, shopFor, saveOffer, deleteOffer, setPoints } = await import('./shop');
+const { redeemOffer, shopFor, saveOffer, deleteOffer, setPoints, giftFragments, MAX_FRAGMENT_GIFT } = await import('./shop');
 const { openBooster, boosterChoices, giftHeldBoosters, heldBoosters } = await import('./boosters');
 const { setTotals } = await import('./views');
 const shopPage = await import('../../../routes/cartes/boutique/+page.server');
@@ -139,7 +139,7 @@ describe('boutique : échange', () => {
 		expect(db.purchases).toHaveLength(0);
 	});
 
-	it('paie en points, garde le booster spécial, et respecte la limite par joueur', async () => {
+	it('paie en fragments, garde le booster spécial, et respecte la limite par joueur', async () => {
 		await redeemOffer(1, 2, []);
 		expect(wallet(1)!.points).toBe(20);
 		expect(db.held).toEqual([expect.objectContaining({ playerId: 1, setId: 2, count: 1 })]);
@@ -147,8 +147,8 @@ describe('boutique : échange', () => {
 		expect(wallet(1)!.points).toBe(20);
 	});
 
-	it('refuse sans assez de points, sans rien donner', async () => {
-		await expect(redeemOffer(2, 2, [])).rejects.toThrow(/pas assez de points/);
+	it('refuse sans assez de fragments, sans rien donner', async () => {
+		await expect(redeemOffer(2, 2, [])).rejects.toThrow(/pas assez de fragments/);
 		expect(db.held).toHaveLength(0);
 		expect(db.purchases).toHaveLength(0);
 	});
@@ -267,13 +267,45 @@ describe('boutique : espace MJ', () => {
 		expect(db.offers.some((o) => o.id === 3)).toBe(false);
 	});
 
-	it('borne les points fixés par le MJ', async () => {
+	it('borne les fragments fixés par le MJ', async () => {
 		await expect(setPoints(1, -1)).rejects.toThrow();
 		await expect(setPoints(1, 1.5)).rejects.toThrow();
 		await expect(setPoints(1, 1_000_001)).rejects.toThrow();
 		await expect(setPoints(999, 10)).rejects.toMatchObject({ status: 404 });
 		await setPoints(2, 12);
 		expect(wallet(2)!.points).toBe(12);
+	});
+});
+
+describe('fragments donnés par le MJ', () => {
+	it('ajoute à un joueur, ou à plusieurs (réserve créée au besoin)', async () => {
+		expect(await giftFragments([1], 25)).toBe(1);
+		expect(wallet(1)!.points).toBe(75);
+		expect(await giftFragments([1, 2, 2], 10)).toBe(2);
+		expect(wallet(1)!.points).toBe(85);
+		expect(wallet(2)!.points).toBe(10);
+	});
+
+	it('reprend sans jamais descendre sous zéro', async () => {
+		await giftFragments([1], -20);
+		expect(wallet(1)!.points).toBe(30);
+		await giftFragments([1], -500);
+		expect(wallet(1)!.points).toBe(0);
+	});
+
+	it('ne dépasse jamais le plafond des fragments', async () => {
+		await setPoints(1, 999_990);
+		await giftFragments([1], 50);
+		expect(wallet(1)!.points).toBe(1_000_000);
+	});
+
+	it('refuse zéro, un montant hors limites, un nombre décimal ou un joueur inconnu', async () => {
+		await expect(giftFragments([1], 0)).rejects.toThrow();
+		await expect(giftFragments([1], MAX_FRAGMENT_GIFT + 1)).rejects.toThrow();
+		await expect(giftFragments([1], 2.5)).rejects.toThrow();
+		await expect(giftFragments([999], 5)).rejects.toMatchObject({ status: 404 });
+		await expect(giftFragments([], 5)).rejects.toMatchObject({ status: 404 });
+		expect(wallet(1)!.points).toBe(50);
 	});
 });
 
@@ -299,6 +331,24 @@ describe('boosters spéciaux gardés', () => {
 		expect((await heldBoosters(1)).map((h) => [h.id, h.count, h.special])).toEqual([[2, 1, true]]);
 		await openBooster(1, 2, null, true);
 		await expect(openBooster(1, 2, null, true)).rejects.toThrow(/plus ce booster/);
+	});
+
+	it('les doublons d’un booster rapportent des fragments, crédités à l’ouverture', async () => {
+		// Pool du booster spécial : la seule carte 20 (Singulière). Serena ne l'a pas encore :
+		// la première est nouvelle, les quatre suivantes sont des doublons (3 fragments chacun).
+		await giftHeldBoosters(1, 2, 1);
+		const opened = await openBooster(1, 2, null, true);
+		expect(Object.values(opened.bonus)).toEqual([3, 3, 3, 3]);
+		expect(opened.wallet.points).toBe(50 + 12);
+		expect(wallet(1)!.points).toBe(62);
+	});
+
+	it('pas de fragments pour les doublons d’un tirage limité', async () => {
+		db.templates.find((t) => t.id === 20)!.maxPrints = 100;
+		await giftHeldBoosters(1, 2, 1);
+		const opened = await openBooster(1, 2, null, true);
+		expect(opened.bonus).toEqual({});
+		expect(wallet(1)!.points).toBe(50);
 	});
 
 	it('le MJ ne descend jamais sous zéro ni au-delà de 99', async () => {

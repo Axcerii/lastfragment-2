@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	checkPicks,
 	emptyCriteria,
+	fragmentsLabel,
 	matchesCriteria,
 	parsePrice,
 	parseReward,
@@ -147,6 +148,14 @@ describe('boutique : textes', () => {
 		expect(priceLineLabel(line(1, { templateId: 7 }), names)).toBe('1 × Lyra');
 		expect(priceLineLabel(line(3), names)).toBe('3 cartes au choix');
 		expect(priceLineLabel(line(1, { rarity: 5, rarityUp: true, wear: 'neuve', wearUp: true }), names)).toBe('1 carte Unique · Neuve');
+	});
+
+	it('compte en fragments, la monnaie de la boutique', () => {
+		expect(fragmentsLabel(0)).toBe('0 fragment');
+		expect(fragmentsLabel(1)).toBe('1 fragment');
+		expect(fragmentsLabel(30)).toBe('30 fragments');
+		// Séparateur des milliers à la française (espace insécable).
+		expect(fragmentsLabel(1200).replace(/\s/g, ' ')).toBe('1 200 fragments');
 	});
 
 	it('décrit une carte reçue', () => {

@@ -157,6 +157,35 @@ export function drawWear(randomInt: RandomInt, tierKey?: string): number {
 	return Math.round(value * 1_000_000) / 1_000_000;
 }
 
+// ─── Doublons ────────────────────────────────────────────────────────────
+
+/**
+ * Fragments (monnaie de la boutique) rendus par un doublon tiré d'un booster, selon sa rareté.
+ * Le joueur garde la carte : les fragments viennent en plus. Rien pour une Unique.
+ */
+export const DUPLICATE_FRAGMENTS: Record<number, number> = { 1: 1, 2: 3, 3: 8, 4: 50, 5: 0 };
+
+export interface DrawnCard {
+	templateId: number;
+	rarity: number;
+	/** Tirage limité (`maxPrints`) : un doublon ne rapporte rien. */
+	limited: boolean;
+}
+
+/**
+ * Fragments de chaque carte d'un booster, dans l'ordre du tirage. Une carte est un doublon si le
+ * joueur en possédait déjà un exemplaire avant le booster, ou si elle est déjà sortie plus tôt
+ * dans ce même booster.
+ */
+export function duplicateFragments(cards: DrawnCard[], ownedBefore: Iterable<number>): number[] {
+	const seen = new Set(ownedBefore);
+	return cards.map((card) => {
+		const duplicate = seen.has(card.templateId);
+		seen.add(card.templateId);
+		return duplicate && !card.limited ? (DUPLICATE_FRAGMENTS[card.rarity] ?? 0) : 0;
+	});
+}
+
 /** Taux par défaut d'un booster, en pour cent par rareté. */
 export const DEFAULT_RATES: Record<number, number> = { 1: 62, 2: 25, 3: 9, 4: 3.5, 5: 0.5 };
 

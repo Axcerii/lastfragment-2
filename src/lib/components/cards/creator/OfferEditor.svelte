@@ -1,6 +1,6 @@
 <script lang="ts">
-    // Éditeur d'une offre de la boutique : ce que le joueur cède (points, cartes précises ou
-    // cartes selon des critères) et ce qu'il reçoit (points, boosters, cartes). Le prix et la
+    // Éditeur d'une offre de la boutique : ce que le joueur cède (fragments, cartes précises ou
+    // cartes selon des critères) et ce qu'il reçoit (fragments, boosters, cartes). Le prix et la
     // récompense partent en JSON, revérifiés par le serveur (cards/shop.ts).
     import { untrack } from "svelte";
     import { enhance } from "$app/forms";
@@ -9,7 +9,7 @@
         emptyCriteria,
         emptyPrice,
         emptyReward,
-        pointsLabel,
+        fragmentsLabel,
         priceLineLabel,
         rewardCardLabel,
         SHOP_LIMITS,
@@ -141,13 +141,13 @@
     let summary = $derived.by(() => {
         const give = [
             ...price.cards.map((l) => priceLineLabel(l, names)),
-            ...(price.points ? [pointsLabel(price.points)] : []),
+            ...(price.points ? [fragmentsLabel(price.points)] : []),
         ];
         const get = [
             ...reward.cards.map((c) => rewardCardLabel(c, names)),
             ...reward.held.map((h) => `${h.count} booster${h.count > 1 ? "s" : ""} « ${names.set(h.setId) ?? "?"} »`),
             ...(reward.boosters ? [`${reward.boosters} booster${reward.boosters > 1 ? "s" : ""} de réserve`] : []),
-            ...(reward.points ? [pointsLabel(reward.points)] : []),
+            ...(reward.points ? [fragmentsLabel(reward.points)] : []),
         ];
         return { give: give.join(" + ") || "rien", get: get.join(" + ") || "rien" };
     });
@@ -198,7 +198,7 @@
         <fieldset>
             <legend>Le joueur cède</legend>
             <label class="inline">
-                Points
+                Fragments
                 <input type="number" min="0" max={SHOP_LIMITS.points} bind:value={price.points} />
             </label>
 
@@ -266,7 +266,7 @@
             <legend>Le joueur reçoit</legend>
             <div class="row">
                 <label class="inline">
-                    Points
+                    Fragments
                     <input type="number" min="0" max={SHOP_LIMITS.points} bind:value={reward.points} />
                 </label>
                 <label class="inline">

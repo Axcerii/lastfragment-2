@@ -1,9 +1,9 @@
 <script lang="ts">
-    // Boutique : les offres proposées aux joueurs (cartes contre points, cartes ou boosters), leur
+    // Boutique : les offres proposées aux joueurs (cartes contre fragments, cartes ou boosters), leur
     // état, et les derniers échanges conclus.
     import { enhance } from "$app/forms";
     import OfferEditor from "$lib/components/cards/creator/OfferEditor.svelte";
-    import { pointsLabel, priceLineLabel, rewardCardLabel, type ShopNames } from "$lib/cards/shop";
+    import { fragmentsLabel, priceLineLabel, rewardCardLabel, type ShopNames } from "$lib/cards/shop";
 
     let { data, form } = $props();
 
@@ -27,7 +27,7 @@
     }
 
     function gives(o: Offer) {
-        const list = [...o.price.cards.map((l) => priceLineLabel(l, names)), ...(o.price.points ? [pointsLabel(o.price.points)] : [])];
+        const list = [...o.price.cards.map((l) => priceLineLabel(l, names)), ...(o.price.points ? [fragmentsLabel(o.price.points)] : [])];
         return list.join(" + ") || "rien";
     }
 
@@ -36,7 +36,7 @@
             ...o.reward.cards.map((c) => rewardCardLabel(c, names)),
             ...o.reward.held.map((h) => `${h.count} booster${h.count > 1 ? "s" : ""} « ${setOf(h.setId)?.name ?? "?"} »`),
             ...(o.reward.boosters ? [`${o.reward.boosters} booster${o.reward.boosters > 1 ? "s" : ""} de réserve`] : []),
-            ...(o.reward.points ? [pointsLabel(o.reward.points)] : []),
+            ...(o.reward.points ? [fragmentsLabel(o.reward.points)] : []),
         ];
         return list.join(" + ") || "rien";
     }
@@ -60,8 +60,10 @@
         {/if}
     </header>
     <p class="muted">
-        Chaque offre dit ce que le joueur cède (points, cartes précises ou cartes selon leur rareté, leur état, leur
-        série) et ce qu’il reçoit (points, boosters, cartes). Pour un booster réservé à la boutique, coche « Booster
+        Chaque offre dit ce que le joueur cède (fragments, cartes précises ou cartes selon leur rareté, leur état,
+        leur série) et ce qu’il reçoit (fragments, boosters, cartes). Les fragments sont la monnaie de la boutique :
+        pour en donner, va dans <a href="/admin/cartes/reglages">Réglages</a> (un joueur ou tous) ou sur la page d’un
+        joueur. Pour un booster réservé à la boutique, coche « Booster
         spécial » sur sa série dans <a href="/admin/cartes/series">Séries</a> : il disparaît de la vitrine des
         boosters, et ses cartes ne tombent du booster All que si elles y sont marquées.
     </p>

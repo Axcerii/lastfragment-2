@@ -111,10 +111,23 @@
         </div>
     </form>
 
+    <form class="panel" method="POST" action="?/fragments" use:enhance={keep}>
+        <h2>Offrir des fragments</h2>
+        <p class="muted small">La monnaie de la boutique. Un nombre négatif en reprend, sans descendre sous zéro.</p>
+        <div class="row">
+            <select name="playerId" required aria-label="Joueur">
+                <option value="tous">Tous les joueurs</option>
+                {#each data.players as p (p.id)}<option value={p.id}>{p.login}</option>{/each}
+            </select>
+            <input name="amount" type="number" min="-100000" max="100000" value="10" aria-label="Nombre de fragments" />
+            <button class="btn btn-accent">Offrir</button>
+        </div>
+    </form>
+
     <section class="panel">
         <h2>Joueurs</h2>
         <table>
-            <thead><tr><th>Joueur</th><th>Réserve</th><th>Ouverts</th><th>Cartes</th></tr></thead>
+            <thead><tr><th>Joueur</th><th>Réserve</th><th>Ouverts</th><th>Cartes</th><th>Fragments</th></tr></thead>
             <tbody>
                 {#each data.players as p (p.id)}
                     <tr>
@@ -122,6 +135,7 @@
                         <td>{p.stock ?? "—"}</td>
                         <td>{p.opened}</td>
                         <td>{p.cards}</td>
+                        <td>{p.fragments.toLocaleString("fr-FR")}</td>
                     </tr>
                 {/each}
             </tbody>

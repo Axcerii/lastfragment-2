@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { requireAdmin } from '$lib/server/auth';
 import { moveCardsOf, playerCards, readIds, removeCardsOf, replayOpening, unpinCardsOf } from '$lib/server/cards/admin';
 import { giftBoosters, giftHeldBoosters, setBoosterStock } from '$lib/server/cards/boosters';
-import { setPoints } from '$lib/server/cards/shop';
+import { giftFragments, MAX_FRAGMENT_GIFT, setPoints } from '$lib/server/cards/shop';
 import { giveCard } from '$lib/server/cards/copies';
 import { CardError } from '$lib/server/cards/settings';
 import type { Actions, PageServerLoad } from './$types';
@@ -62,18 +62,33 @@ export const actions: Actions = {
 		return { message: `Réserve fixée à ${stock} booster${stock > 1 ? 's' : ''}.` };
 	},
 
-	/** Fixe les points de boutique. */
+	/** Fixe les fragments (monnaie de la boutique). */
 	points: async ({ request, locals, params }) => {
 		requireAdmin(locals);
 		const id = playerId(params.id);
 		const points = intField(await request.formData(), 'points', 0, 999_999);
-		if (points === null) return fail(400, { error: 'Points entre 0 et 999 999.' });
+		if (points === null) return fail(400, { error: 'Fragments entre 0 et 999 999.' });
 		try {
 			await setPoints(id, points);
 		} catch (e) {
 			return failWith(e);
 		}
-		return { message: `Points fixés à ${points}.` };
+		return { message: `Fragments fixés à ${points}.` };
+	},
+
+	/** Donne (ou reprend) des fragments. */
+	fragments: async ({ request, locals, params }) => {
+		requireAdmin(locals);
+		const id = playerId(params.id);
+		const amount = intField(await request.formData(), 'amount', -MAX_FRAGMENT_GIFT, MAX_FRAGMENT_GIFT);
+		if (!amount) return fail(400, { error: `Fragments entre -${MAX_FRAGMENT_GIFT} et ${MAX_FRAGMENT_GIFT} (hors 0).` });
+		try {
+			await giftFragments([id], amount);
+		} catch (e) {
+			return failWith(e);
+		}
+		const n = Math.abs(amount).toLocaleString('fr-FR');
+		return { message: `${amount > 0 ? '+' : '−'}${n} fragment${Math.abs(amount) > 1 ? 's' : ''}.` };
 	},
 
 	/** Donne (ou reprend) des boosters d'une série, gardés à part de la réserve. */

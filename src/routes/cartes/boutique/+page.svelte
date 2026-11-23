@@ -1,5 +1,5 @@
 <script lang="ts">
-    // Boutique : les offres du MJ. Chacune montre ce que le joueur reçoit et ce qu'il cède (points,
+    // Boutique : les offres du MJ. Chacune montre ce que le joueur reçoit et ce qu'il cède (fragments,
     // cartes précises ou cartes qui répondent à des critères). « Échanger » ouvre le choix des
     // cartes à céder, déjà rempli avec les doubles et les plus usées ; le joueur peut changer.
     import { enhance } from "$app/forms";
@@ -8,9 +8,11 @@
     import CollectibleCard from "$lib/components/cards/CollectibleCard.svelte";
     import Countdown from "$lib/components/cards/Countdown.svelte";
     import PackModel from "$lib/components/cards/opening/PackModel.svelte";
+    import Icon from "$lib/components/ui/Icon.svelte";
     import {
         matchesCriteria,
-        pointsLabel,
+        FRAGMENT_ICON,
+        fragmentsLabel,
         priceLineLabel,
         rewardCardLabel,
         suggestCards,
@@ -49,7 +51,7 @@
 
     /** Ce qu'il manque au joueur pour cette offre, ou null s'il peut payer. */
     function missing(offer: Offer): string | null {
-        if (offer.price.points > data.points) return `Il te manque ${pointsLabel(offer.price.points - data.points)}`;
+        if (offer.price.points > data.points) return `Il te manque ${fragmentsLabel(offer.price.points - data.points)}`;
         const picks = suggestCards(offer.price.cards, copies);
         const short = offer.price.cards.findIndex((line, i) => picks[i].length < line.count);
         return short >= 0 ? "Il te manque des cartes" : null;
@@ -113,13 +115,17 @@
         <div>
             <h1>Boutique</h1>
             <p class="muted">
-                Cède des cartes contre des points, des boosters ou d’autres cartes. Les cartes cédées rejoignent la
-                réserve du MJ.
+                Cède des cartes contre des fragments, des boosters ou d’autres cartes. Les cartes cédées rejoignent la
+                réserve du MJ. Chaque doublon tiré d’un booster rapporte aussi des fragments : 1 par Commune, 3 par
+                Singulière, 8 par Rare, 50 par Légendaire (rien pour une Unique ou un tirage limité).
             </p>
         </div>
-        <div class="purse panel" aria-label="Tes points">
-            <span class="muted small">Tes points</span>
-            <strong>{data.points.toLocaleString("fr-FR")}</strong>
+        <div class="purse panel">
+            <span class="muted small">Tes fragments</span>
+            <strong>
+                {data.points.toLocaleString("fr-FR")}
+                <Icon src={FRAGMENT_ICON} color="var(--rarity-4)" size="1.4rem" label="fragments" />
+            </strong>
         </div>
     </header>
 
@@ -168,7 +174,7 @@
                                     <li><span class="gem" aria-hidden="true"></span><span>{offer.reward.boosters} booster{offer.reward.boosters > 1 ? "s" : ""} dans ta réserve</span></li>
                                 {/if}
                                 {#if offer.reward.points}
-                                    <li><span class="coin" aria-hidden="true">✦</span><span>{pointsLabel(offer.reward.points)}</span></li>
+                                    <li><span class="coin"><Icon src={FRAGMENT_ICON} color="var(--rarity-4)" size="1.5rem" /></span><span>{fragmentsLabel(offer.reward.points)}</span></li>
                                 {/if}
                             </ul>
                         </section>
@@ -188,8 +194,8 @@
                                 {/each}
                                 {#if offer.price.points}
                                     <li class:ok={data.points >= offer.price.points}>
-                                        <span class="coin" aria-hidden="true">✦</span>
-                                        <span>{pointsLabel(offer.price.points)}</span>
+                                        <span class="coin"><Icon src={FRAGMENT_ICON} color="var(--rarity-4)" size="1.5rem" /></span>
+                                        <span>{fragmentsLabel(offer.price.points)}</span>
                                     </li>
                                 {/if}
                                 {#if !offer.price.cards.length && !offer.price.points}
@@ -234,8 +240,8 @@
                     <li>+{h.count} booster{h.count > 1 ? "s" : ""} « {h.name} », à ouvrir dans l’onglet Boosters</li>
                 {/each}
                 {#if result.boosters}<li>+{result.boosters} booster{result.boosters > 1 ? "s" : ""} dans ta réserve</li>{/if}
-                {#if result.pointsEarned}<li>+{pointsLabel(result.pointsEarned)}</li>{/if}
-                <li class="muted">Il te reste {pointsLabel(result.points)}.</li>
+                {#if result.pointsEarned}<li>+{fragmentsLabel(result.pointsEarned)}</li>{/if}
+                <li class="muted">Il te reste {fragmentsLabel(result.points)}.</li>
             </ul>
             <div class="row">
                 {#if result.held.length || result.boosters}<a class="btn btn-accent" href="/cartes">Ouvrir mes boosters</a>{/if}
@@ -300,7 +306,7 @@
             {/each}
 
             <p class="recap">
-                {#if offer.price.points}Tu paies <strong>{pointsLabel(offer.price.points)}</strong> (il t’en restera {pointsLabel(data.points - offer.price.points)}).{/if}
+                {#if offer.price.points}Tu paies <strong>{fragmentsLabel(offer.price.points)}</strong> (il t’en restera {fragmentsLabel(data.points - offer.price.points)}).{/if}
                 {#if offer.price.cards.length}Les cartes cochées partent dans la réserve du MJ : c’est définitif.{/if}
                 {#if !offer.price.points && !offer.price.cards.length}Cette offre est gratuite.{/if}
             </p>
@@ -349,6 +355,9 @@
     }
 
     .purse strong {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
         font-family: var(--titleFont);
         font-size: 1.8rem;
         line-height: 1.1;
@@ -490,12 +499,12 @@
         background: linear-gradient(160deg, #fff, var(--accent));
     }
 
+    /* Symbole des fragments (le logo du Tout), centré dans la place d'une miniature de carte. */
     .coin {
         flex-shrink: 0;
         width: 2.6rem;
-        text-align: center;
-        color: var(--rarity-4);
-        font-size: 1.3rem;
+        display: grid;
+        place-items: center;
     }
 
     .special {

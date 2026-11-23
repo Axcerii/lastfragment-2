@@ -1,7 +1,7 @@
 // Boutique des cartes : les offres préparées par le MJ, et l'échange lui-même.
 //
 // Un échange se fait en une transaction : l'offre est verrouillée (ses limites se comptent un
-// échange à la fois), les points ne sont retirés que s'il y en a assez, et chaque carte cédée ne
+// échange à la fois), les fragments (champ `points`) ne sont retirés que s'il y en a assez, et chaque carte cédée ne
 // change de mains que si elle appartient encore au joueur. Le moindre accroc annule tout : rien
 // n'est payé sans être reçu, rien n'est reçu sans être payé. Les cartes cédées vont dans la
 // réserve du MJ, avec leur historique, comme une carte retirée.
@@ -251,7 +251,7 @@ export async function redeemOffer(playerId: number, offerId: number, rawPicks: u
 						where: { playerId, points: { gte: price.points } },
 						data: { points: { decrement: price.points } }
 					});
-					if (paid.count !== 1) throw new CardError('Tu n’as pas assez de points.', 409);
+					if (paid.count !== 1) throw new CardError('Tu n’as pas assez de fragments.', 409);
 				}
 				if (given.length) {
 					const moved = await tx.card.updateMany({
@@ -380,7 +380,7 @@ export async function saveOffer(id: number | null, input: OfferInput): Promise<n
 	if (!price.ok) throw new CardError(price.error);
 	const reward = parseReward(input.reward);
 	if (!reward.ok) throw new CardError(reward.error);
-	if (isEmptyReward(reward.value)) throw new CardError('L’offre ne donne rien : ajoute des points, des boosters ou des cartes.');
+	if (isEmptyReward(reward.value)) throw new CardError('L’offre ne donne rien : ajoute des fragments, des boosters ou des cartes.');
 	if (isEmptyPrice(price.value) && input.perPlayer === null) {
 		throw new CardError('Une offre gratuite doit être limitée par joueur (sinon elle se prend à l’infini).');
 	}
@@ -504,12 +504,48 @@ export async function adminShop() {
 	};
 }
 
-/** Le MJ fixe les points de boutique d'un joueur. */
+/** Le MJ fixe les fragments (points de boutique) d'un joueur. */
 export async function setPoints(playerId: number, points: number) {
 	if (!Number.isInteger(points) || points < 0 || points > SHOP_LIMITS.points) {
-		throw new CardError(`Points entre 0 et ${SHOP_LIMITS.points}.`);
+		throw new CardError(`Fragments entre 0 et ${SHOP_LIMITS.points}.`);
 	}
 	if (!(await prisma.player.findUnique({ where: { id: playerId }, select: { id: true } }))) throw new CardError('Joueur introuvable.', 404);
 	await ensureWallet(playerId, await getRules());
 	await prisma.cardWallet.update({ where: { playerId }, data: { points } });
+}
+
+/** Plus grand don (ou retrait) de fragments en une fois par le MJ. */
+export const MAX_FRAGMENT_GIFT = 100_000;
+
+/**
+ * Le MJ donne des fragments à des joueurs, ou en reprend (`amount` négatif) sans jamais descendre
+ * sous zéro. Renvoie le nombre de joueurs servis. Chaque compte est modifié sous condition : deux
+ * dons simultanés s'additionnent, rien n'est perdu.
+ */
+export async function giftFragments(playerIds: number[], amount: number): Promise<number> {
+	if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > MAX_FRAGMENT_GIFT) {
+		throw new CardError(`Fragments entre -${MAX_FRAGMENT_GIFT} et ${MAX_FRAGMENT_GIFT} (hors 0).`);
+	}
+	const ids = [...new Set(playerIds.filter((id) => Number.isInteger(id) && id > 0))];
+	const players = await prisma.player.findMany({ where: { id: { in: ids } }, select: { id: true } });
+	if (players.length === 0) throw new CardError('Joueur introuvable.', 404);
+	const rules = await getRules();
+	for (const { id } of players) {
+		await ensureWallet(id, rules);
+		if (amount > 0) {
+			// Plafond : un compte ne dépasse jamais la limite des fragments.
+			const added = await prisma.cardWallet.updateMany({
+				where: { playerId: id, points: { lte: SHOP_LIMITS.points - amount } },
+				data: { points: { increment: amount } }
+			});
+			if (added.count !== 1) await prisma.cardWallet.update({ where: { playerId: id }, data: { points: SHOP_LIMITS.points } });
+		} else {
+			const taken = await prisma.cardWallet.updateMany({
+				where: { playerId: id, points: { gte: -amount } },
+				data: { points: { decrement: -amount } }
+			});
+			if (taken.count !== 1) await prisma.cardWallet.update({ where: { playerId: id }, data: { points: 0 } });
+		}
+	}
+	return players.length;
 }

@@ -3,11 +3,21 @@
     // (le dernier album ouvert d'emblée), et l'album lui-même où les cartes manquantes restent des
     // cases numérotées. Les Unique ne comptent pas dans les 100 % : leur case n'apparaît qu'une fois
     // obtenue et fait déborder l'album. La vue « Cartes » liste les exemplaires par pages, pour ne
-    // pas dessiner des centaines de cartes d'un coup sur un téléphone.
+    // pas dessiner des centaines de cartes d'un coup sur un téléphone. Triée par état, elle montre
+    // chaque exemplaire à part (deux exemplaires d'une même carte n'ont pas la même usure).
     import type { Snippet } from "svelte";
     import { fade } from "svelte/transition";
     import { matches } from "$lib/components/table/MediaPicker.svelte";
-    import { CARD_TYPES, padNumber, RARITIES, UNIQUE_RARITY, type CopyView, type TemplateView } from "$lib/cards/types";
+    import {
+        CARD_TYPES,
+        formatWear,
+        padNumber,
+        RARITIES,
+        UNIQUE_RARITY,
+        wearTier,
+        type CopyView,
+        type TemplateView,
+    } from "$lib/cards/types";
     import { requestGyro } from "$lib/cards/gyro.svelte";
     import CardInspector from "./CardInspector.svelte";
     import CollectibleCard from "./CollectibleCard.svelte";
@@ -44,7 +54,7 @@
     let rarity = $state(0);
     let setId = $state("");
     let dupes = $state(false);
-    let sort = $state<"recent" | "rarete" | "numero" | "nom">("recent");
+    let sort = $state<"recent" | "rarete" | "numero" | "nom" | "usee" | "neuve">("recent");
     let pageIndex = $state(0);
 
     // Une pile par modèle, l'exemplaire le moins usé en premier.
@@ -112,8 +122,17 @@
                 return b.latest - a.latest;
             }),
     );
-    let pages = $derived(Math.max(1, Math.ceil(shown.length / PAGE_SIZE)));
-    let paged = $derived(shown.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE));
+
+    // Une case par carte (sa pile, le meilleur exemplaire dessus), ou une par exemplaire triée par état.
+    let byWear = $derived(sort === "usee" || sort === "neuve");
+    let items = $derived.by(() => {
+        if (!byWear) return shown.map((s) => ({ key: `t${s.template.id}`, template: s.template, copy: s.copies[0], count: s.copies.length }));
+        return shown
+            .flatMap((s) => s.copies.map((copy) => ({ key: `c${copy.id}`, template: s.template, copy, count: 1 })))
+            .sort((a, b) => (sort === "usee" ? b.copy.wear - a.copy.wear : a.copy.wear - b.copy.wear) || b.copy.id - a.copy.id);
+    });
+    let pages = $derived(Math.max(1, Math.ceil(items.length / PAGE_SIZE)));
+    let paged = $derived(items.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE));
 
     // Un filtre qui change ramène à la première page.
     $effect.pre(() => {
@@ -290,6 +309,8 @@
             <option value="rarete">Rareté</option>
             <option value="numero">Numéro</option>
             <option value="nom">Nom</option>
+            <option value="usee">État : plus usées d’abord</option>
+            <option value="neuve">État : mieux conservées d’abord</option>
         </select>
     </div>
     <div class="filters">
@@ -313,11 +334,21 @@
         <p class="muted empty">Aucune carte pour l’instant.</p>
     {:else}
         <div class="grid">
-            {#each paged as stack (stack.template.id)}
-                <button type="button" class="tile" onclick={() => inspect(stack.template.id)} aria-label="{stack.template.name}, {stack.copies.length} exemplaire(s)">
-                    {#if stack.copies.length > 1}<span class="stacked" aria-hidden="true"></span>{/if}
-                    <CollectibleCard card={stack.template} copy={stack.copies[0]} lite tilt="hover" />
-                    {#if stack.copies.length > 1}<span class="count">×{stack.copies.length}</span>{/if}
+            {#each paged as item (item.key)}
+                <button
+                    type="button"
+                    class="tile"
+                    onclick={() => inspect(item.template.id, byWear ? item.copy.id : undefined)}
+                    aria-label={byWear
+                        ? `${item.template.name}, ${wearTier(item.copy.wear).label}`
+                        : `${item.template.name}, ${item.count} exemplaire(s)`}
+                >
+                    {#if item.count > 1}<span class="stacked" aria-hidden="true"></span>{/if}
+                    <CollectibleCard card={item.template} copy={item.copy} lite tilt="hover" />
+                    {#if item.count > 1}<span class="count">×{item.count}</span>{/if}
+                    {#if byWear}
+                        <span class="wear-tag">{wearTier(item.copy.wear).label} · {formatWear(item.copy.wear).slice(0, 5)}</span>
+                    {/if}
                 </button>
             {:else}
                 <p class="muted">Aucune carte ne correspond.</p>
@@ -700,6 +731,16 @@
 
     .tile:focus-visible {
         outline-offset: 4px;
+    }
+
+    /* Tri par état : l'usure de l'exemplaire sous sa carte. */
+    .wear-tag {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: 0.7rem;
+        text-align: center;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
     }
 
     /* Une Unique découverte : sa case n'existait pas avant, elle s'annonce. */

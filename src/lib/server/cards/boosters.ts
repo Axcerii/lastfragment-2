@@ -7,7 +7,17 @@
 
 import { randomInt } from 'crypto';
 import { Prisma, type Card, type CardPack, type CardSet } from '@prisma/client';
-import { accrue, consume, drawSlot, drawWear, rollGodPack, slotMinimum, type PoolCard } from '$lib/cards/booster';
+import {
+	accrue,
+	consume,
+	drawSlot,
+	drawWear,
+	duplicateFragments,
+	rollGodPack,
+	slotMinimum,
+	type DrawnCard,
+	type PoolCard
+} from '$lib/cards/booster';
 import type { OwnedCard, PackView, SetView } from '$lib/cards/types';
 import { prisma } from '../prisma';
 import { CardError, getRules, type CardRules } from './settings';
@@ -177,6 +187,14 @@ export interface OpenedBooster {
 	wallet: WalletView;
 	/** Booster gardé (boutique) : combien il en reste de cette série ; null pour la réserve habituelle. */
 	held: number | null;
+	/** Fragments gagnés par les doublons, par exemplaire (seulement ceux qui en rapportent). */
+	bonus: Record<number, number>;
+}
+
+/** Fragments par exemplaire, sans les zéros : ce que montre l'ouverture. */
+function bonusOf(ids: number[], drawn: DrawnCard[], ownedBefore: Iterable<number>): Record<number, number> {
+	const amounts = duplicateFragments(drawn, ownedBefore);
+	return Object.fromEntries(ids.map((id, i) => [id, amounts[i]]).filter(([, n]) => n > 0));
 }
 
 /** Ordre de révélation : de la moins rare à la plus rare, le meilleur pour la fin. */
@@ -227,7 +245,7 @@ export async function openBooster(
 	});
 	const owned = new Set(before.map((c) => c.templateId));
 
-	const { openingId, ids } = await withRetry(() =>
+	const { openingId, ids, bonus } = await withRetry(() =>
 		prisma.$transaction(
 			async (tx) => {
 				if (held) {
@@ -254,6 +272,7 @@ export async function openBooster(
 				const left = pool.map((c) => ({ ...c }));
 				const picked: number[] = [];
 				const created: Card[] = [];
+				const drawn: DrawnCard[] = [];
 				const god = rollGodPack(rules.godPack, rand);
 				for (let slot = 0; slot < rules.count; slot++) {
 					const min = slotMinimum(slot, rules.count, rules.guaranteed, god);
@@ -267,6 +286,8 @@ export async function openBooster(
 							continue;
 						}
 						picked.push(choice.id);
+						// Tirage limité : `remaining` est un nombre, null pour un tirage illimité.
+						drawn.push({ templateId: choice.id, rarity: choice.rarity, limited: choice.remaining !== null });
 						if (choice.remaining !== null) choice.remaining--;
 						created.push(card);
 						break;
@@ -278,7 +299,12 @@ export async function openBooster(
 				const opening = await tx.cardOpening.create({
 					data: { playerId, setId, packId, cardIds: created.map((c) => c.id) }
 				});
-				return { openingId: opening.id, ids: created.map((c) => c.id) };
+				// Doublons : leurs fragments sont crédités avec le tirage, dans la même transaction.
+				const ids = created.map((c) => c.id);
+				const bonus = bonusOf(ids, drawn, owned);
+				const earned = Object.values(bonus).reduce((sum, n) => sum + n, 0);
+				if (earned > 0) await tx.cardWallet.update({ where: { playerId }, data: { points: { increment: earned } } });
+				return { openingId: opening.id, ids, bonus };
 			},
 			{ timeout: 15_000 }
 		)
@@ -289,7 +315,7 @@ export async function openBooster(
 	const left = held
 		? ((await prisma.cardHeldBooster.findUnique({ where: { playerId_setId: { playerId, setId: setId as number } } }))?.count ?? 0)
 		: null;
-	return { openingId, cards, fresh, wallet: await walletOf(playerId, rules), held: left };
+	return { openingId, cards, fresh, wallet: await walletOf(playerId, rules), held: left, bonus };
 }
 
 // ─── Boosters gardés (boutique) ──────────────────────────────────────────
@@ -384,6 +410,8 @@ export interface UnseenBooster {
 	pack: PackView;
 	cards: OwnedCard[];
 	fresh: number[];
+	/** Fragments des doublons, déjà crédités à l'ouverture (recalculés pour l'affichage). */
+	bonus: Record<number, number>;
 }
 
 export async function unseenBoosters(playerId: number): Promise<UnseenBooster[]> {
@@ -405,6 +433,13 @@ export async function unseenBoosters(playerId: number): Promise<UnseenBooster[]>
 			distinct: ['templateId']
 		});
 		const known = new Set(older.map((c) => c.templateId));
+		// Ordre du tirage (celui des identifiants), pas celui de la révélation.
+		const byId = new Map(cards.map((c) => [c.copy.id, c.template]));
+		const inOrder = ids.filter((id) => byId.has(id));
+		const drawn = inOrder.map((id) => {
+			const t = byId.get(id)!;
+			return { templateId: t.id, rarity: t.rarity, limited: t.maxPrints !== null };
+		});
 		result.push({
 			openingId: opening.id,
 			setId: opening.setId,
@@ -412,7 +447,8 @@ export async function unseenBoosters(playerId: number): Promise<UnseenBooster[]>
 			code: opening.set?.code ?? 'ALL',
 			pack: opening.pack ? packView(opening.pack) : opening.set ? packsOf(opening.set, [])[0] : ALL_PACK,
 			cards,
-			fresh: [...new Set(cards.map((c) => c.template.id))].filter((id) => !known.has(id))
+			fresh: [...new Set(cards.map((c) => c.template.id))].filter((id) => !known.has(id)),
+			bonus: bonusOf(inOrder, drawn, known)
 		});
 	}
 	return result;

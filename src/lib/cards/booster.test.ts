@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+	DUPLICATE_FRAGMENTS,
+	duplicateFragments,
 	accrue,
 	consume,
 	drawBooster,
@@ -142,6 +144,24 @@ describe('tirage', () => {
 		let a = 0;
 		for (let i = 0; i < 10_000; i++) if (weightedPick(items, (x) => (x === 'a' ? 9 : 1), random) === 'a') a++;
 		expect(a / 10_000).toBeCloseTo(0.9, 1);
+	});
+});
+
+describe('doublons', () => {
+	const card = (templateId: number, rarity: number, limited = false) => ({ templateId, rarity, limited });
+
+	it('rapporte des fragments selon la rareté, rien pour une Unique', () => {
+		expect(DUPLICATE_FRAGMENTS).toEqual({ 1: 1, 2: 3, 3: 8, 4: 50, 5: 0 });
+		const owned = [1, 2, 3, 4, 5];
+		expect(duplicateFragments([card(1, 1), card(2, 2), card(3, 3), card(4, 4), card(5, 5)], owned)).toEqual([1, 3, 8, 50, 0]);
+	});
+
+	it('une carte nouvelle ne rapporte rien, son double dans le même booster si', () => {
+		expect(duplicateFragments([card(7, 3), card(8, 1), card(7, 3)], [])).toEqual([0, 0, 8]);
+	});
+
+	it('rien pour un tirage limité', () => {
+		expect(duplicateFragments([card(9, 4, true), card(9, 4, true)], [9])).toEqual([0, 0]);
 	});
 });
 
