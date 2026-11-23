@@ -17,6 +17,11 @@
 			page.route.id === "/flux/secret" ||
 			(page.route.id ?? "").startsWith("/outils/table/[id]")
 	);
+
+	// Pages qui font défiler leur contenu dans leur propre cadre, à hauteur d'écran (la liste des
+	// personnages) : sur ordinateur, le pied de page les ferait déborder et toute la page défilerait
+	// en plus du cadre. Sur téléphone, elles défilent normalement et gardent le lien vers les CGU.
+	let ownScroll = $derived(page.route.id === "/personnages");
 </script>
 
 <svelte:head>
@@ -30,7 +35,7 @@
 {@render children?.()}
 
 {#if !bare}
-	<footer>
+	<footer class:own-scroll={ownScroll}>
 		<a href="/cgu">Conditions générales d'utilisation</a>
 	</footer>
 {/if}
@@ -55,5 +60,12 @@
 	footer a:focus-visible {
 		color: var(--accent);
 		text-decoration: underline;
+	}
+
+	/* Même seuil que la liste des personnages, qui ne défile dans son cadre qu'au-dessus de 600 px. */
+	@media screen and (min-width: 601px) {
+		footer.own-scroll {
+			display: none;
+		}
 	}
 </style>
